@@ -11,7 +11,7 @@
 
 - [x] Phase 1 — Project Scaffolding & Tooling
 - [x] Phase 2 — Design System & Navigation Shell
-- [ ] Phase 3 — Supabase Setup & Database Schema
+- [x] Phase 3 — Supabase Setup & Database Schema
 - [ ] Phase 4 — Authentication (Google OAuth)
 - [ ] Phase 5 — RAWG API Integration
 - [ ] Phase 6 — Search Screen
