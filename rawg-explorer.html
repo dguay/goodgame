@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #111; padding: 1rem; }
+.tabs { display: flex; border-bottom: 1px solid #e5e5e5; overflow-x: auto; }
+.tab { padding: 9px 16px; font-size: 13px; color: #888; cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tab.active { color: #111; font-weight: 600; border-bottom: 2px solid #111; }
+.panel { display: none; padding: 1rem 0; }
+.panel.active { display: block; }
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 10px; }
+.data-card { background: #f7f7f7; border-radius: 8px; padding: 10px 12px; }
+.data-card-title { font-size: 11px; font-weight: 700; color: #777; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.data-field { font-size: 12px; color: #222; padding: 2px 0; display: flex; align-items: baseline; gap: 7px; line-height: 1.4; }
+.dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.d-blue{background:#378ADD} .d-teal{background:#1D9E75} .d-purple{background:#7F77DD} .d-amber{background:#EF9F27} .d-coral{background:#D85A30} .d-gray{background:#888780}
+.locked { font-size: 11px; color: #888; background: #f7f7f7; border: 1px solid #e5e5e5; border-radius: 8px; padding: 7px 11px; margin-top: 10px; }
+.note { font-size: 11px; color: #666; margin-top: 10px; padding: 7px 11px; background: #f7f7f7; border-radius: 0 8px 8px 0; border-left: 3px solid #ccc; }
+.section-lbl { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin: 4px 0 10px; }
+.proj-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 12px; }
+.proj-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 8px; }
+.proj-card.top { border: 2px solid #185FA5; }
+.proj-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-bottom: 2px; }
+.pt-blue{background:#E6F1FB;color:#185FA5} .pt-teal{background:#E1F5EE;color:#085041} .pt-purple{background:#EEEDFE;color:#3C3489} .pt-amber{background:#FAEEDA;color:#633806}
+.proj-title { font-size: 14px; font-weight: 600; color: #111; line-height: 1.3; }
+.proj-desc { font-size: 12px; color: #555; line-height: 1.6; }
+.rf-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.rf { font-size: 10px; padding: 2px 6px; border-radius: 6px; background: #f5f5f5; color: #666; border: 1px solid #e5e5e5; }
+</style>
+</head>
+<body>
+<div class="tabs">
+  <button class="tab active" onclick="show('data',this)">What data you get</button>
+  <button class="tab" onclick="show('ideas',this)">Project ideas</button>
+  <button class="tab" onclick="show('limits',this)">Limits &amp; terms</button>
+</div>
+
+<div id="panel-data" class="panel active">
+  <div class="data-grid">
+    <div class="data-card">
+      <p class="data-card-title">🎮 Game core</p>
+      <div class="data-field"><span class="dot d-blue"></span>Name, slug, description</div>
+      <div class="data-field"><span class="dot d-blue"></span>Release date</div>
+      <div class="data-field"><span class="dot d-blue"></span>RAWG rating (0–5 scale)</div>
+      <div class="data-field"><span class="dot d-blue"></span>Metacritic score</div>
+      <div class="data-field"><span class="dot d-blue"></span>ESRB rating</div>
+      <div class="data-field"><span class="dot d-blue"></span>Average playtime (hours)</div>
+      <div class="data-field"><span class="dot d-blue"></span>Cover / background image</div>
+      <div class="data-field"><span class="dot d-blue"></span>Official website URL</div>
+    </div>
+    <div class="data-card">
+      <p class="data-card-title">🏷️ Classification</p>
+      <div class="data-field"><span class="dot d-teal"></span>Genres (RPG, Action, Indie…)</div>
+      <div class="data-field"><span class="dot d-teal"></span>600+ community tags</div>
+      <div class="data-field"><span class="dot d-teal"></span>Platforms + per-platform scores</div>
+      <div class="data-field"><span class="dot d-teal"></span>Stores (Steam, GOG, Epic…)</div>
+      <div class="data-field"><span class="dot d-teal"></span>Developer(s)</div>
+      <div class="data-field"><span class="dot d-teal"></span>Publisher(s)</div>
+      <div class="data-field"><span class="dot d-teal"></span>Individual creators + job roles</div>
+    </div>
+    <div class="data-card">
+      <p class="data-card-title">📊 Engagement data</p>
+      <div class="data-field"><span class="dot d-purple"></span>RAWG player counts</div>
+      <div class="data-field"><span class="dot d-purple"></span>Steam average playtime</div>
+      <div class="data-field"><span class="dot d-purple"></span>Ratings breakdown (1–5 stars)</div>
+      <div class="data-field"><span class="dot d-purple"></span>Total reviews count</div>
+      <div class="data-field"><span class="dot d-purple"></span>Suggestions count</div>
+      <div class="data-field"><span class="dot d-purple"></span>Added to library count</div>
+    </div>
+    <div class="data-card">
+      <p class="data-card-title">📦 Related content</p>
+      <div class="data-field"><span class="dot d-amber"></span>Screenshots (multiple)</div>
+      <div class="data-field"><span class="dot d-amber"></span>DLCs &amp; GOTY editions list</div>
+      <div class="data-field"><span class="dot d-amber"></span>Games in same series</div>
+      <div class="data-field"><span class="dot d-amber"></span>Achievements list</div>
+      <div class="data-field"><span class="dot d-amber"></span>Game subreddit recent posts</div>
+      <div class="data-field"><span class="dot d-amber"></span>PC system requirements</div>
+      <div class="data-field"><span class="dot d-amber"></span>Store buy links</div>
+    </div>
+    <div class="data-card">
+      <p class="data-card-title">🔍 Search &amp; filter</p>
+      <div class="data-field"><span class="dot d-coral"></span>Filter by genre, tag, platform</div>
+      <div class="data-field"><span class="dot d-coral"></span>Filter by Metacritic range</div>
+      <div class="data-field"><span class="dot d-coral"></span>Filter by date range</div>
+      <div class="data-field"><span class="dot d-coral"></span>Filter by ESRB rating</div>
+      <div class="data-field"><span class="dot d-coral"></span>Sort by rating, date, playtime</div>
+      <div class="data-field"><span class="dot d-coral"></span>Fuzzy or exact name search</div>
+      <div class="data-field"><span class="dot d-coral"></span>500k+ games indexed</div>
+    </div>
+    <div class="data-card">
+      <p class="data-card-title">🏢 Reference lists</p>
+      <div class="data-field"><span class="dot d-gray"></span>All genres (paginated)</div>
+      <div class="data-field"><span class="dot d-gray"></span>All platforms</div>
+      <div class="data-field"><span class="dot d-gray"></span>All developers</div>
+      <div class="data-field"><span class="dot d-gray"></span>All publishers</div>
+      <div class="data-field"><span class="dot d-gray"></span>All stores</div>
+      <div class="data-field"><span class="dot d-gray"></span>All tags</div>
+      <div class="data-field"><span class="dot d-gray"></span>Creator roles &amp; bios</div>
+    </div>
+  </div>
+  <div class="locked">🔒 Business/enterprise only: visually similar games engine, live Twitch streams, linked YouTube videos</div>
+</div>
+
+<div id="panel-ideas" class="panel">
+  <div class="section-lbl">Top picks for your situation</div>
+  <div class="proj-grid">
+    <div class="proj-card top">
+      <span class="proj-tag pt-blue">My top pick</span>
+      <p class="proj-title">Dad Mode — "I have 45 mins, what do I play?"</p>
+      <p class="proj-desc">Describe your current situation — energy, mood, time window. Claude queries RAWG filtered to your personal backlog, sorted by playtime, genre, and taste profile stored in Supabase. Returns a ranked recommendation with a one-para pitch per game. The killer feature: the right game for the exact moment you're in.</p>
+      <div class="rf-row"><span class="rf">playtime</span><span class="rf">genres</span><span class="rf">tags</span><span class="rf">ESRB</span><span class="rf">rating</span><span class="rf">metacritic</span></div>
+    </div>
+    <div class="proj-card">
+      <span class="proj-tag pt-teal">ARPG angle</span>
+      <p class="proj-title">ARPG Time Sink Calculator</p>
+      <p class="proj-desc">Pull every ARPG from RAWG with playtime + DLC data. Claude builds a total time investment breakdown — base game, all DLC, 100% completion — then a full "you liked Diablo IV, should you play Path of Exile 2?" decision guide. Visualize as a tier list with hours-per-dollar value scores.</p>
+      <div class="rf-row"><span class="rf">playtime</span><span class="rf">DLC list</span><span class="rf">game series</span><span class="rf">tags</span><span class="rf">achievements</span></div>
+    </div>
+    <div class="proj-card">
+      <span class="proj-tag pt-purple">Numbers angle</span>
+      <p class="proj-title">Critic vs. Player — the gap dashboard</p>
+      <p class="proj-desc">Pull games where Metacritic and RAWG player rating diverge most. Visualize the gap across genres and years. Claude narrates the most interesting outliers — games critics loved but players hated, hidden gems critics slept on. Pure data exploration built entirely on RAWG filter + sort endpoints.</p>
+      <div class="rf-row"><span class="rf">metacritic</span><span class="rf">rating</span><span class="rf">ratings breakdown</span><span class="rf">genres</span><span class="rf">release date</span></div>
+    </div>
+    <div class="proj-card">
+      <span class="proj-tag pt-amber">Kids angle</span>
+      <p class="proj-title">Kid-Safe Game Finder</p>
+      <p class="proj-desc">Filter RAWG by ESRB "Everyone" and "Everyone 10+", then Claude matches games to your kids' ages and interests. "My 6-year-old loves dinosaurs" → ranked list with screenshots, a fit explanation, and a parent note on any mild content. Doubles as a birthday gift guide generator.</p>
+      <div class="rf-row"><span class="rf">ESRB rating</span><span class="rf">genres</span><span class="rf">tags</span><span class="rf">screenshots</span><span class="rf">description</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel-limits" class="panel">
+  <div class="data-grid">
+    <div class="data-card">
+      <p class="data-card-title">✅ Free tier</p>
+      <div class="data-field"><span class="dot d-teal"></span>Free API key at rawg.io/apidocs</div>
+      <div class="data-field"><span class="dot d-teal"></span>~20,000 requests/month</div>
+      <div class="data-field"><span class="dot d-teal"></span>All endpoints included</div>
+      <div class="data-field"><span class="dot d-teal"></span>Personal &amp; hobby projects OK</div>
+      <div class="data-field"><span class="dot d-teal"></span>Commercial OK up to 100k MAU</div>
+    </div>
+    <div class="data-card">
+      <p class="data-card-title">⚠️ Rules</p>
+      <div class="data-field"><span class="dot d-amber"></span>Must credit RAWG as source</div>
+      <div class="data-field"><span class="dot d-amber"></span>Add a link back on every page</div>
+      <div class="data-field"><span class="dot d-amber"></span>No RAWG clones allowed</div>
+      <div class="data-field"><span class="dot d-amber"></span>100k+ MAU needs a contract</div>
+      <div class="data-field"><span class="dot d-amber"></span>No bulk data harvesting</div>
+    </div>
+    <div class="data-card">
+      <p class="data-card-title">👍 Verdict</p>
+      <div class="data-field"><span class="dot d-teal"></span>Legitimate, documented API</div>
+      <div class="data-field"><span class="dot d-teal"></span>Clear ToS, no hidden gotchas</div>
+      <div class="data-field"><span class="dot d-teal"></span>Used by Yandex, 70k+ Discord servers</div>
+      <div class="data-field"><span class="dot d-teal"></span>Very generous free tier</div>
+      <div class="data-field"><span class="dot d-teal"></span>Safe to build on</div>
+    </div>
+  </div>
+  <div class="note">Attribution is simple — just add "Game data provided by <strong><a href="https://rawg.io" target="_blank">RAWG</a></strong>" in your footer. That's it.</div>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
