@@ -18,19 +18,28 @@
 ## Folder Structure
 
 ```
-/app                  → expo-router pages (file-based routing)
-  (auth)/             → unauthenticated routes
-  (tabs)/             → main tab screens
-  game/[id].tsx       → game detail
-  _layout.tsx         → root layout + auth guard
-/components           → reusable UI components
-/hooks                → custom React hooks
-/lib                  → clients (supabase.ts, rawg.ts), helpers
-/stores               → Zustand stores
-/types                → shared TypeScript interfaces/types
-/assets               → fonts, images, icons
-/constants            → colors, spacing, typography tokens
-/supabase/migrations  → SQL migration files (one per change)
+/mobile                       → Expo app (Android + Web)
+  /app                        → expo-router pages (file-based routing)
+    (auth)/                   → unauthenticated routes
+    (tabs)/                   → main tab screens
+    game/[id].tsx             → game detail
+    _layout.tsx               → root layout + auth guard
+  /components                 → reusable UI components
+  /hooks                      → custom React hooks
+  /lib                        → clients (supabase.ts, rawg.ts), helpers
+  /stores                     → Zustand stores
+  /types                      → shared TypeScript interfaces/types
+  /assets                     → fonts, images, icons
+  /constants                  → colors, spacing, typography tokens
+  package.json                → mobile app dependencies
+  app.json                    → Expo config
+  tsconfig.json               → TypeScript config
+
+/supabase                     → Supabase backend
+  /migrations                 → SQL migration files (one per change)
+  config.toml                 → Supabase CLI config
+
+package.json                  → root scripts (proxies to mobile/ + supabase commands)
 ```
 
 ---
@@ -59,8 +68,9 @@
 - Every table has Row Level Security (RLS) enabled. Never disable it.
 - Always generate and commit updated TypeScript types after schema changes:
   ```bash
-  supabase gen types typescript --project-id <id> > types/supabase.ts
+  supabase gen types typescript --project-id <id> > mobile/types/supabase.ts
   ```
+  Or from root: `pnpm run db:types`
 - Schema changes go in `/supabase/migrations/` as timestamped `.sql` files.
 
 ### State Management
