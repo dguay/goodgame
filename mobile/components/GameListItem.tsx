@@ -18,7 +18,7 @@ interface Props {
 
 export function GameListItem({ game }: Props) {
   const year = game.released != null ? game.released.split('-')[0] : null
-  const topGenre = game.genres[0]?.name ?? null
+  const topGenre = (game.genres ?? [])[0]?.name ?? null
   const meta = [year, topGenre].filter(Boolean).join(' · ')
 
   return (

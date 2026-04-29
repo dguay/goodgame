@@ -25,9 +25,9 @@ export interface RawgGame {
   metacritic: number | null
   rating: number
   ratings_count: number
-  genres: RawgGenre[]
-  platforms: RawgPlatformEntry[]
-  short_screenshots: RawgScreenshot[]
+  genres: RawgGenre[] | null
+  platforms: RawgPlatformEntry[] | null
+  short_screenshots: RawgScreenshot[] | null
 }
 
 export interface RawgDeveloper {

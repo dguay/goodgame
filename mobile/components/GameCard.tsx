@@ -34,7 +34,7 @@ interface Props {
 
 export function GameCard({ game, style }: Props) {
   const year = game.released != null ? game.released.split('-')[0] : null
-  const platforms = game.platforms
+  const platforms = (game.platforms ?? [])
     .map(p => PLATFORM_LABELS[p.platform.slug])
     .filter((p): p is string => p !== undefined)
     .slice(0, 3)
