@@ -12,6 +12,7 @@ mobile/web-build/
 .env*.local
 mobile/.env.local
 mobile/.env*.local
+TODO.md
 
 # Native
 *.jks
@@ -26,6 +27,7 @@ mobile/google-services.json
 
 # Supabase
 supabase/.temp/
+supabase/.env
 
 # OS
 .DS_Store

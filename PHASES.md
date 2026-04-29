@@ -12,7 +12,7 @@
 - [x] Phase 1 — Project Scaffolding & Tooling
 - [x] Phase 2 — Design System & Navigation Shell
 - [x] Phase 3 — Supabase Setup & Database Schema
-- [ ] Phase 4 — Authentication (Google OAuth)
+- [x] Phase 4 — Authentication (Google OAuth)
 - [ ] Phase 5 — RAWG API Integration
 - [ ] Phase 6 — Search Screen
 - [ ] Phase 7 — Library Management (Core Feature)
@@ -309,6 +309,7 @@
    - Restore session on app start
    - Auth guard: if `!isAuthenticated` and route is not `/(auth)/*`, redirect to `/(auth)/login`
 7. Add sign out to profile tab (stub for now — just a button that calls `signOut()`)
+8. Make sure we can develop locally without interfering with data in production
 
 ### Verification Checklist
 - [ ] Tapping "Continue with Google" opens Google OAuth on Android
