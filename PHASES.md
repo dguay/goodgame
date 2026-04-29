@@ -14,7 +14,7 @@
 - [x] Phase 3 — Supabase Setup & Database Schema
 - [x] Phase 4 — Authentication (Google OAuth)
 - [x] Phase 5 — RAWG API Integration
-- [ ] Phase 6 — Search Screen
+- [x] Phase 6 — Search Screen
 - [ ] Phase 7 — Library Management (Core Feature)
 - [ ] Phase 8 — Game Detail Page
 - [ ] Phase 9 — Dashboard / Home Screen

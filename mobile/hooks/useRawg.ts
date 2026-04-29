@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import {
   searchGames,
   getGameDetail,
@@ -13,6 +13,18 @@ export function useGameSearch(query: string) {
   return useQuery({
     queryKey: ['rawg', 'search', query],
     queryFn: () => searchGames(query),
+    enabled: query.length > 1,
+    staleTime: STALE,
+  })
+}
+
+export function useGameSearchInfinite(query: string) {
+  return useInfiniteQuery({
+    queryKey: ['rawg', 'search', 'infinite', query],
+    queryFn: ({ pageParam }) => searchGames(query, pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.next != null ? lastPageParam + 1 : undefined,
     enabled: query.length > 1,
     staleTime: STALE,
   })
