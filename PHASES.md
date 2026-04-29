@@ -18,7 +18,7 @@
 - [x] Phase 7 — Library Management (Core Feature)
 - [x] Phase 8 — Game Detail Page
 - [x] Phase 9 — Dashboard / Home Screen
-- [ ] Phase 10 — Profile Screen
+- [x] Phase 10 — Profile Screen
 - [ ] Phase 11 — Web Deployment (Vercel)
 - [ ] Phase 12 — Android Build & Play Store
 - [ ] Phase 13 — Polish, Performance & Error Handling
