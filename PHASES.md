@@ -16,7 +16,7 @@
 - [x] Phase 5 — RAWG API Integration
 - [x] Phase 6 — Search Screen
 - [x] Phase 7 — Library Management (Core Feature)
-- [ ] Phase 8 — Game Detail Page
+- [x] Phase 8 — Game Detail Page
 - [ ] Phase 9 — Dashboard / Home Screen
 - [ ] Phase 10 — Profile Screen
 - [ ] Phase 11 — Web Deployment (Vercel)
