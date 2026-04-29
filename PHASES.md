@@ -15,7 +15,7 @@
 - [x] Phase 4 — Authentication (Google OAuth)
 - [x] Phase 5 — RAWG API Integration
 - [x] Phase 6 — Search Screen
-- [ ] Phase 7 — Library Management (Core Feature)
+- [x] Phase 7 — Library Management (Core Feature)
 - [ ] Phase 8 — Game Detail Page
 - [ ] Phase 9 — Dashboard / Home Screen
 - [ ] Phase 10 — Profile Screen

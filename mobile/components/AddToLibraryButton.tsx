@@ -1,24 +1,133 @@
-import { Pressable, StyleSheet } from 'react-native'
+import { useState } from 'react'
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
+import { Text } from '@/components/ui/Text'
+import { StatusPicker } from '@/components/StatusPicker'
+import {
+  useAddToLibrary,
+  useLibraryEntry,
+  useRemoveFromLibrary,
+  useUpdateLibraryEntry,
+} from '@/hooks/useLibrary'
 import { Colors, Spacing } from '@/constants'
+import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { RawgGame } from '@/types/rawg'
 
 interface Props {
   game: Pick<RawgGame, 'id' | 'name' | 'background_image'>
 }
 
-// Stub — wired to library mutations in Phase 7
-export function AddToLibraryButton({ game: _game }: Props) {
+export function AddToLibraryButton({ game }: Props) {
+  const [pickerVisible, setPickerVisible] = useState(false)
+
+  const entry = useLibraryEntry(game.id)
+  const addMutation = useAddToLibrary()
+  const updateMutation = useUpdateLibraryEntry()
+  const removeMutation = useRemoveFromLibrary()
+
+  const isPending =
+    addMutation.isPending || updateMutation.isPending || removeMutation.isPending
+
+  function handlePress() {
+    setPickerVisible(true)
+  }
+
+  function handleSelect(status: LibraryStatus) {
+    setPickerVisible(false)
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
+    }
+    if (entry != null) {
+      updateMutation.mutate({ id: entry.id, status })
+    } else {
+      addMutation.mutate({
+        rawg_game_id: game.id,
+        game_title: game.name,
+        game_cover_url: game.background_image ?? null,
+        status,
+      })
+    }
+  }
+
+  function handleRemove() {
+    setPickerVisible(false)
+    if (entry != null) {
+      removeMutation.mutate(entry.id)
+    }
+  }
+
+  if (isPending) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color={Colors.primary} />
+      </View>
+    )
+  }
+
+  const currentStatus = entry != null ? (entry.status as LibraryStatus) : null
+
   return (
-    <Pressable style={styles.button} hitSlop={8}>
-      <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
-    </Pressable>
+    <>
+      <Pressable
+        style={({ pressed }) => [
+          entry != null ? styles.statusChip : styles.addButton,
+          entry != null && { borderColor: STATUS_COLORS[entry.status as LibraryStatus] },
+          pressed && styles.pressed,
+        ]}
+        onPress={handlePress}
+        hitSlop={8}
+      >
+        {entry != null ? (
+          <Text variant="label" color={STATUS_COLORS[entry.status as LibraryStatus]}>
+            {STATUS_LABELS[entry.status as LibraryStatus]}
+          </Text>
+        ) : (
+          <>
+            <Ionicons name="add" size={13} color={Colors.textPrimary} />
+            <Text variant="label">Add</Text>
+          </>
+        )}
+      </Pressable>
+      <StatusPicker
+        visible={pickerVisible}
+        currentStatus={currentStatus}
+        onSelect={handleSelect}
+        onRemove={handleRemove}
+        onDismiss={() => setPickerVisible(false)}
+      />
+    </>
   )
 }
 
 const styles = StyleSheet.create({
-  button: {
-    padding: Spacing.xs,
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    backgroundColor: Colors.surfaceRaised,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.border,
     alignSelf: 'flex-start',
+  },
+  statusChip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignSelf: 'flex-start',
+  },
+  loadingContainer: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    alignSelf: 'flex-start',
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
   },
 })
