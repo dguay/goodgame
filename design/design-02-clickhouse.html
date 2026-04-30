@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GameLog — ClickHouse Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #030303; font-family: 'Inter', sans-serif; }
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const CH = {
+  canvas:    '#0a0a0a',
+  soft:      '#121212',
+  card:      '#1a1a1a',
+  elevated:  '#242424',
+  yellow:    '#faff69',
+  yellowAct: '#e6eb52',
+  yellowDim: '#3a3a1f',
+  white:     '#ffffff',
+  body:      '#cccccc',
+  bodyStr:   '#e6e6e6',
+  muted:     '#888888',
+  mutedSoft: '#5a5a5a',
+  hairline:  '#2a2a2a',
+  hairlineS: '#3a3a3a',
+  emerald:   '#22c55e',
+  rose:      '#ef4444',
+  blue:      '#3b82f6',
+};
+
+const chGAMES = [
+  { id:1, title:'Elden Ring', dev:'FromSoftware', year:2022, status:'playing', rating:9.2, playtime:47, cover:'linear-gradient(155deg,#3d2a08,#1a1205,#0f0d04)', meta:94, genre:'RPG', hours:47 },
+  { id:2, title:'Hollow Knight', dev:'Team Cherry', year:2017, status:'done', rating:9.0, playtime:35, cover:'linear-gradient(155deg,#1a1040,#0a0820,#050415)', meta:87, genre:'Metroidvania', hours:35 },
+  { id:3, title:"Baldur's Gate 3", dev:'Larian Studios', year:2023, status:'playing', rating:null, playtime:12, cover:'linear-gradient(155deg,#400d0a,#1a0605,#0d0402)', meta:96, genre:'RPG', hours:12 },
+  { id:4, title:'Hades', dev:'Supergiant', year:2020, status:'done', rating:8.5, playtime:28, cover:'linear-gradient(155deg,#3d0d1f,#1a060f,#0d0408)', meta:93, genre:'Roguelite', hours:28 },
+  { id:5, title:'Cyberpunk 2077', dev:'CD Projekt Red', year:2020, status:'want_to_play', rating:null, playtime:0, cover:'linear-gradient(155deg,#0a1545,#050a20,#020510)', meta:86, genre:'RPG', hours:0 },
+  { id:6, title:'God of War', dev:'Santa Monica', year:2018, status:'did_not_finish', rating:7.0, playtime:8, cover:'linear-gradient(155deg,#3d1508,#1a0905,#0d0503)', meta:94, genre:'Action', hours:8 },
+];
+
+const chSTATUS = {
+  playing:        { label:'Playing',      color: CH.emerald },
+  done:           { label:'Done',         color: CH.yellow  },
+  want_to_play:   { label:'Want to Play', color: CH.blue    },
+  did_not_finish: { label:'DNF',          color: CH.rose    },
+};
+
+function ChPhone({ children, label }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+      <div style={{
+        width:275, height:596,
+        background:'linear-gradient(145deg,#1e1e1e,#0f0f0f)',
+        borderRadius:46, padding:11,
+        boxShadow:'0 0 0 1px #2a2a2a, 0 40px 80px rgba(0,0,0,0.9)',
+        position:'relative',
+      }}>
+        <div style={{
+          width:'100%', height:'100%',
+          background: CH.canvas,
+          borderRadius:36, overflow:'hidden', position:'relative',
+        }}>
+          <div style={{ position:'absolute', top:10, left:'50%', transform:'translateX(-50%)', width:94, height:28, background:'#000', borderRadius:20, zIndex:10 }} />
+          <div style={{ position:'absolute', top:0, left:0, right:0, height:50, display:'flex', alignItems:'flex-end', justifyContent:'space-between', paddingBottom:8, paddingLeft:22, paddingRight:22, zIndex:9 }}>
+            <span style={{ fontSize:11, fontWeight:600, color:CH.white, fontFamily:'Inter,sans-serif' }}>9:41</span>
+            <span style={{ fontSize:9, color:CH.muted, fontFamily:'Inter,sans-serif' }}>▲▲▲ ❋ ▮▮</span>
+          </div>
+          <div style={{ position:'absolute', top:50, left:0, right:0, bottom:22, overflowY:'auto' }}>
+            {children}
+          </div>
+          <div style={{ position:'absolute', bottom:7, left:'50%', transform:'translateX(-50%)', width:100, height:4, background:'rgba(255,255,255,0.35)', borderRadius:2 }} />
+        </div>
+      </div>
+      {label && <div style={{ color:CH.mutedSoft, fontSize:11, letterSpacing:'0.12em', fontFamily:'Inter,sans-serif', fontWeight:600, textTransform:'uppercase' }}>{label}</div>}
+    </div>
+  );
+}
+
+function ChBtn({ children, variant='primary', full }) {
+  const base = {
+    display:'inline-flex', alignItems:'center', justifyContent:'center',
+    borderRadius:8, cursor:'pointer', fontFamily:'Inter,sans-serif',
+    fontWeight:600, fontSize:13, padding:'9px 18px',
+    width: full ? '100%' : undefined, border:'none',
+  };
+  if (variant === 'primary') return <div style={{ ...base, background:CH.yellow, color:CH.canvas }}>{children}</div>;
+  if (variant === 'secondary') return <div style={{ ...base, background:CH.card, color:CH.white, border:`1px solid ${CH.hairline}` }}>{children}</div>;
+  return <div style={{ ...base, background:'transparent', color:CH.muted }}>{children}</div>;
+}
+
+function ChCover({ game, width=110, height=150, radius=8 }) {
+  return (
+    <div style={{
+      width, height, background:game.cover, borderRadius:radius,
+      display:'flex', flexDirection:'column', justifyContent:'flex-end',
+      padding:6, position:'relative', overflow:'hidden', flexShrink:0,
+    }}>
+      <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.75), transparent 55%)' }} />
+      <div style={{ position:'relative', zIndex:1, fontSize:8, fontWeight:700, color:'rgba(255,255,255,0.9)', lineHeight:1.2, textTransform:'uppercase', letterSpacing:'0.3px' }}>{game.genre}</div>
+    </div>
+  );
+}
+
+/* ─────────── CH HOME ─────────── */
+function ChHome() {
+  return (
+    <div style={{ background:CH.canvas, minHeight:'100%', paddingBottom:16 }}>
+      {/* Header */}
+      <div style={{ padding:'10px 14px 0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div style={{ fontSize:15, fontWeight:700, color:CH.white, letterSpacing:'-0.3px' }}>GameLog</div>
+        <div style={{ width:28, height:28, borderRadius:'50%', background:CH.card, border:`1px solid ${CH.hairline}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:14, height:14, borderRadius:'50%', background:`linear-gradient(135deg,${CH.yellow},${CH.yellowAct})` }} />
+        </div>
+      </div>
+
+      {/* Hero stats — yellow callout numbers */}
+      <div style={{ padding:'20px 14px 0' }}>
+        <div style={{ fontSize:11, fontWeight:600, color:CH.muted, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:14 }}>Your Library</div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6 }}>
+          {[['6','games'], ['122h','played'], ['2','playing']].map(([num, label]) => (
+            <div key={label} style={{ background:CH.card, border:`1px solid ${CH.hairline}`, borderRadius:12, padding:'12px 10px' }}>
+              <div style={{ fontSize:26, fontWeight:700, color:CH.yellow, lineHeight:1, letterSpacing:'-1.5px', fontFamily:'Inter,sans-serif' }}>{num}</div>
+              <div style={{ fontSize:10, color:CH.muted, marginTop:4, fontWeight:500 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Continue Playing */}
+      <div style={{ marginTop:22, padding:'0 14px' }}>
+        <div style={{ fontSize:12, fontWeight:600, color:CH.muted, letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:12 }}>Continue Playing</div>
+        <div style={{ display:'flex', gap:8, overflowX:'auto' }}>
+          {chGAMES.filter(g=>g.status==='playing').map(g => (
+            <div key={g.id} style={{ flexShrink:0, width:105, background:CH.card, borderRadius:12, border:`1px solid ${CH.hairline}`, overflow:'hidden' }}>
+              <ChCover game={g} width={105} height={135} radius={0} />
+              <div style={{ padding:'8px 8px 10px' }}>
+                <div style={{ fontSize:11, fontWeight:600, color:CH.white, lineHeight:1.3, marginBottom:4 }}>{g.title}</div>
+                <div style={{ fontSize:9, color:CH.emerald, fontWeight:600, letterSpacing:'0.5px' }}>▶ {g.hours}h</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent — list view style */}
+      <div style={{ marginTop:22, padding:'0 14px' }}>
+        <div style={{ fontSize:12, fontWeight:600, color:CH.muted, letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:12 }}>Recently Added</div>
+        {chGAMES.slice(2,5).map((g,i) => (
+          <div key={g.id} style={{
+            display:'flex', gap:10, padding:'10px 0',
+            borderBottom: i<2 ? `1px solid ${CH.hairline}` : 'none',
+            alignItems:'center',
+          }}>
+            <ChCover game={g} width={46} height={60} radius={6} />
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:CH.white, lineHeight:1.3 }}>{g.title}</div>
+              <div style={{ fontSize:10, color:CH.muted, marginTop:2 }}>{g.dev} · {g.year}</div>
+              <div style={{ marginTop:4 }}>
+                <span style={{
+                  fontSize:9, fontWeight:600, padding:'2px 8px', borderRadius:9999,
+                  background: `${chSTATUS[g.status].color}22`,
+                  color: chSTATUS[g.status].color,
+                  letterSpacing:'0.3px',
+                }}>{chSTATUS[g.status].label}</span>
+              </div>
+            </div>
+            {g.rating && <div style={{ fontSize:14, fontWeight:700, color:CH.yellow, letterSpacing:'-0.5px' }}>{g.rating}</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom nav */}
+      <div style={{ margin:'18px 14px 0', paddingTop:14, borderTop:`1px solid ${CH.hairline}`, display:'flex', justifyContent:'space-around' }}>
+        {['Home','Search','Library','Profile'].map((t,i) => (
+          <div key={t} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+            <div style={{ width:20, height:20, borderRadius:4, background: i===0 ? CH.yellow : CH.elevated }} />
+            <div style={{ fontSize:9, color: i===0 ? CH.yellow : CH.mutedSoft, fontWeight: i===0 ? 700 : 500 }}>{t}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────── CH LIBRARY ─────────── */
+function ChLibrary() {
+  const tabs = ['All','Playing','Done','Want to Play','DNF'];
+  return (
+    <div style={{ background:CH.canvas, minHeight:'100%', paddingBottom:80 }}>
+      <div style={{ padding:'10px 14px 0' }}>
+        <div style={{ fontSize:22, fontWeight:700, color:CH.white, letterSpacing:'-1px' }}>Library</div>
+      </div>
+
+      {/* Category tabs */}
+      <div style={{ display:'flex', gap:4, padding:'14px 14px 0', overflowX:'auto' }}>
+        {tabs.map((t,i) => (
+          <div key={t} style={{
+            flexShrink:0, padding:'6px 12px', borderRadius:8, cursor:'pointer',
+            background: i===0 ? CH.card : 'transparent',
+            color: i===0 ? CH.white : CH.muted,
+            fontSize:11, fontWeight: i===0 ? 600 : 500,
+            border: i===0 ? `1px solid ${CH.hairlineS}` : '1px solid transparent',
+          }}>{t}</div>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 14px 8px' }}>
+        <div style={{ fontSize:11, color:CH.muted, fontWeight:500 }}>6 games</div>
+        <div style={{ fontSize:11, color:CH.muted, display:'flex', gap:6 }}>
+          <span style={{ color:CH.yellow, fontWeight:600 }}>Grid</span> · List
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div style={{ padding:'0 14px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+        {chGAMES.map(g => {
+          const s = chSTATUS[g.status];
+          return (
+            <div key={g.id} style={{ background:CH.card, border:`1px solid ${CH.hairline}`, borderRadius:12, overflow:'hidden' }}>
+              <ChCover game={g} width="100%" height={120} radius={0} />
+              <div style={{ padding:'8px 10px 10px' }}>
+                <div style={{ fontSize:11, fontWeight:600, color:CH.white, lineHeight:1.3, marginBottom:5 }}>{g.title}</div>
+                <div style={{ display:'inline-block', padding:'2px 8px', borderRadius:9999, background:`${s.color}18`, fontSize:9, fontWeight:600, color:s.color, letterSpacing:'0.4px' }}>{s.label}</div>
+                {g.rating && (
+                  <div style={{ marginTop:5, display:'flex', justifyContent:'space-between' }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:CH.yellow, letterSpacing:'-0.5px' }}>{g.rating}</span>
+                    <span style={{ fontSize:9, color:CH.muted }}>{g.playtime}h</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────── CH DETAIL ─────────── */
+function ChDetail() {
+  const game = chGAMES[0];
+  return (
+    <div style={{ background:CH.canvas, minHeight:'100%' }}>
+      {/* Hero */}
+      <div style={{ position:'relative', height:180 }}>
+        <div style={{ position:'absolute', inset:0, background:game.cover, filter:'blur(18px)', transform:'scale(1.15)' }} />
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(10,10,10,0.4), rgba(10,10,10,0.98))' }} />
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'flex-end', padding:14, gap:12 }}>
+          <ChCover game={game} width={75} height={100} radius={8} />
+          <div style={{ flex:1, paddingBottom:2 }}>
+            <div style={{ fontSize:9, fontWeight:600, color:CH.muted, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:3 }}>{game.genre} · {game.year}</div>
+            <div style={{ fontSize:18, fontWeight:700, color:CH.white, lineHeight:1.15, letterSpacing:'-0.8px' }}>{game.title}</div>
+            <div style={{ fontSize:11, color:CH.muted, marginTop:2 }}>{game.dev}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stat callouts — ClickHouse signature */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:0, borderBottom:`1px solid ${CH.hairline}`, margin:'0' }}>
+        {[['9.2','Rating'], ['47h','Played'], ['94','Metacritic']].map(([v,l], i) => (
+          <div key={l} style={{ padding:'14px 0', textAlign:'center', borderRight: i<2 ? `1px solid ${CH.hairline}` : 'none' }}>
+            <div style={{ fontSize:22, fontWeight:700, color:CH.yellow, letterSpacing:'-1.5px', lineHeight:1 }}>{v}</div>
+            <div style={{ fontSize:9, color:CH.muted, fontWeight:600, marginTop:3, letterSpacing:'0.5px', textTransform:'uppercase' }}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div style={{ padding:'14px 14px 0', display:'flex', gap:8 }}>
+        <div style={{ flex:1 }}><ChBtn variant="primary" full>Update Status</ChBtn></div>
+        <ChBtn variant="secondary">Share</ChBtn>
+      </div>
+
+      {/* Code-window style card for game info */}
+      <div style={{ margin:'14px', background:CH.card, borderRadius:12, border:`1px solid ${CH.hairline}`, overflow:'hidden' }}>
+        <div style={{ padding:'10px 14px', borderBottom:`1px solid ${CH.hairline}`, display:'flex', gap:6 }}>
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#ef4444' }} />
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#f59e0b' }} />
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#22c55e' }} />
+          <div style={{ marginLeft:8, fontSize:10, color:CH.muted, fontFamily:'JetBrains Mono,monospace' }}>game_stats.json</div>
+        </div>
+        <div style={{ padding:'12px 14px', fontFamily:'JetBrains Mono,monospace', fontSize:11, lineHeight:1.8 }}>
+          {[
+            ['status', '"playing"', CH.emerald],
+            ['platform', '"PC, PS5"', CH.blue],
+            ['playtime', '47', CH.yellow],
+            ['personal_rating', '9.2', CH.yellow],
+            ['metacritic', '94', CH.yellow],
+          ].map(([k,v,c]) => (
+            <div key={k}>
+              <span style={{ color:CH.muted }}>  "{k}"</span>
+              <span style={{ color:CH.mutedSoft }}>: </span>
+              <span style={{ color:c }}>{v}</span>
+              <span style={{ color:CH.mutedSoft }}>,</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div style={{ padding:'0 14px 14px', fontSize:12, color:CH.body, lineHeight:1.65 }}>
+        An open-world action RPG in the Lands Between. Face challenging enemies and uncover mysteries of a shattered world.
+      </div>
+
+      {/* More like this */}
+      <div style={{ padding:'0 14px 20px' }}>
+        <div style={{ fontSize:12, fontWeight:600, color:CH.muted, letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:10 }}>More Like This</div>
+        <div style={{ display:'flex', gap:8, overflowX:'auto' }}>
+          {chGAMES.slice(1,4).map(g => <ChCover key={g.id} game={g} width={72} height={96} radius={8} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div style={{
+      minHeight:'100vh', background:'#030303',
+      display:'flex', flexDirection:'column', alignItems:'center',
+      padding:'40px 24px 60px', gap:48,
+    }}>
+      <div style={{ textAlign:'center', maxWidth:700 }}>
+        <div style={{ display:'inline-block', background:`${CH.yellow}18`, border:`1px solid ${CH.yellow}44`, borderRadius:8, padding:'4px 16px', marginBottom:16 }}>
+          <span style={{ fontSize:11, color:CH.yellow, fontWeight:600, letterSpacing:'1.2px', textTransform:'uppercase', fontFamily:'Inter,sans-serif' }}>Design Exploration · 02 of 04</span>
+        </div>
+        <h1 style={{ fontSize:36, fontWeight:700, color:CH.white, fontFamily:'Inter,sans-serif', letterSpacing:'-2px', lineHeight:1.1 }}>ClickHouse Design System</h1>
+        <p style={{ marginTop:12, fontSize:15, color:CH.muted, fontFamily:'Inter,sans-serif', fontWeight:400, lineHeight:1.6, maxWidth:520, margin:'12px auto 0' }}>
+          Near-pure black canvas · Electric yellow #faff69 brand voltage · Inter 700 with -2.5px tracking · Stat callouts · 8px buttons
+        </p>
+      </div>
+
+      <div style={{ display:'flex', gap:32, flexWrap:'wrap', justifyContent:'center' }}>
+        <ChPhone label="Home"><ChHome /></ChPhone>
+        <ChPhone label="Library"><ChLibrary /></ChPhone>
+        <ChPhone label="Game Detail"><ChDetail /></ChPhone>
+      </div>
+
+      <div style={{ maxWidth:860, width:'100%', display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:12 }}>
+        {[
+          ['#faff69', 'Electric Yellow', 'Stats, CTAs, active states'],
+          ['#0a0a0a', 'Near-pure Black', 'Page floor — no light mode'],
+          ['Inter 700', 'Display Weight', '-2.5px tracking, confident'],
+          ['8px', 'Button Radius', 'No pills — engineered feel'],
+        ].map(([val, name, desc]) => (
+          <div key={name} style={{ background:CH.card, border:`1px solid ${CH.hairline}`, borderRadius:12, padding:14 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:CH.yellow, marginBottom:4, fontFamily:'Inter,sans-serif', letterSpacing:'-0.5px' }}>{val}</div>
+            <div style={{ fontSize:12, fontWeight:600, color:CH.white, marginBottom:3 }}>{name}</div>
+            <div style={{ fontSize:11, color:CH.muted, lineHeight:1.4 }}>{desc}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
