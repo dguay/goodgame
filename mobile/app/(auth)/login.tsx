@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   googleButtonText: {
-    fontFamily: 'DMSans-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: FontSize.md,
     color: '#1F1F1F',
   },

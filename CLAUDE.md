@@ -111,27 +111,38 @@ This is a legal requirement from RAWG's free tier. Do not omit it from any scree
 Design tokens live in `/constants/`. Always use tokens — never magic numbers.
 
 ```ts
-// constants/colors.ts — dark theme
+// constants/colors.ts — Coinbase dark canvas
 export const Colors = {
-  background:    '#0D0D0F',
-  surface:       '#1A1A1F',
-  surfaceRaised: '#242429',
-  border:        '#2E2E36',
-  primary:       '#7C6AF7',   // purple accent
-  primaryLight:  '#A89BF9',
-  success:       '#4ADE80',
-  warning:       '#FACC15',
-  error:         '#F87171',
-  textPrimary:   '#F0EFF5',
-  textSecondary: '#9896A8',
-  textMuted:     '#5E5C6E',
+  background:      '#0a0b0d',              // page floor
+  surface:         '#16181c',              // cards
+  surfaceRaised:   '#1e2228',              // elevated chips
+  border:          'rgba(255,255,255,0.07)',
+  borderSoft:      'rgba(255,255,255,0.04)',
+  primary:         '#0052ff',              // Coinbase Blue — CTAs only
+  primaryActive:   '#003ecc',
+  primaryDisabled: '#a8b8cc',
+  textPrimary:     '#ffffff',
+  textSecondary:   '#a8acb3',
+  textMuted:       '#6b7178',
+  textMutedSoft:   '#454b53',
+  success:         '#05b169',              // semantic up / playing
+  error:           '#cf202f',              // semantic down / danger
+  warning:         '#f4b000',              // amber / done
 }
 
 // constants/spacing.ts
-export const Spacing = { xs:4, sm:8, md:16, lg:24, xl:32, xxl:48 }
+export const Spacing = { xxs:4, xs:8, sm:12, md:16, lg:24, xl:32, xxl:48, section:96 }
 
 // constants/typography.ts
 export const FontSize = { xs:11, sm:13, md:15, lg:18, xl:22, xxl:28, xxxl:36 }
+export const FontFamily = {
+  display: 'Inter-Regular', body: 'Inter-Regular',
+  medium: 'Inter-Medium', semibold: 'Inter-SemiBold',
+  bold: 'Inter-Bold', mono: 'JetBrainsMono-Medium',
+}
+
+// constants/radius.ts
+export const Radius = { none:0, xs:4, sm:8, md:12, lg:16, xl:24, pill:100, full:9999 }
 ```
 
 ---
@@ -153,10 +164,10 @@ export const STATUS_LABELS: Record<LibraryStatus, string> = {
 }
 
 export const STATUS_COLORS: Record<LibraryStatus, string> = {
-  want_to_play:    '#7C6AF7',  // primary
-  playing:         '#4ADE80',  // success/green
-  done:            '#FACC15',  // gold
-  did_not_finish:  '#9896A8',  // muted gray
+  want_to_play:    '#a8acb3',  // textSecondary
+  playing:         '#05b169',  // success / semantic up
+  done:            '#f4b000',  // amber
+  did_not_finish:  '#6b7178',  // textMuted
 }
 ```
 

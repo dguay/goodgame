@@ -10,7 +10,7 @@ import {
   useRemoveFromLibrary,
   useUpdateLibraryEntry,
 } from '@/hooks/useLibrary'
-import { Colors, Spacing } from '@/constants'
+import { Colors, Spacing, Radius } from '@/constants'
 import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { RawgGame } from '@/types/rawg'
 
@@ -106,23 +106,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.xxs,
     backgroundColor: Colors.surfaceRaised,
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
     borderColor: Colors.border,
     alignSelf: 'flex-start',
   },
   statusChip: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 6,
+    paddingVertical: Spacing.xxs,
+    borderRadius: Radius.pill,
     borderWidth: 1.5,
     alignSelf: 'flex-start',
   },
   loadingContainer: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.xxs,
     alignSelf: 'flex-start',
     minWidth: 50,
     alignItems: 'center',

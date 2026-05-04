@@ -3,7 +3,7 @@ import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
-import { Colors, Spacing } from '@/constants'
+import { Colors, Spacing, Radius } from '@/constants'
 import type { RawgGame } from '@/types/rawg'
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -86,9 +86,9 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: Radius.xl,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
   coverContainer: {
@@ -104,14 +104,14 @@ const styles = StyleSheet.create({
     top: Spacing.xs,
     right: Spacing.xs,
     borderWidth: 1.5,
-    borderRadius: 4,
+    borderRadius: Radius.xs,
     paddingHorizontal: 4,
     paddingVertical: 1,
     backgroundColor: Colors.background,
   },
   info: {
-    padding: Spacing.sm,
-    gap: Spacing.xs,
+    padding: Spacing.xs,
+    gap: Spacing.xxs,
   },
   title: {
     fontSize: 13,
@@ -132,6 +132,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceRaised,
     paddingHorizontal: 4,
     paddingVertical: 2,
-    borderRadius: 3,
+    borderRadius: Radius.xs,
   },
 })

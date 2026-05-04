@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+﻿import { useState, useCallback, useRef } from 'react'
 import {
   View,
   StyleSheet,
@@ -26,8 +26,8 @@ const H_PAD = Spacing.md      // 16
 const COL_GAP = Spacing.sm    // 8
 // Each card: marginHorizontal = COL_GAP/2 = 4
 // FlatList paddingHorizontal = H_PAD - COL_GAP/2 = 12
-// Net edge space = 12 + 4 = 16 = H_PAD ✓
-// Net gap between cards = 4 + 4 = 8 = COL_GAP ✓
+// Net edge space = 12 + 4 = 16 = H_PAD âœ“
+// Net gap between cards = 4 + 4 = 8 = COL_GAP âœ“
 const CARD_MARGIN = COL_GAP / 2
 
 function GridSkeletons({ cardWidth }: { cardWidth: number }) {
@@ -113,7 +113,7 @@ export default function SearchScreen() {
         <TextInput
           ref={inputRef}
           style={styles.searchInput}
-          placeholder="Search games…"
+          placeholder="Search gamesâ€¦"
           placeholderTextColor={Colors.textMuted}
           value={query}
           onChangeText={setQuery}
@@ -211,13 +211,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 12,
     gap: Spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
   searchInput: {
     flex: 1,
     color: Colors.textPrimary,
-    fontFamily: 'DMSans-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 15,
     padding: 0,
   },
@@ -273,3 +273,4 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
 })
+

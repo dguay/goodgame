@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import {
   Alert,
   FlatList,
@@ -30,13 +30,13 @@ import { Colors, Spacing } from '@/constants'
 import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type FilterStatus = LibraryStatus | 'all'
 type SortKey = 'recent' | 'title' | 'rating' | 'playtime'
 type ViewMode = 'grid' | 'list'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -48,12 +48,12 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Recently Added' },
-  { key: 'title', label: 'Title A–Z' },
+  { key: 'title', label: 'Title Aâ€“Z' },
   { key: 'rating', label: 'Rating' },
   { key: 'playtime', label: 'Playtime' },
 ]
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatPlaytime(minutes: number): string {
   const h = Math.floor(minutes / 60)
@@ -84,7 +84,7 @@ function sortEntries(entries: LibraryEntry[], sort: SortKey): LibraryEntry[] {
   })
 }
 
-// ─── LibraryEntryCard ─────────────────────────────────────────────────────────
+// â”€â”€â”€ LibraryEntryCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function LibraryEntryCard({
   entry,
@@ -129,7 +129,7 @@ function LibraryEntryCard({
             (entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0)) && (
             <View style={lcStyles.metaRow}>
               {entry.personal_rating != null && (
-                <Text variant="caption">★ {entry.personal_rating.toFixed(1)}</Text>
+                <Text variant="caption">â˜… {entry.personal_rating.toFixed(1)}</Text>
               )}
               {entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0 && (
                 <Text variant="caption">{formatPlaytime(entry.personal_playtime_minutes)}</Text>
@@ -173,7 +173,7 @@ function LibraryEntryCard({
           (entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0)) && (
           <View style={lcStyles.metaRow}>
             {entry.personal_rating != null && (
-              <Text variant="caption">★ {entry.personal_rating.toFixed(1)}</Text>
+              <Text variant="caption">â˜… {entry.personal_rating.toFixed(1)}</Text>
             )}
             {entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0 && (
               <Text variant="caption">{formatPlaytime(entry.personal_playtime_minutes)}</Text>
@@ -192,7 +192,7 @@ const lcStyles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     gap: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     backgroundColor: Colors.background,
   },
@@ -219,7 +219,7 @@ const lcStyles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 10,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
   gridCover: {
@@ -252,7 +252,7 @@ const lcStyles = StyleSheet.create({
   },
 })
 
-// ─── SortPicker ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ SortPicker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SortPicker({
   visible,
@@ -323,7 +323,7 @@ const spStyles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: Spacing.xl,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: Colors.border,
   },
@@ -332,7 +332,7 @@ const spStyles = StyleSheet.create({
     borderRadius: 16,
     width: 300,
     paddingBottom: Spacing.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
   handle: {
@@ -364,7 +364,7 @@ const spStyles = StyleSheet.create({
   },
 })
 
-// ─── LibraryScreen ────────────────────────────────────────────────────────────
+// â”€â”€â”€ LibraryScreen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function LibraryScreen() {
   const [filter, setFilter] = useState<FilterStatus>('all')
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   filterScroll: {
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   viewToggle: {
@@ -733,3 +733,4 @@ const styles = StyleSheet.create({
     width: 72,
   },
 })
+

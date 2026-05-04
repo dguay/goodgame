@@ -1,5 +1,5 @@
 import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native'
-import { Colors, Spacing } from '@/constants'
+import { Colors, Spacing, Radius } from '@/constants'
 
 interface Props {
   children: React.ReactNode
@@ -18,7 +18,7 @@ export function Card({ children, elevated, style }: Props) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: Radius.xl,
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -27,8 +27,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceRaised,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
     elevation: 4,
   },
 })

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+﻿import { useState, useCallback } from 'react'
 import {
   ScrollView,
   RefreshControl,
@@ -145,7 +145,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text variant="heading" style={styles.greeting}>
-            {getGreeting()}, {displayName} 👾
+            {getGreeting()}, {displayName} ðŸ‘¾
           </Text>
           <View style={styles.statsStrip}>
             <View style={styles.statItem}>
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: Spacing.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
   statItem: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 10,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
   libraryCardCover: {
@@ -327,3 +327,4 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
 })
+

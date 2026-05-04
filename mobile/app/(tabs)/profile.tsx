@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+﻿import { useState, useRef, useCallback } from 'react'
 import {
   View,
   StyleSheet,
@@ -134,7 +134,7 @@ export default function ProfileScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ── */}
+        {/* â”€â”€ Header â”€â”€ */}
         <View style={styles.header}>
           {avatarUrl != null ? (
             <Image
@@ -176,7 +176,7 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* ── Stats Card ── */}
+        {/* â”€â”€ Stats Card â”€â”€ */}
         <Card style={styles.card}>
           <Text variant="subheading" style={styles.cardTitle}>Stats</Text>
 
@@ -218,7 +218,7 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        {/* ── Library Breakdown Chart ── */}
+        {/* â”€â”€ Library Breakdown Chart â”€â”€ */}
         <Card style={styles.card}>
           <Text variant="subheading" style={styles.cardTitle}>Library Breakdown</Text>
 
@@ -267,7 +267,7 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        {/* ── Top Genres ── */}
+        {/* â”€â”€ Top Genres â”€â”€ */}
         {(stats.topGenres.length > 0 || statsLoading) && (
           <View style={styles.section}>
             <Text variant="subheading" style={styles.sectionTitle}>Top Genres</Text>
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* ── Settings ── */}
+        {/* â”€â”€ Settings â”€â”€ */}
         <View style={styles.settingsSection}>
           <Text variant="label" style={styles.settingsSectionTitle}>ACCOUNT</Text>
           <View style={styles.settingsCard}>
@@ -307,7 +307,7 @@ export default function ProfileScreen() {
             >
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
               <Text variant="body" style={[styles.settingsLabel, styles.signOutLabel]}>
-                {isSigningOut ? 'Signing out…' : 'Sign Out'}
+                {isSigningOut ? 'Signing outâ€¦' : 'Sign Out'}
               </Text>
             </Pressable>
           </View>
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   nameInput: {
-    fontFamily: 'Syne-Bold',
+    fontFamily: 'Inter-Regular',
     fontSize: FontSize.xxl,
     color: Colors.textPrimary,
     borderBottomWidth: 2,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statNumber: {
-    fontFamily: 'Syne-Bold',
+    fontFamily: 'Inter-Regular',
     fontSize: FontSize.xl,
   },
   statLabel: {
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
+    height: 1,
     backgroundColor: Colors.border,
     marginBottom: Spacing.md,
   },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceRaised,
   },
   rowDivider: {
-    height: StyleSheet.hairlineWidth,
+    height: 1,
     backgroundColor: Colors.border,
     marginHorizontal: Spacing.md,
   },
@@ -514,3 +514,4 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
 })
+

@@ -4,8 +4,13 @@ import { useEffect } from 'react'
 import { StyleSheet } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useFonts } from 'expo-font'
-import { Syne_400Regular, Syne_700Bold } from '@expo-google-fonts/syne'
-import { DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans'
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter'
+import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -61,10 +66,11 @@ function AuthGuard() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    'Syne-Regular': Syne_400Regular,
-    'Syne-Bold': Syne_700Bold,
-    'DMSans-Regular': DMSans_400Regular,
-    'DMSans-Medium': DMSans_500Medium,
+    'Inter-Regular':         Inter_400Regular,
+    'Inter-Medium':          Inter_500Medium,
+    'Inter-SemiBold':        Inter_600SemiBold,
+    'Inter-Bold':            Inter_700Bold,
+    'JetBrainsMono-Medium':  JetBrainsMono_500Medium,
   })
 
   useEffect(() => {

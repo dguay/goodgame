@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Text } from './Text'
-import { Colors, Spacing, FontSize } from '@/constants'
+import { Colors, Spacing, FontSize, FontFamily, Radius } from '@/constants'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'ghost' | 'icon'
@@ -16,9 +16,7 @@ interface Props {
 export function Button({ variant = 'primary', onPress, children, disabled, loading, icon, style }: Props) {
   const textColor =
     variant === 'primary'
-      ? Colors.background
-      : variant === 'secondary'
-      ? Colors.primary
+      ? '#ffffff'
       : Colors.textPrimary
 
   return (
@@ -44,7 +42,7 @@ export function Button({ variant = 'primary', onPress, children, disabled, loadi
         <Text
           variant="label"
           color={textColor}
-          style={{ fontSize: FontSize.sm, fontFamily: 'DMSans-Medium' }}
+          style={{ fontSize: FontSize.md, fontFamily: FontFamily.semibold, letterSpacing: 0, textTransform: 'none' }}
         >
           {children}
         </Text>
@@ -58,18 +56,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: Radius.pill,
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.xs,
+    paddingHorizontal: Spacing.lg,
+    height: 44,
+    gap: Spacing.xxs,
   },
   primary: {
     backgroundColor: Colors.primary,
   },
   secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -77,7 +76,7 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: Radius.full,
     backgroundColor: Colors.surfaceRaised,
     paddingVertical: 0,
     paddingHorizontal: 0,

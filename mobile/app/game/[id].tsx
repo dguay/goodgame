@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+﻿import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   ScrollView,
@@ -26,7 +26,7 @@ import { Colors, Spacing } from '@/constants'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGameDetail, RawgScreenshot } from '@/types/rawg'
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const PLATFORM_LABELS: Record<string, string> = {
   pc: 'PC',
@@ -49,7 +49,7 @@ function metacriticColor(score: number): string {
   return Colors.error
 }
 
-// ─── HeroSection ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ HeroSection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface HeroProps { game: RawgGameDetail }
 
@@ -126,7 +126,7 @@ function HeroSection({ game }: HeroProps) {
   )
 }
 
-// ─── InfoSection ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ InfoSection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface InfoProps {
   description: string
@@ -143,7 +143,7 @@ function InfoSection({ description, genres }: InfoProps) {
         <View style={styles.genreRow}>
           {genres.map(g => (
             <View key={g.id} style={styles.genreChip}>
-              <Text variant="label" color={Colors.primaryLight}>{g.name}</Text>
+              <Text variant="label" color={Colors.primary}>{g.name}</Text>
             </View>
           ))}
         </View>
@@ -168,7 +168,7 @@ function InfoSection({ description, genres }: InfoProps) {
   )
 }
 
-// ─── ScreenshotGallery ────────────────────────────────────────────────────────
+// â”€â”€â”€ ScreenshotGallery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface GalleryProps { screenshots: RawgScreenshot[] }
 
@@ -226,7 +226,7 @@ function ScreenshotGallery({ screenshots }: GalleryProps) {
   )
 }
 
-// ─── RatingInput ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ RatingInput â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface RatingInputProps {
   value: number | null
@@ -255,9 +255,9 @@ function RatingInput({ value, onChange }: RatingInputProps) {
           color={value != null ? Colors.warning : Colors.textMuted}
           style={styles.ratingValue}
         >
-          {value != null ? value.toFixed(1) : '—'}
+          {value != null ? value.toFixed(1) : 'â€”'}
         </Text>
-        <Text variant="caption">/ 10  ·  tap to clear</Text>
+        <Text variant="caption">/ 10  Â·  tap to clear</Text>
       </Pressable>
       <Pressable onPress={increment} hitSlop={8} style={styles.ratingBtn}>
         <Ionicons name="add-circle-outline" size={26} color={Colors.textSecondary} />
@@ -266,7 +266,7 @@ function RatingInput({ value, onChange }: RatingInputProps) {
   )
 }
 
-// ─── PersonalTracking ─────────────────────────────────────────────────────────
+// â”€â”€â”€ PersonalTracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface TrackingProps { entry: LibraryEntry }
 
@@ -413,7 +413,7 @@ function PersonalTracking({ entry }: TrackingProps) {
   )
 }
 
-// ─── MoreLikeThis ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ MoreLikeThis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface MoreLikeThisProps { gameId: number }
 
@@ -438,7 +438,7 @@ function MoreLikeThis({ gameId }: MoreLikeThisProps) {
   )
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function GameDetailScreen() {
   const { id: idParam } = useLocalSearchParams<{ id: string }>()
@@ -531,7 +531,7 @@ export default function GameDetailScreen() {
   )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const styles = StyleSheet.create({
   root: {
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   sectionTitle: {
@@ -671,13 +671,13 @@ const styles = StyleSheet.create({
   trackingSection: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   trackingCard: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
   },
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   trackingDivider: {
-    height: StyleSheet.hairlineWidth,
+    height: 1,
     backgroundColor: Colors.border,
   },
   datesRow: {
@@ -702,18 +702,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: Spacing.md,
     gap: Spacing.xs,
-    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: 1,
     borderRightColor: Colors.border,
   },
   shortInput: {
-    fontFamily: 'DMSans-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 15,
     color: Colors.textPrimary,
     minWidth: 100,
     textAlign: 'right',
   },
   notesInput: {
-    fontFamily: 'DMSans-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 15,
     color: Colors.textPrimary,
     minHeight: 100,
@@ -761,14 +761,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(13,13,15,0.75)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
 
   // Sticky action bar
   actionBar: {
     backgroundColor: Colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     borderTopColor: Colors.border,
     paddingTop: Spacing.sm,
     paddingHorizontal: Spacing.md,
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
   },
   actionBarTitle: {
     fontSize: 15,
-    fontFamily: 'DMSans-Medium',
+    fontFamily: 'Inter-Medium',
   },
 
   // Error fallback back button (not needed since EmptyState has CTA, kept for safety)

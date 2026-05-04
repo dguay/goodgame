@@ -3,7 +3,7 @@ import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
-import { Colors, Spacing } from '@/constants'
+import { Colors, Spacing, Radius } from '@/constants'
 import type { RawgGame } from '@/types/rawg'
 
 function metacriticColor(score: number): string {
@@ -58,21 +58,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.xs,
     gap: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderSoft,
   },
   thumbnail: {
     width: 60,
     height: 80,
-    borderRadius: 6,
+    borderRadius: Radius.sm,
     backgroundColor: Colors.surfaceRaised,
     flexShrink: 0,
   },
   info: {
     flex: 1,
-    gap: Spacing.xs,
+    gap: Spacing.xxs,
   },
   title: {
     fontSize: 14,
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   metaBadge: {
     alignSelf: 'flex-start',
     borderWidth: 1.5,
-    borderRadius: 4,
+    borderRadius: Radius.xs,
     paddingHorizontal: 4,
     paddingVertical: 1,
   },

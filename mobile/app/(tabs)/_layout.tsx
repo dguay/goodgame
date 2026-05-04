@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   logoText: {
-    fontFamily: 'Syne-Bold',
+    fontFamily: 'Inter-Regular',
     fontSize: FontSize.xl,
     color: Colors.primary,
     letterSpacing: -0.5,
@@ -163,12 +163,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceRaised,
   },
   sideNavLabel: {
-    fontFamily: 'DMSans-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: FontSize.md,
     color: Colors.textSecondary,
   },
   sideNavLabelActive: {
-    fontFamily: 'DMSans-Medium',
+    fontFamily: 'Inter-Medium',
     color: Colors.primary,
   },
   bottomBar: {
@@ -187,12 +187,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   bottomTabLabel: {
-    fontFamily: 'DMSans-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   bottomTabLabelActive: {
     color: Colors.primary,
-    fontFamily: 'DMSans-Medium',
+    fontFamily: 'Inter-Medium',
   },
 })

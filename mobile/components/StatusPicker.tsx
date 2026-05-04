@@ -1,7 +1,7 @@
 import { Modal, View, Pressable, StyleSheet, Platform } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Text } from '@/components/ui/Text'
-import { Colors, Spacing } from '@/constants'
+import { Colors, Spacing, Radius } from '@/constants'
 import { STATUS_LABELS, STATUS_COLORS, type LibraryStatus } from '@/types'
 
 const STATUSES: LibraryStatus[] = ['want_to_play', 'playing', 'done', 'did_not_finish']
@@ -34,7 +34,6 @@ export function StatusPicker({ visible, currentStatus, onSelect, onRemove, onDis
     >
       <View style={[styles.overlay, isWeb ? styles.overlayCenter : styles.overlayBottom]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
-        {/* onStartShouldSetResponder prevents taps on empty sheet space from reaching the backdrop */}
         <View
           style={isWeb ? styles.card : styles.sheet}
           onStartShouldSetResponder={(_e) => true}
@@ -95,7 +94,7 @@ export function StatusPicker({ visible, currentStatus, onSelect, onRemove, onDis
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   overlayBottom: {
     justifyContent: 'flex-end',
@@ -106,19 +105,19 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     paddingBottom: Spacing.xl,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: Colors.border,
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 16,
+    borderRadius: Radius.xl,
     width: 360,
     paddingBottom: Spacing.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: Colors.border,
   },
   handle: {
@@ -127,13 +126,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     borderRadius: 2,
     alignSelf: 'center',
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.sm,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   title: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   row: {
     flexDirection: 'row',
@@ -155,9 +154,9 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
+    height: 1,
+    backgroundColor: Colors.borderSoft,
     marginHorizontal: Spacing.lg,
-    marginVertical: Spacing.xs,
+    marginVertical: Spacing.xxs,
   },
 })

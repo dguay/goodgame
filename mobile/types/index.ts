@@ -12,8 +12,8 @@ export const STATUS_LABELS: Record<LibraryStatus, string> = {
 }
 
 export const STATUS_COLORS: Record<LibraryStatus, string> = {
-  want_to_play:   '#7C6AF7',
-  playing:        '#4ADE80',
-  done:           '#FACC15',
-  did_not_finish: '#9896A8',
+  want_to_play:   '#a8acb3',   // textSecondary — neutral/queued
+  playing:        '#05b169',   // success / semantic up
+  done:           '#f4b000',   // amber / gold
+  did_not_finish: '#6b7178',   // textMuted — deprioritized
 }
