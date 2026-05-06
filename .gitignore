@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 mobile/node_modules/
+.pnpm-store/
 
 # Expo
 mobile/.expo/

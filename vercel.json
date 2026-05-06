@@ -1,6 +1,7 @@
 {
-  "installCommand": "pnpm --dir mobile install --frozen-lockfile",
-  "buildCommand": "pnpm --dir mobile run build:web",
+  "framework": null,
+  "installCommand": "cd mobile && pnpm install --frozen-lockfile",
+  "buildCommand": "cd mobile && pnpm run build:web",
   "outputDirectory": "mobile/dist",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
