@@ -157,7 +157,7 @@ site_url = "http://localhost:8081"
 additional_redirect_urls = [
   "http://localhost:8081",
   "http://127.0.0.1:8081",
-  "gamelog://auth/callback",
+  "goodgame://auth/callback",
   "exp://127.0.0.1:8081/--/auth/callback",
   "exp://127.0.0.1:19000/--/auth/callback",
   "exp://127.0.0.1:19006/--/auth/callback",

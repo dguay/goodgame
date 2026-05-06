@@ -1,4 +1,4 @@
-# GameLog
+# Goodgame
 
 A Goodreads-style gaming backlog tracker for Android and Web.
 

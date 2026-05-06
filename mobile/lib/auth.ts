@@ -18,9 +18,9 @@ export async function signInWithGoogle(): Promise<void> {
   }
 
   // Native: open Google OAuth in an in-app browser, then exchange the code for a session.
-  // makeRedirectUri returns gamelog://auth/callback in standalone builds,
+  // makeRedirectUri returns goodgame://auth/callback in standalone builds,
   // or exp://... in Expo Go development.
-  const redirectUrl = makeRedirectUri({ scheme: 'gamelog', path: 'auth/callback' })
+  const redirectUrl = makeRedirectUri({ scheme: 'goodgame', path: 'auth/callback' })
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

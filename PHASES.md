@@ -1,4 +1,4 @@
-# PHASES.md — GameLog Implementation Plan
+# PHASES.md — Goodgame Implementation Plan
 
 > **How to use this file:**
 > At the start of each new Claude Code session, paste the relevant phase block as your prompt,
@@ -35,7 +35,7 @@
 
 1. Initialize Expo project using `expo-router` template:
    ```bash
-   npx create-expo-app@latest gamelog --template tabs
+   npx create-expo-app@latest goodgame --template tabs
    ```
 2. Configure TypeScript strict mode in `tsconfig.json`:
    ```json
@@ -75,9 +75,9 @@
    ```
 7. Add `.env.local` to `.gitignore`
 8. Configure `app.json`:
-   - Set `name`, `slug` to `gamelog`
-   - Set `scheme` to `gamelog` (for deep links)
-   - Set `android.package` to `com.yourname.gamelog`
+   - Set `name` to `Goodgame`, `slug` to `goodgame`
+   - Set `scheme` to `goodgame` (for deep links)
+   - Set `android.package` to `com.yourname.goodgame`
    - Configure `web.bundler` to `metro`
 9. Populate `/constants/colors.ts`, `/constants/spacing.ts`, `/constants/typography.ts` using the design tokens from `CLAUDE.md`
 10. Create `/types/index.ts` with `LibraryStatus`, `STATUS_LABELS`, `STATUS_COLORS` from `CLAUDE.md`
@@ -280,7 +280,7 @@
    - Create OAuth 2.0 Web Client ID
    - Add authorized redirect URI: `https://<your-project>.supabase.co/auth/v1/callback`
    - Create Android OAuth Client ID with package name + SHA-1
-   - Add `gamelog://` as authorized redirect URI for native
+   - Add `goodgame://` as authorized redirect URI for native
 3. Create `/stores/authStore.ts` (Zustand):
    ```ts
    interface AuthStore {
@@ -295,12 +295,12 @@
 4. Create `/lib/auth.ts`:
    ```ts
    export async function signInWithGoogle(): Promise<void>
-   // Native: use expo-auth-session with makeRedirectUri({ scheme: 'gamelog' })
+   // Native: use expo-auth-session with makeRedirectUri({ scheme: 'goodgame' })
    // Web: use supabase.auth.signInWithOAuth({ provider: 'google' })
    export async function signOut(): Promise<void>
    ```
 5. Build `app/(auth)/login.tsx`:
-   - GameLog logo/wordmark (text-based is fine for now)
+   - Goodgame logo/wordmark (text-based is fine for now)
    - Tagline: "Your gaming journey, tracked."
    - "Continue with Google" button (use Google brand colors)
    - `<RawgFooter />` at bottom
@@ -845,7 +845,7 @@
    - Ensure touch targets are ≥44px on mobile, but not oversized on desktop
 
 7. **SEO / Web meta tags:**
-   - `app/(tabs)/index.tsx` → title "GameLog — Your Gaming Backlog"
+   - `app/(tabs)/index.tsx` → title "Goodgame — Your Gaming Backlog"
    - `app/game/[id].tsx` → dynamic title from game name
    - Add `og:image` meta using game cover art
 

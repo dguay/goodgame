@@ -27,7 +27,7 @@ function SideNavBar() {
   return (
     <View style={styles.sideNav}>
       <View style={styles.logoContainer}>
-        <Text style={styles.logoText}>GameLog</Text>
+        <Text style={styles.logoText}>Goodgame</Text>
       </View>
       {TABS.map((tab) => {
         const isFocused = pathname === tab.path || (pathname === '/' && tab.path === '/')

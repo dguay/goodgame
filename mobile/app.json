@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "gamelog",
-    "slug": "gamelog",
+    "name": "Goodgame",
+    "slug": "goodgame",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gamelog",
+    "scheme": "goodgame",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -21,7 +21,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0D0D0F"
       },
-      "package": "com.davidguay.gamelog",
+      "package": "com.davidguay.goodgame",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },

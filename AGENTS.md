@@ -1,4 +1,4 @@
-# CLAUDE.md — GameLog Project
+# CLAUDE.md — Goodgame Project
 
 > This file is read automatically by Claude Code at the start of every session.
 > It contains project-wide conventions, architecture decisions, and rules that must be followed at all times.
@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-**GameLog** is a Goodreads-style gaming backlog tracker.
+**Goodgame** is a Goodreads-style gaming backlog tracker.
 - **Platforms:** Android (Play Store — Internal App Sharing) + Web (Vercel)
 - **Stack:** Expo (expo-router) · Supabase · Vercel · RAWG.io API
 - **Auth:** Google OAuth via Supabase Auth

@@ -25,7 +25,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.hero}>
-          <Text variant="display" style={styles.logo}>GameLog</Text>
+          <Text variant="display" style={styles.logo}>Goodgame</Text>
           <Text variant="body" color={Colors.textSecondary} style={styles.tagline}>
             Your gaming journey, tracked.
           </Text>
