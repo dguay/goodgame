@@ -63,6 +63,8 @@ pnpm run web        # Open in browser at http://localhost:8081
 pnpm run android    # Launch on Android emulator or device
 ```
 
+For Android, Scan QR code from Expo Go app 
+
 ---
 
 ## Local development (isolated from production)
@@ -86,7 +88,7 @@ First run pulls ~1 GB of Docker images. Subsequent starts are fast (~10 s).
 The command prints credentials when ready:
 
 ```
-API URL:    http://127.0.0.1:54321
+API URL:    http://127.0.0.1:54221
 anon key:   eyJ...
 ```
 
@@ -95,7 +97,7 @@ anon key:   eyJ...
 Update `mobile/.env.local` with the local credentials:
 
 ```
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54221
 EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon key from output above>
 EXPO_PUBLIC_RAWG_API_KEY=your_rawg_api_key
 ```
@@ -115,7 +117,7 @@ pnpm run db:start
 Also add this URI to your Google Cloud Console project under **Authorized redirect URIs**:
 
 ```
-http://127.0.0.1:54321/auth/v1/callback
+http://127.0.0.1:54221/auth/v1/callback
 ```
 
 ### 4. Local Studio

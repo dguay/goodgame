@@ -326,6 +326,7 @@ client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 # skip_nonce_check is required for native (Expo) Google sign-in
+redirect_uri = "http://127.0.0.1:54221/auth/v1/callback" #local only 
 skip_nonce_check = true
 
 [auth.external.apple]

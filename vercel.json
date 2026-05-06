@@ -1,0 +1,6 @@
+{
+  "installCommand": "pnpm --dir mobile install --frozen-lockfile",
+  "buildCommand": "pnpm --dir mobile run build:web",
+  "outputDirectory": "mobile/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

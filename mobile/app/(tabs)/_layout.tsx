@@ -84,15 +84,6 @@ function BottomTabBar({ state, navigation }: TabBarProps) {
   )
 }
 
-const tabScreens = (
-  <>
-    <Tabs.Screen name="index" options={{ title: 'Home' }} />
-    <Tabs.Screen name="search" options={{ title: 'Search' }} />
-    <Tabs.Screen name="library" options={{ title: 'Library' }} />
-    <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-  </>
-)
-
 export default function TabLayout() {
   const { width } = useWindowDimensions()
   const isSideNav = Platform.OS === 'web' && width >= 768
@@ -106,7 +97,10 @@ export default function TabLayout() {
             tabBar={() => null}
             screenOptions={{ headerShown: false }}
           >
-            {tabScreens}
+            <Tabs.Screen name="index" options={{ title: 'Home' }} />
+            <Tabs.Screen name="search" options={{ title: 'Search' }} />
+            <Tabs.Screen name="library" options={{ title: 'Library' }} />
+            <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
           </Tabs>
         </View>
       </View>
@@ -118,7 +112,10 @@ export default function TabLayout() {
       tabBar={(props) => <BottomTabBar {...(props as unknown as TabBarProps)} />}
       screenOptions={{ headerShown: false }}
     >
-      {tabScreens}
+      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="search" options={{ title: 'Search' }} />
+      <Tabs.Screen name="library" options={{ title: 'Library' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   )
 }
