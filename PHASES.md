@@ -19,7 +19,7 @@
 - [x] Phase 8 — Game Detail Page
 - [x] Phase 9 — Dashboard / Home Screen
 - [x] Phase 10 — Profile Screen
-- [ ] Phase 11 — Web Deployment (Vercel)
+- [x] Phase 11 — Web Deployment (Vercel)
 - [ ] Phase 12 — Android Build & Play Store
 - [ ] Phase 13 — Polish, Performance & Error Handling
 
