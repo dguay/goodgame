@@ -734,6 +734,7 @@ function LibraryFilters({
               accessibilityState={{ selected: isActive }}
               style={({ pressed }) => [
                 styles.filterTab,
+                isWide && styles.filterTabWide,
                 isActive && [
                   styles.filterTabActive,
                   { borderColor: filterColor },
@@ -1074,19 +1075,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.xs,
     minHeight: 40,
-    flexGrow: 1,
+    width: '31%',
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: Radius.pill,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    backgroundColor: 'transparent',
+  },
+  filterTabWide: {
+    width: 132,
   },
   filterTabActive: {
-    backgroundColor: Colors.surfaceRaised,
+    backgroundColor: 'transparent',
   },
   filterTabPressed: {
-    backgroundColor: Colors.surfaceRaised,
+    borderColor: Colors.textMuted,
   },
   filterLabel: {
     color: Colors.textSecondary,
@@ -1094,7 +1098,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: Colors.surfaceRaised,
-    borderRadius: Radius.pill,
+    borderRadius: Radius.xs,
     borderWidth: 1,
     borderColor: Colors.borderSoft,
     minWidth: 22,
@@ -1119,7 +1123,7 @@ const styles = StyleSheet.create({
   viewToggle: {
     flexDirection: 'row',
     padding: 3,
-    borderRadius: Radius.pill,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
@@ -1129,7 +1133,7 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Radius.pill,
+    borderRadius: Radius.xs,
   },
   toggleBtnActive: {
     backgroundColor: Colors.surfaceRaised,
@@ -1146,7 +1150,7 @@ const styles = StyleSheet.create({
     maxWidth: 190,
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.pill,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
