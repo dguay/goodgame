@@ -1,14 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Alert,
   FlatList,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   View,
+  type GestureResponderEvent,
+  type NativeSyntheticEvent,
+  type NativeTouchEvent,
   useWindowDimensions,
 } from 'react-native'
 import { Swipeable } from 'react-native-gesture-handler'
@@ -24,14 +28,22 @@ import { StatusPicker } from '@/components/StatusPicker'
 import {
   useLibraryEntries,
   useRemoveFromLibrary,
+  useUpdateLibraryCustomOrder,
   useUpdateLibraryEntry,
 } from '@/hooks/useLibrary'
+import { useUpdateUserPreferences, useUserPreferences } from '@/hooks/useUserPreferences'
 import { Colors, Spacing } from '@/constants'
-import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
+import {
+  LIBRARY_SORT_KEYS,
+  STATUS_COLORS,
+  STATUS_LABELS,
+  type LibrarySortKey,
+  type LibraryStatus,
+} from '@/types'
 import type { LibraryEntry } from '@/types/database'
 
 type FilterStatus = LibraryStatus | 'all'
-type SortKey = 'recent' | 'title' | 'rating' | 'playtime'
+type SortKey = LibrarySortKey
 type ViewMode = 'grid' | 'list'
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
@@ -47,7 +59,12 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'title', label: 'Title' },
   { key: 'rating', label: 'Rating' },
   { key: 'playtime', label: 'Playtime' },
+  { key: 'custom', label: 'Custom' },
 ]
+
+function isSortKey(value: string | null): value is SortKey {
+  return value != null && LIBRARY_SORT_KEYS.includes(value as SortKey)
+}
 
 function formatPlaytime(minutes: number): string {
   const h = Math.floor(minutes / 60)
@@ -74,8 +91,54 @@ function sortEntries(entries: LibraryEntry[], sort: SortKey): LibraryEntry[] {
         const pB = b.personal_playtime_minutes ?? -1
         return pB - pA
       }
+      case 'custom':
+        return 0
     }
   })
+}
+
+function orderEntriesByIds(entries: LibraryEntry[], orderedIds: string[]): LibraryEntry[] {
+  const positions = new Map(orderedIds.map((id, index) => [id, index]))
+
+  return [...entries].sort((a, b) => {
+    const aPosition = positions.get(a.id) ?? Number.MAX_SAFE_INTEGER
+    const bPosition = positions.get(b.id) ?? Number.MAX_SAFE_INTEGER
+
+    if (aPosition !== bPosition) return aPosition - bPosition
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
+}
+
+function getCustomOrderedIds(entries: LibraryEntry[]): string[] {
+  return [...entries]
+    .sort((a, b) => {
+      const aOrder = a.custom_order ?? Number.MAX_SAFE_INTEGER
+      const bOrder = b.custom_order ?? Number.MAX_SAFE_INTEGER
+
+      if (aOrder !== bOrder) return aOrder - bOrder
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+    .map(entry => entry.id)
+}
+
+function swapItems<T>(items: T[], firstIndex: number, secondIndex: number): T[] {
+  if (
+    firstIndex === secondIndex ||
+    firstIndex < 0 ||
+    secondIndex < 0 ||
+    firstIndex >= items.length ||
+    secondIndex >= items.length
+  ) {
+    return items
+  }
+
+  const next = [...items]
+  const firstItem = next[firstIndex]
+  const secondItem = next[secondIndex]
+  if (firstItem == null || secondItem == null) return items
+  next[firstIndex] = secondItem
+  next[secondIndex] = firstItem
+  return next
 }
 
 function LibraryEntryCard({
@@ -244,6 +307,207 @@ const lcStyles = StyleSheet.create({
   },
 })
 
+function ReorderableLibraryEntry({
+  entry,
+  children,
+  canMoveUp,
+  canMoveDown,
+  onMove,
+  onDragEnd,
+}: {
+  entry: LibraryEntry
+  children: ReactNode
+  canMoveUp: boolean
+  canMoveDown: boolean
+  onMove: (id: string, direction: -1 | 1) => void
+  onDragEnd: () => void
+}) {
+  const [isDragging, setIsDragging] = useState(false)
+  const dragOffsetRef = useRef(0)
+  const isDraggingRef = useRef(false)
+  const movedRef = useRef(false)
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const webStartYRef = useRef(0)
+
+  const clearHoldTimer = useCallback(() => {
+    if (holdTimerRef.current != null) {
+      clearTimeout(holdTimerRef.current)
+      holdTimerRef.current = null
+    }
+  }, [])
+
+  const stopDragging = useCallback(() => {
+    clearHoldTimer()
+    const didMove = movedRef.current
+    isDraggingRef.current = false
+    movedRef.current = false
+    dragOffsetRef.current = 0
+    setIsDragging(false)
+    if (didMove) onDragEnd()
+  }, [clearHoldTimer, onDragEnd])
+
+  const moveFromDelta = useCallback((delta: number) => {
+    if (delta <= -48) {
+      dragOffsetRef.current += delta
+      movedRef.current = true
+      onMove(entry.id, -1)
+    }
+
+    if (delta >= 48) {
+      dragOffsetRef.current += delta
+      movedRef.current = true
+      onMove(entry.id, 1)
+    }
+  }, [entry.id, onMove])
+
+  const beginDragging = useCallback(() => {
+    isDraggingRef.current = true
+    setIsDragging(true)
+  }, [])
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          movedRef.current = false
+          dragOffsetRef.current = 0
+          clearHoldTimer()
+          holdTimerRef.current = setTimeout(() => {
+            beginDragging()
+          }, 220)
+        },
+        onPanResponderMove: (_event, gestureState) => {
+          if (!isDraggingRef.current) return
+          const delta = gestureState.dy - dragOffsetRef.current
+          moveFromDelta(delta)
+        },
+        onPanResponderRelease: stopDragging,
+        onPanResponderTerminate: stopDragging,
+      }),
+    [beginDragging, clearHoldTimer, moveFromDelta, stopDragging]
+  )
+
+  const startWebDrag = useCallback((event: GestureResponderEvent) => {
+    if (Platform.OS !== 'web') return
+
+    clearHoldTimer()
+    movedRef.current = false
+    webStartYRef.current = event.nativeEvent.pageY
+    dragOffsetRef.current = 0
+
+    holdTimerRef.current = setTimeout(() => {
+      beginDragging()
+    }, 120)
+  }, [beginDragging, clearHoldTimer])
+
+  const updateWebDrag = useCallback((event: NativeSyntheticEvent<NativeTouchEvent>) => {
+    if (Platform.OS !== 'web' || !isDraggingRef.current) return
+
+    const totalDelta = event.nativeEvent.pageY - webStartYRef.current
+    const delta = totalDelta - dragOffsetRef.current
+    moveFromDelta(delta)
+  }, [moveFromDelta])
+
+  const handleStep = useCallback((direction: -1 | 1) => {
+    movedRef.current = true
+    onMove(entry.id, direction)
+    onDragEnd()
+  }, [entry.id, onDragEnd, onMove])
+
+  return (
+    <View style={[rdStyles.row, isDragging && rdStyles.rowDragging]}>
+      <View
+        style={[rdStyles.handle, isDragging && rdStyles.handleActive]}
+        accessibilityLabel={`Reorder ${entry.game_title}`}
+      >
+        <Pressable
+          style={[rdStyles.stepButton, !canMoveUp && rdStyles.stepButtonDisabled]}
+          disabled={!canMoveUp}
+          onPress={() => handleStep(-1)}
+          accessibilityRole="button"
+          accessibilityLabel={`Move ${entry.game_title} up`}
+          hitSlop={4}
+        >
+          <Ionicons name="chevron-up" size={16} color={canMoveUp ? Colors.textSecondary : Colors.textMutedSoft} />
+        </Pressable>
+        <View
+          style={rdStyles.grip}
+          accessibilityRole="button"
+          accessibilityHint="Hold, then drag up or down to reorder"
+          onStartShouldSetResponder={() => Platform.OS === 'web'}
+          onResponderGrant={startWebDrag}
+          onResponderMove={updateWebDrag}
+          onResponderRelease={stopDragging}
+          onResponderTerminate={stopDragging}
+          {...(Platform.OS === 'web' ? {} : panResponder.panHandlers)}
+        >
+          <Ionicons
+            name="reorder-three-outline"
+            size={24}
+            color={isDragging ? Colors.primary : Colors.textMuted}
+          />
+        </View>
+        <Pressable
+          style={[rdStyles.stepButton, !canMoveDown && rdStyles.stepButtonDisabled]}
+          disabled={!canMoveDown}
+          onPress={() => handleStep(1)}
+          accessibilityRole="button"
+          accessibilityLabel={`Move ${entry.game_title} down`}
+          hitSlop={4}
+        >
+          <Ionicons name="chevron-down" size={16} color={canMoveDown ? Colors.textSecondary : Colors.textMutedSoft} />
+        </Pressable>
+      </View>
+      <View style={rdStyles.card}>{children}</View>
+    </View>
+  )
+}
+
+const rdStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: Colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  rowDragging: {
+    backgroundColor: Colors.surface,
+  },
+  handle: {
+    width: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: Colors.borderSoft,
+    paddingVertical: 4,
+  },
+  handleActive: {
+    backgroundColor: Colors.surfaceRaised,
+  },
+  stepButton: {
+    width: 32,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+  stepButtonDisabled: {
+    opacity: 0.35,
+  },
+  grip: {
+    width: 36,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    flex: 1,
+  },
+})
+
 
 function SortPicker({
   visible,
@@ -362,19 +626,45 @@ export default function LibraryScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortPickerVisible, setSortPickerVisible] = useState(false)
   const [statusPickerEntry, setStatusPickerEntry] = useState<LibraryEntry | null>(null)
+  const [customOrderIds, setCustomOrderIds] = useState<string[]>([])
+  const customOrderIdsRef = useRef<string[]>([])
 
   const { data: entries, isLoading, refetch, isRefetching } = useLibraryEntries()
   const { mutate: updateEntry } = useUpdateLibraryEntry()
   const { mutate: removeEntry } = useRemoveFromLibrary()
+  const { mutate: updateCustomOrder } = useUpdateLibraryCustomOrder()
+  const { data: userPreferences, isSuccess: preferencesLoaded } = useUserPreferences()
+  const { mutate: updateUserPreferences } = useUpdateUserPreferences()
 
   const { width } = useWindowDimensions()
-  const numColumns = viewMode === 'grid' ? (width >= 768 ? 3 : 2) : 1
+  const activeViewMode = sort === 'custom' ? 'list' : viewMode
+  const numColumns = activeViewMode === 'grid' ? (width >= 768 ? 3 : 2) : 1
+
+  useEffect(() => {
+    if (!preferencesLoaded || userPreferences == null) return
+    if (isSortKey(userPreferences.library_sort)) {
+      setSort(userPreferences.library_sort)
+    }
+  }, [preferencesLoaded, userPreferences])
+
+  useEffect(() => {
+    const entryIds = getCustomOrderedIds(entries ?? [])
+    setCustomOrderIds(current => {
+      const currentSet = new Set(current)
+      const entryIdSet = new Set(entryIds)
+      const existingIds = current.filter(id => entryIdSet.has(id))
+      const newIds = entryIds.filter(id => !currentSet.has(id))
+      const next = [...existingIds, ...newIds]
+      customOrderIdsRef.current = next
+      return next
+    })
+  }, [entries])
 
   const filtered = useMemo(() => {
     const all = entries ?? []
     const byStatus = filter === 'all' ? all : all.filter(e => e.status === filter)
-    return sortEntries(byStatus, sort)
-  }, [entries, filter, sort])
+    return sort === 'custom' ? orderEntriesByIds(byStatus, customOrderIds) : sortEntries(byStatus, sort)
+  }, [customOrderIds, entries, filter, sort])
 
   const counts = useMemo((): Record<FilterStatus, number> => {
     const all = entries ?? []
@@ -411,6 +701,30 @@ export default function LibraryScreen() {
     }
     setStatusPickerEntry(null)
   }
+
+  const handleCustomMove = useCallback((id: string, direction: -1 | 1) => {
+    const visibleIndex = filtered.findIndex(entry => entry.id === id)
+    const targetVisibleEntry = filtered[visibleIndex + direction]
+    if (visibleIndex === -1 || targetVisibleEntry == null) return
+
+    setCustomOrderIds(current => {
+      const currentIndex = current.indexOf(id)
+      const targetIndex = current.indexOf(targetVisibleEntry.id)
+      const next = swapItems(current, currentIndex, targetIndex)
+      customOrderIdsRef.current = next
+      return next
+    })
+  }, [filtered])
+
+  const handleCustomDragEnd = useCallback(() => {
+    updateCustomOrder(customOrderIdsRef.current)
+  }, [updateCustomOrder])
+
+  const handleSortSelect = useCallback((nextSort: SortKey) => {
+    setSort(nextSort)
+    setSortPickerVisible(false)
+    updateUserPreferences({ library_sort: nextSort })
+  }, [updateUserPreferences])
 
   const currentSortLabel = SORT_OPTIONS.find(s => s.key === sort)?.label ?? 'Sort'
 
@@ -487,23 +801,24 @@ export default function LibraryScreen() {
       <View style={styles.controls}>
         <View style={styles.viewToggle}>
           <Pressable
-            style={[styles.toggleBtn, viewMode === 'grid' && styles.toggleBtnActive]}
+            style={[styles.toggleBtn, activeViewMode === 'grid' && styles.toggleBtnActive]}
             onPress={() => setViewMode('grid')}
+            disabled={sort === 'custom'}
           >
             <Ionicons
               name="grid-outline"
               size={18}
-              color={viewMode === 'grid' ? Colors.primary : Colors.textSecondary}
+              color={activeViewMode === 'grid' ? Colors.primary : Colors.textSecondary}
             />
           </Pressable>
           <Pressable
-            style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
+            style={[styles.toggleBtn, activeViewMode === 'list' && styles.toggleBtnActive]}
             onPress={() => setViewMode('list')}
           >
             <Ionicons
               name="list-outline"
               size={18}
-              color={viewMode === 'list' ? Colors.primary : Colors.textSecondary}
+              color={activeViewMode === 'list' ? Colors.primary : Colors.textSecondary}
             />
           </Pressable>
         </View>
@@ -519,16 +834,29 @@ export default function LibraryScreen() {
       {/* Game list */}
       <FlatList
         data={filtered}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const card = (
             <LibraryEntryCard
               entry={item}
-              mode={viewMode}
+              mode={activeViewMode}
               onStatusPress={setStatusPickerEntry}
               onDelete={handleDelete}
             />
           )
-          if (viewMode === 'list' && Platform.OS !== 'web') {
+          if (sort === 'custom') {
+            return (
+              <ReorderableLibraryEntry
+                entry={item}
+                canMoveUp={index > 0}
+                canMoveDown={index < filtered.length - 1}
+                onMove={handleCustomMove}
+                onDragEnd={handleCustomDragEnd}
+              >
+                {card}
+              </ReorderableLibraryEntry>
+            )
+          }
+          if (activeViewMode === 'list' && Platform.OS !== 'web') {
             return (
               <Swipeable
                 renderRightActions={() => (
@@ -551,13 +879,13 @@ export default function LibraryScreen() {
         }}
         keyExtractor={item => item.id}
         numColumns={numColumns}
-        key={`${viewMode}-${numColumns}`}
+        key={`${activeViewMode}-${numColumns}-${sort}`}
         contentContainerStyle={[
           styles.listContent,
           filtered.length === 0 && styles.listContentEmpty,
         ]}
-        columnWrapperStyle={viewMode === 'grid' ? styles.gridRow : undefined}
-        ItemSeparatorComponent={viewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
+        columnWrapperStyle={activeViewMode === 'grid' ? styles.gridRow : undefined}
+        ItemSeparatorComponent={activeViewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -583,10 +911,7 @@ export default function LibraryScreen() {
       <SortPicker
         visible={sortPickerVisible}
         currentSort={sort}
-        onSelect={s => {
-          setSort(s)
-          setSortPickerVisible(false)
-        }}
+        onSelect={handleSortSelect}
         onDismiss={() => setSortPickerVisible(false)}
       />
 

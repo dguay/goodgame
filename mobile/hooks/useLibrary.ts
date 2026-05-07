@@ -7,6 +7,17 @@ function libraryKey(userId: string) {
   return ['library', userId] as const
 }
 
+function getNextCustomOrder(entries: LibraryEntry[], requestedOrder?: number | null): number {
+  if (requestedOrder != null) return requestedOrder
+
+  const minCustomOrder = entries.reduce<number | null>((currentMin, entry) => {
+    if (entry.custom_order == null) return currentMin
+    return currentMin == null ? entry.custom_order : Math.min(currentMin, entry.custom_order)
+  }, null)
+
+  return minCustomOrder == null ? 1 : minCustomOrder - 1
+}
+
 export function useLibraryEntries() {
   const user = useAuthStore(s => s.user)
 
@@ -40,9 +51,11 @@ export function useAddToLibrary() {
   return useMutation({
     mutationFn: async (entry: Omit<LibraryEntryInsert, 'user_id'>): Promise<LibraryEntry> => {
       if (user == null) throw new Error('Not authenticated')
+      const existingEntries = queryClient.getQueryData<LibraryEntry[]>(libraryKey(user.id)) ?? []
+      const customOrder = getNextCustomOrder(existingEntries, entry.custom_order)
       const { data, error } = await supabase
         .from('library_entries')
-        .insert({ ...entry, user_id: user.id })
+        .insert({ ...entry, custom_order: customOrder, user_id: user.id })
         .select()
         .single()
       if (error) throw new Error(error.message)
@@ -53,6 +66,7 @@ export function useAddToLibrary() {
       const key = libraryKey(user.id)
       await queryClient.cancelQueries({ queryKey: key })
       const prev = queryClient.getQueryData<LibraryEntry[]>(key)
+      const customOrder = getNextCustomOrder(prev ?? [], entry.custom_order)
       const now = new Date().toISOString()
       const optimistic: LibraryEntry = {
         id: `optimistic-${Date.now()}`,
@@ -64,12 +78,60 @@ export function useAddToLibrary() {
         personal_notes: entry.personal_notes ?? null,
         personal_playtime_minutes: entry.personal_playtime_minutes ?? null,
         personal_rating: entry.personal_rating ?? null,
+        custom_order: customOrder,
         game_cover_url: entry.game_cover_url ?? null,
         game_title: entry.game_title,
         rawg_game_id: entry.rawg_game_id,
         status: entry.status,
       }
       queryClient.setQueryData<LibraryEntry[]>(key, old => [optimistic, ...(old ?? [])])
+      return { prev }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev != null && user != null) {
+        queryClient.setQueryData(libraryKey(user.id), ctx.prev)
+      }
+    },
+    onSettled: async () => {
+      if (user != null) {
+        await queryClient.invalidateQueries({ queryKey: libraryKey(user.id) })
+      }
+    },
+  })
+}
+
+export function useUpdateLibraryCustomOrder() {
+  const queryClient = useQueryClient()
+  const user = useAuthStore(s => s.user)
+
+  return useMutation({
+    mutationFn: async (orderedIds: string[]): Promise<void> => {
+      if (user == null) throw new Error('Not authenticated')
+
+      const updates = orderedIds.map(async (id, index) => {
+        const { error } = await supabase
+          .from('library_entries')
+          .update({ custom_order: index + 1 })
+          .eq('id', id)
+          .eq('user_id', user.id)
+
+        if (error) throw new Error(error.message)
+      })
+
+      await Promise.all(updates)
+    },
+    onMutate: async (orderedIds) => {
+      if (user == null) return undefined
+      const key = libraryKey(user.id)
+      await queryClient.cancelQueries({ queryKey: key })
+      const prev = queryClient.getQueryData<LibraryEntry[]>(key)
+      const orderById = new Map(orderedIds.map((id, index) => [id, index + 1]))
+      queryClient.setQueryData<LibraryEntry[]>(key, old =>
+        (old ?? []).map(entry => {
+          const customOrder = orderById.get(entry.id)
+          return customOrder == null ? entry : { ...entry, custom_order: customOrder }
+        })
+      )
       return { prev }
     },
     onError: (_err, _vars, ctx) => {
