@@ -111,14 +111,14 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   statusChip: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xxs,
     borderRadius: Radius.pill,
     borderWidth: 1.5,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   loadingContainer: {
     paddingHorizontal: Spacing.sm,

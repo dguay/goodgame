@@ -168,84 +168,116 @@ interface HeroProps { game: RawgGameDetail }
 
 function HeroSection({ game }: HeroProps) {
   const releaseDate = getReleaseDateInfo(game.released)
+  const developerLabel = (game.developers ?? []).map(d => d.name).join(', ')
+  const publisherLabel = (game.publishers ?? []).map(p => p.name).join(', ')
   const platforms = (game.platforms ?? [])
     .map(p => PLATFORM_LABELS[p.platform.slug])
     .filter((p): p is string => p !== undefined)
     .slice(0, 5)
+  const hiddenPlatformCount = Math.max((game.platforms ?? []).length - platforms.length, 0)
+  const hasRating = game.rating > 0
+  const hasMetaLine = releaseDate != null || developerLabel !== '' || publisherLabel !== ''
 
   return (
     <View style={styles.hero}>
       {game.background_image != null && (
-        <Image
-          source={{ uri: game.background_image }}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          blurRadius={18}
-          cachePolicy="disk"
-        />
-      )}
-      <LinearGradient
-        colors={['rgba(13,13,15,0.15)', 'rgba(13,13,15,0.98)']}
-        locations={[0, 0.82]}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.heroContent}>
-        {game.background_image != null && (
+        <View style={styles.heroArtworkFrame}>
           <Image
             source={{ uri: game.background_image }}
-            style={styles.coverArt}
+            style={styles.heroArtwork}
             contentFit="cover"
             cachePolicy="disk"
             transition={200}
           />
-        )}
+        </View>
+      )}
+      <LinearGradient
+        colors={['rgba(10,11,13,0.02)', 'rgba(10,11,13,0.42)', Colors.background]}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.heroContent}>
         <View style={styles.heroInfo}>
-          <Text variant="heading" numberOfLines={4} style={styles.heroTitle}>
-            {game.name}
-          </Text>
-          {(game.developers ?? []).length > 0 && (
-            <Text variant="caption" numberOfLines={2}>
-              {(game.developers ?? []).map(d => d.name).join(', ')}
-            </Text>
-          )}
-          <View style={styles.heroMeta}>
-            {releaseDate != null && (
-              releaseDate.isFuture ? (
-                <View style={styles.comingSoonMeta}>
-                  <Ionicons name="calendar-outline" size={13} color={Colors.success} />
-                  <Text variant="caption" color={Colors.success}>
-                    Coming on {releaseDate.label}
-                  </Text>
-                </View>
-              ) : (
-                <Text variant="caption">{releaseDate.label}</Text>
-              )
-            )}
-            {game.metacritic != null && (
-              <View style={[styles.metacriticBadge, { borderColor: metacriticColor(game.metacritic) }]}>
-                <Text variant="label" color={metacriticColor(game.metacritic)}>
-                  {game.metacritic}
-                </Text>
-              </View>
-            )}
-            {game.rating > 0 && (
-              <View style={styles.rawgRating}>
-                <Ionicons name="star" size={11} color={Colors.warning} />
-                <Text variant="label" color={Colors.warning}>
-                  {' '}
-                  {game.rating.toFixed(1)}
-                  {game.ratings_count > 0 ? ` (${formatRatingCount(game.ratings_count)} ratings)` : ''}
-                </Text>
-              </View>
-            )}
-          </View>
-          {platforms.length > 0 && (
+          {/* {platforms.length > 0 && (
             <View style={styles.platformRow}>
               {platforms.map(p => (
                 <View key={p} style={styles.platformChip}>
                   <Text variant="label">{p}</Text>
                 </View>
               ))}
+              {hiddenPlatformCount > 0 && (
+                <View style={styles.platformChip}>
+                  <Text variant="label">+{hiddenPlatformCount}</Text>
+                </View>
+              )}
+            </View>
+          )} */}
+          <Text variant="heading" numberOfLines={4} style={styles.heroTitle}>
+            {game.name}
+          </Text>
+          {hasMetaLine && (
+            <Text variant="caption" numberOfLines={2} style={styles.heroSubtitle}>
+              {[
+                releaseDate?.isFuture === true ? `Coming ${releaseDate.label}` : releaseDate?.label,
+                developerLabel !== '' ? developerLabel : null,
+                publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
+              ].filter(Boolean).join('  /  ')}
+            </Text>
+          )}
+          {(releaseDate?.isFuture === true || game.metacritic != null || hasRating || game.playtime > 0) && (
+            <View style={styles.heroBadgeRow}>
+              {releaseDate?.isFuture === true && (
+                <View style={[styles.heroBadge, styles.heroBadgeSuccess]}>
+                  <Ionicons name="calendar-outline" size={14} color={Colors.success} />
+                  <Text variant="label" color={Colors.success}>
+                    Upcoming
+                  </Text>
+                </View>
+              )}
+              {game.metacritic != null && (
+                <View style={[styles.heroBadge, { borderColor: metacriticColor(game.metacritic) }]}>
+                  <Text variant="mono" color={metacriticColor(game.metacritic)} style={styles.heroBadgeNumber}>
+                    {game.metacritic}
+                  </Text>
+                  <Text variant="label" color={metacriticColor(game.metacritic)}>
+                    Meta
+                  </Text>
+                </View>
+              )}
+              {hasRating && (
+                <View style={styles.heroBadge}>
+                  <Ionicons name="star" size={14} color={Colors.warning} />
+                  <Text variant="mono" color={Colors.textPrimary} style={styles.heroBadgeNumber}>
+                    {game.rating.toFixed(1)}
+                  </Text>
+                  <Text variant="label">
+                    {game.ratings_count > 0 ? formatRatingCount(game.ratings_count) : 'RAWG'}
+                  </Text>
+                </View>
+              )}
+              {game.playtime > 0 && (
+                <View style={styles.heroBadge}>
+                  <Ionicons name="time-outline" size={14} color={Colors.textSecondary} />
+                  <Text variant="mono" color={Colors.textPrimary} style={styles.heroBadgeNumber}>
+                    {game.playtime}
+                  </Text>
+                  <Text variant="label">Hours</Text>
+                </View>
+              )}
+               {platforms.length > 0 && (
+              <View style={styles.platformRow}>
+                {platforms.map(p => (
+                  <View key={p} style={styles.platformChip}>
+                    <Text variant="label">{p}</Text>
+                  </View>
+                ))}
+                {hiddenPlatformCount > 0 && (
+                  <View style={styles.platformChip}>
+                    <Text variant="label">+{hiddenPlatformCount}</Text>
+                  </View>
+                )}
+              </View>
+            )}
             </View>
           )}
         </View>
@@ -776,62 +808,105 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: {
-    height: 300,
+    minHeight: Platform.OS === 'web' ? 430 : 390,
     justifyContent: 'flex-end',
+    overflow: 'hidden',
+    backgroundColor: Colors.background,
+  },
+  heroArtworkFrame: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: Platform.OS === 'web' ? 60 : 92,
+    left: 0,
     backgroundColor: Colors.surface,
+  },
+  heroArtwork: {
+    width: '100%',
+    height: '100%',
   },
   heroContent: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: Spacing.md,
+    width: '100%',
+    maxWidth: 980,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Platform.OS === 'web' ? 148 : 132,
+    paddingBottom: Spacing.lg,
     gap: Spacing.md,
   },
+  coverColumn: {
+    flexShrink: 0,
+  },
   coverArt: {
-    width: 100,
-    height: 140,
-    borderRadius: 8,
+    width: Platform.OS === 'web' ? 142 : 112,
+    height: Platform.OS === 'web' ? 196 : 156,
+    borderRadius: Radius.sm,
     backgroundColor: Colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  coverArtPlaceholder: {
+    width: Platform.OS === 'web' ? 142 : 112,
+    height: Platform.OS === 'web' ? 196 : 156,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: Colors.border,
     flexShrink: 0,
   },
   heroInfo: {
     flex: 1,
-    gap: Spacing.xs,
-    paddingBottom: Spacing.xs,
+    minWidth: 0,
+    gap: Spacing.sm,
   },
   heroTitle: {
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: Platform.OS === 'web' ? 36 : 29,
+    lineHeight: Platform.OS === 'web' ? 40 : 32,
+    maxWidth: 720,
   },
-  heroMeta: {
+  heroSubtitle: {
+    maxWidth: 620,
+  },
+  heroBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: Spacing.xs,
   },
-  comingSoonMeta: {
+  heroBadge: {
+    minHeight: 34,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-  },
-  metacriticBadge: {
-    borderWidth: 1.5,
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm,
     backgroundColor: Colors.background,
   },
-  rawgRating: {
-    flexDirection: 'row',
+  heroBadgeSuccess: {
+    borderColor: 'rgba(5,177,105,0.38)',
+  },
+  heroBadgeNumber: {
+    fontSize: 13,
+    lineHeight: 17,
   },
   platformRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: Spacing.xs,
   },
   platformChip: {
-    backgroundColor: Colors.surfaceRaised,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+    minHeight: 24,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.xs,
     borderRadius: 4,
   },
 
