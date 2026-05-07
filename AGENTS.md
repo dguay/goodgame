@@ -215,7 +215,6 @@ Key endpoints used:
 | GET | `/games` | Search + browse games |
 | GET | `/games/{id}` | Full game detail |
 | GET | `/games/{id}/game-series` | Related games |
-| GET | `/games/{id}/suggested` | Similar games |
 
 RAWG OpenAPI spec lives at:
 

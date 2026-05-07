@@ -4,7 +4,6 @@ import {
   getGameDetail,
   getNewReleases,
   getTopRated,
-  getSuggestedGames,
 } from '@/lib/rawg'
 
 const STALE = 5 * 60 * 1000
@@ -51,15 +50,6 @@ export function useTopRated() {
   return useQuery({
     queryKey: ['rawg', 'topRated'],
     queryFn: getTopRated,
-    staleTime: STALE,
-  })
-}
-
-export function useSuggestedGames(id: number | null) {
-  return useQuery({
-    queryKey: ['rawg', 'suggested', id],
-    queryFn: () => getSuggestedGames(id!),
-    enabled: id !== null,
     staleTime: STALE,
   })
 }

@@ -74,7 +74,3 @@ export async function getTopRated(): Promise<RawgPaginatedResponse<RawgGame>> {
     page_size: 20,
   })
 }
-
-export async function getSuggestedGames(id: number): Promise<RawgPaginatedResponse<RawgGame>> {
-  return get<RawgPaginatedResponse<RawgGame>>(`/games/${id}/suggested`)
-}

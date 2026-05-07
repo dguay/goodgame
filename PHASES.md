@@ -372,8 +372,6 @@
    export async function getNewReleases(): Promise<RawgPaginatedResponse<RawgGame>>
      // dates: last 30 days, ordering: -released
    export async function getTopRated(): Promise<RawgPaginatedResponse<RawgGame>>
-     // ordering: -metacritic, metacritic: 80,100
-   export async function getSuggestedGames(id: number): Promise<RawgPaginatedResponse<RawgGame>>
    ```
 
 3. Create React Query hooks in `/hooks/useRawg.ts`:
@@ -382,7 +380,6 @@
    export function useGameDetail(id: number | null)
    export function useNewReleases()
    export function useTopRated()
-   export function useSuggestedGames(id: number | null)
    ```
    All hooks use `staleTime: 5 * 60 * 1000`.
 
@@ -540,7 +537,6 @@
    - All fields call `useUpdateLibraryEntry()` mutation on change
 
 6. **"More Like This" section:**
-   - Horizontal scroll using `useSuggestedGames(id)`
    - Compact `<GameCard>` variant
 
 7. `<RawgFooter />` at the bottom

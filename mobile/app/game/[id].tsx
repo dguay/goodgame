@@ -22,7 +22,7 @@ import { GameCard } from '@/components/GameCard'
 import { RawgFooter } from '@/components/RawgFooter'
 import { RatingInput } from '@/components/RatingInput'
 
-import { useGameDetail, useSuggestedGames } from '@/hooks/useRawg'
+import { useGameDetail } from '@/hooks/useRawg'
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
 
 import { Colors, Spacing } from '@/constants'
@@ -30,6 +30,21 @@ import type { LibraryEntry } from '@/types/database'
 import type { RawgGameDetail, RawgScreenshot } from '@/types/rawg'
 
 // helpers
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
 
 const PLATFORM_LABELS: Record<string, string> = {
   pc: 'PC',
@@ -52,12 +67,50 @@ function metacriticColor(score: number): string {
   return Colors.error
 }
 
+function formatRatingCount(count: number): string {
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
+  return count.toString()
+}
+
+interface ReleaseDateInfo {
+  label: string
+  isFuture: boolean
+}
+
+function getReleaseDateInfo(released: string | null): ReleaseDateInfo | null {
+  if (released == null) return null
+  const [year, month, day] = released.split('-')
+  const monthIndex = Number(month) - 1
+  const dayNumber = Number(day)
+  const yearNumber = Number(year)
+  if (year == null || month == null || day == null) return null
+  if (monthIndex < 0 || monthIndex >= MONTH_NAMES.length) return null
+  if (isNaN(yearNumber) || isNaN(dayNumber)) return null
+
+  const releaseDate = new Date(yearNumber, monthIndex, dayNumber)
+  if (
+    releaseDate.getFullYear() !== yearNumber ||
+    releaseDate.getMonth() !== monthIndex ||
+    releaseDate.getDate() !== dayNumber
+  ) {
+    return null
+  }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return {
+    label: `${MONTH_NAMES[monthIndex]} ${dayNumber}, ${year}`,
+    isFuture: releaseDate.getTime() > today.getTime(),
+  }
+}
+
 // HeroSection
 
 interface HeroProps { game: RawgGameDetail }
 
 function HeroSection({ game }: HeroProps) {
-  const year = game.released != null ? game.released.split('-')[0] : null
+  const releaseDate = getReleaseDateInfo(game.released)
   const platforms = (game.platforms ?? [])
     .map(p => PLATFORM_LABELS[p.platform.slug])
     .filter((p): p is string => p !== undefined)
@@ -99,7 +152,18 @@ function HeroSection({ game }: HeroProps) {
             </Text>
           )}
           <View style={styles.heroMeta}>
-            {year != null && <Text variant="caption">{year}</Text>}
+            {releaseDate != null && (
+              releaseDate.isFuture ? (
+                <View style={styles.comingSoonMeta}>
+                  <Ionicons name="calendar-outline" size={13} color={Colors.success} />
+                  <Text variant="caption" color={Colors.success}>
+                    Coming on {releaseDate.label}
+                  </Text>
+                </View>
+              ) : (
+                <Text variant="caption">{releaseDate.label}</Text>
+              )
+            )}
             {game.metacritic != null && (
               <View style={[styles.metacriticBadge, { borderColor: metacriticColor(game.metacritic) }]}>
                 <Text variant="label" color={metacriticColor(game.metacritic)}>
@@ -110,7 +174,11 @@ function HeroSection({ game }: HeroProps) {
             {game.rating > 0 && (
               <View style={styles.rawgRating}>
                 <Ionicons name="star" size={11} color={Colors.warning} />
-                <Text variant="label" color={Colors.warning}> {game.rating.toFixed(1)}</Text>
+                <Text variant="label" color={Colors.warning}>
+                  {' '}
+                  {game.rating.toFixed(1)}
+                  {game.ratings_count > 0 ? ` (${formatRatingCount(game.ratings_count)} ratings)` : ''}
+                </Text>
               </View>
             )}
           </View>
@@ -385,31 +453,6 @@ function PersonalTracking({ entry }: TrackingProps) {
   )
 }
 
-// MoreLikeThis
-
-interface MoreLikeThisProps { gameId: number }
-
-function MoreLikeThis({ gameId }: MoreLikeThisProps) {
-  const { data } = useSuggestedGames(gameId)
-  const games = data?.results ?? []
-  if (games.length === 0) return null
-
-  return (
-    <View style={styles.section}>
-      <Text variant="subheading" style={styles.sectionTitle}>More Like This</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.moreGamesRow}
-      >
-        {games.slice(0, 10).map(game => (
-          <GameCard key={game.id} game={game} style={styles.moreGameCard} />
-        ))}
-      </ScrollView>
-    </View>
-  )
-}
-
 // Main Screen
 
 export default function GameDetailScreen() {
@@ -478,7 +521,6 @@ export default function GameDetailScreen() {
           <InfoSection description={game.description_raw} genres={game.genres ?? []} />
           <ScreenshotGallery screenshots={game.short_screenshots ?? []} />
           {entry != null && <PersonalTracking entry={entry} />}
-          <MoreLikeThis gameId={game.id} />
           <RawgFooter />
         </View>
       </ScrollView>
@@ -554,6 +596,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.xs,
   },
+  comingSoonMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
   metacriticBadge: {
     borderWidth: 1.5,
     borderRadius: 4,
@@ -563,7 +610,6 @@ const styles = StyleSheet.create({
   },
   rawgRating: {
     flexDirection: 'row',
-    alignItems: 'center',
   },
   platformRow: {
     flexDirection: 'row',

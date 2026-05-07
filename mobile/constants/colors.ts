@@ -9,9 +9,12 @@ export const Colors = {
   borderSoft:      'rgba(255,255,255,0.04)',
 
   // Brand: Coinbase Blue used scarcely (primary CTAs only)
-  primary:         '#0052ff',
-  primaryActive:   '#003ecc',             // press state
-  primaryDisabled: '#a8b8cc',             // disabled CTA
+  primary:         '#1ca7f3',
+  primaryActive:   '#0d78b8',
+  primaryDisabled: '#8bbbd3',
+  // primary:         '#0052ff',
+  // primaryActive:   '#003ecc',             // press state
+  // primaryDisabled: '#a8b8cc',             // disabled CTA
 
   // Text
   textPrimary:     '#ffffff',             // ink / onDark
