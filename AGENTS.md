@@ -217,6 +217,12 @@ Key endpoints used:
 | GET | `/games/{id}/game-series` | Related games |
 | GET | `/games/{id}/suggested` | Similar games |
 
+RAWG OpenAPI spec lives at:
+
+`docs/external/rawg/openapi.yaml`
+
+Use this as the source of truth for RAWG request/response shapes. Runtime RAWG calls must still go through `mobile/lib/rawg.ts`.
+
 ---
 
 ## Component Conventions
