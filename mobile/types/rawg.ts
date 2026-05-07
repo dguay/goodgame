@@ -46,6 +46,7 @@ export interface RawgGameDetail extends RawgGame {
   publishers: RawgPublisher[]
   website: string
   playtime: number
+  reddit_url: string | null
 }
 
 export interface RawgPaginatedResponse<T> {
@@ -53,6 +54,13 @@ export interface RawgPaginatedResponse<T> {
   next: string | null
   previous: string | null
   results: T[]
+}
+
+export interface RawgMovie {
+  id: number
+  name: string
+  preview: string
+  data: Record<string, string>
 }
 
 export interface GetGamesParams {

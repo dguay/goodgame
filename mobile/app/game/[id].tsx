@@ -7,6 +7,8 @@ import {
   TextInput,
   Modal,
   Platform,
+  ActivityIndicator,
+  Linking,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -22,12 +24,18 @@ import { GameCard } from '@/components/GameCard'
 import { RawgFooter } from '@/components/RawgFooter'
 import { RatingInput } from '@/components/RatingInput'
 
-import { useGameDetail } from '@/hooks/useRawg'
+import {
+  useGameAdditions,
+  useGameDetail,
+  useGameMovies,
+  useGameScreenshots,
+  useGameSeries,
+} from '@/hooks/useRawg'
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
 
-import { Colors, Spacing } from '@/constants'
+import { Colors, FontFamily, Radius, Spacing } from '@/constants'
 import type { LibraryEntry } from '@/types/database'
-import type { RawgGameDetail, RawgScreenshot } from '@/types/rawg'
+import type { RawgGame, RawgGameDetail, RawgMovie } from '@/types/rawg'
 
 // helpers
 
@@ -60,6 +68,8 @@ const PLATFORM_LABELS: Record<string, string> = {
   macos: 'Mac',
   linux: 'Lin',
 }
+
+const REDDIT_ORANGE = '#ff4500'
 
 function metacriticColor(score: number): string {
   if (score >= 75) return Colors.success
@@ -103,6 +113,53 @@ function getReleaseDateInfo(released: string | null): ReleaseDateInfo | null {
     label: `${MONTH_NAMES[monthIndex]} ${dayNumber}, ${year}`,
     isFuture: releaseDate.getTime() > today.getTime(),
   }
+}
+
+function getPlayableMovieUrl(movie: RawgMovie): string | null {
+  return movie.data.max ?? movie.data['480'] ?? Object.values(movie.data)[0] ?? null
+}
+
+function getRedditUrl(rawUrl: string | null): string | null {
+  if (rawUrl == null || rawUrl.trim() === '') return null
+  const trimmed = rawUrl.trim()
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed
+  return `https://www.reddit.com/r/${trimmed.replace(/^\/?r\//, '').replace(/\/$/, '')}/`
+}
+
+function getRedditLabel(rawUrl: string | null): string | null {
+  const url = getRedditUrl(rawUrl)
+  if (url == null) return null
+  const match = url.match(/reddit\.com\/r\/([^/]+)/i)
+  return match != null ? `r/${match[1]}` : 'Subreddit'
+}
+
+async function openExternalUrl(url: string): Promise<void> {
+  try {
+    await Linking.openURL(url)
+  } catch (error) {
+    console.warn('Could not open external URL', error)
+  }
+}
+
+interface SectionStateProps {
+  label: string
+}
+
+function SectionLoading({ label }: SectionStateProps) {
+  return (
+    <View style={styles.sectionState}>
+      <ActivityIndicator size="small" color={Colors.primary} />
+      <Text variant="caption">{label}</Text>
+    </View>
+  )
+}
+
+function SectionMessage({ label }: SectionStateProps) {
+  return (
+    <View style={styles.sectionState}>
+      <Text variant="caption">{label}</Text>
+    </View>
+  )
 }
 
 // HeroSection
@@ -202,21 +259,35 @@ function HeroSection({ game }: HeroProps) {
 interface InfoProps {
   description: string
   genres: { id: number; name: string; slug: string }[]
+  redditUrl: string | null
 }
 
-function InfoSection({ description, genres }: InfoProps) {
+function InfoSection({ description, genres, redditUrl }: InfoProps) {
   const [expanded, setExpanded] = useState(false)
   const trimmed = description.trim()
+  const subredditUrl = getRedditUrl(redditUrl)
+  const subredditLabel = getRedditLabel(redditUrl)
 
   return (
     <View style={styles.section}>
-      {genres.length > 0 && (
-        <View style={styles.genreRow}>
-          {genres.map(g => (
-            <View key={g.id} style={styles.genreChip}>
-              <Text variant="label" color={Colors.primary}>{g.name}</Text>
-            </View>
-          ))}
+      {(genres.length > 0 || subredditUrl != null) && (
+        <View style={styles.genreHeader}>
+          <View style={styles.genreRow}>
+            {genres.map(g => (
+              <View key={g.id} style={styles.genreChip}>
+                <Text variant="label" color={Colors.primary}>{g.name}</Text>
+              </View>
+            ))}
+          </View>
+          {subredditUrl != null && subredditLabel != null && (
+            <Pressable
+              style={styles.subredditButton}
+              onPress={() => void openExternalUrl(subredditUrl)}
+            >
+              <Ionicons name="logo-reddit" size={14} color={REDDIT_ORANGE} />
+              <Text variant="label" color={REDDIT_ORANGE}>{subredditLabel}</Text>
+            </Pressable>
+          )}
         </View>
       )}
       {trimmed.length > 0 && (
@@ -241,32 +312,41 @@ function InfoSection({ description, genres }: InfoProps) {
 
 // ScreenshotGallery
 
-interface GalleryProps { screenshots: RawgScreenshot[] }
+interface GalleryProps { gameId: number }
 
-function ScreenshotGallery({ screenshots }: GalleryProps) {
+function ScreenshotGallery({ gameId }: GalleryProps) {
+  const screenshotsQuery = useGameScreenshots(gameId)
+  const screenshots = screenshotsQuery.data?.results ?? []
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  if (screenshots.length === 0) return null
 
   return (
     <View style={styles.section}>
       <Text variant="subheading" style={styles.sectionTitle}>Screenshots</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.screenshotsRow}
-      >
-        {screenshots.map((shot, i) => (
-          <Pressable key={shot.id} onPress={() => setSelectedIndex(i)}>
-            <Image
-              source={{ uri: shot.image }}
-              style={styles.screenshotThumb}
-              contentFit="cover"
-              cachePolicy="disk"
-              transition={200}
-            />
-          </Pressable>
-        ))}
-      </ScrollView>
+      {screenshotsQuery.isLoading ? (
+        <SectionLoading label="Loading screenshots..." />
+      ) : screenshotsQuery.isError ? (
+        <SectionMessage label="Could not load screenshots." />
+      ) : screenshots.length === 0 ? (
+        <SectionMessage label="No screenshots found." />
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.screenshotsRow}
+        >
+          {screenshots.map((shot, i) => (
+            <Pressable key={shot.id} onPress={() => setSelectedIndex(i)}>
+              <Image
+                source={{ uri: shot.image }}
+                style={styles.screenshotThumb}
+                contentFit="cover"
+                cachePolicy="disk"
+                transition={200}
+              />
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
 
       <Modal
         visible={selectedIndex != null}
@@ -276,7 +356,7 @@ function ScreenshotGallery({ screenshots }: GalleryProps) {
       >
         <View style={styles.modalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedIndex(null)} />
-          {selectedIndex != null && (
+          {selectedIndex != null && screenshots[selectedIndex] != null && (
             <Image
               source={{ uri: screenshots[selectedIndex].image }}
               style={styles.fullscreenShot}
@@ -293,6 +373,132 @@ function ScreenshotGallery({ screenshots }: GalleryProps) {
           </Pressable>
         </View>
       </Modal>
+    </View>
+  )
+}
+
+// RelatedContent
+
+interface GameRailProps {
+  title: string
+  games: RawgGame[]
+  isLoading: boolean
+  isError: boolean
+}
+
+function GameRail({ title, games, isLoading, isError }: GameRailProps) {
+  return (
+    <View style={styles.relatedRail}>
+      <Text variant="label" style={styles.railTitle}>{title}</Text>
+      {isLoading ? (
+        <SectionLoading label={`Loading ${title.toLowerCase()}...`} />
+      ) : isError ? (
+        <SectionMessage label={`Could not load ${title.toLowerCase()}.`} />
+      ) : games.length === 0 ? (
+        <SectionMessage label={`No ${title.toLowerCase()} found.`} />
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.moreGamesRow}
+        >
+          {games.map(game => (
+            <GameCard key={game.id} game={game} style={styles.moreGameCard} />
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  )
+}
+
+interface RelatedGamesProps {
+  gameId: number
+}
+
+function RelatedGamesSection({ gameId }: RelatedGamesProps) {
+  const additions = useGameAdditions(gameId)
+  const series = useGameSeries(gameId)
+
+  return (
+    <View style={styles.section}>
+      <Text variant="subheading" style={styles.sectionTitle}>DLCs & Series</Text>
+      <GameRail
+        title="DLCs and editions"
+        games={additions.data?.results ?? []}
+        isLoading={additions.isLoading}
+        isError={additions.isError}
+      />
+      <GameRail
+        title="Same series"
+        games={series.data?.results ?? []}
+        isLoading={series.isLoading}
+        isError={series.isError}
+      />
+    </View>
+  )
+}
+
+// Trailers
+
+interface TrailerCardProps {
+  movie: RawgMovie
+}
+
+function TrailerCard({ movie }: TrailerCardProps) {
+  const movieUrl = getPlayableMovieUrl(movie)
+  const disabled = movieUrl == null
+
+  return (
+    <Pressable
+      style={[styles.trailerCard, disabled && styles.disabledCard]}
+      onPress={() => {
+        if (movieUrl != null) void openExternalUrl(movieUrl)
+      }}
+      disabled={disabled}
+    >
+      <View style={styles.trailerPreview}>
+        <Image
+          source={movie.preview !== '' ? { uri: movie.preview } : null}
+          style={styles.trailerImage}
+          contentFit="cover"
+          cachePolicy="disk"
+          transition={200}
+        />
+        <View style={styles.playBadge}>
+          <Ionicons name="play" size={18} color={Colors.textPrimary} />
+        </View>
+      </View>
+      <Text variant="body" numberOfLines={2} style={styles.trailerTitle}>
+        {movie.name}
+      </Text>
+    </Pressable>
+  )
+}
+
+function TrailersSection({ gameId }: RelatedGamesProps) {
+  const movies = useGameMovies(gameId)
+  const trailers = movies.data?.results ?? []
+
+  return (
+    <View style={styles.section}>
+      <Text variant="subheading" style={styles.sectionTitle}>Trailers</Text>
+      {movies.isLoading ? (
+        <SectionLoading label="Loading trailers..." />
+      ) : movies.isError ? (
+        <SectionMessage label="Could not load trailers." />
+      ) : trailers.length === 0 ? (
+        <SectionMessage label="No trailers found." />
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.trailersRow}
+        >
+          {trailers.map(movie => (
+            <TrailerCard key={movie.id} movie={movie} />
+          ))}
+        </ScrollView>
+      )}
     </View>
   )
 }
@@ -518,9 +724,15 @@ export default function GameDetailScreen() {
         <HeroSection game={game} />
 
         <View style={styles.body}>
-          <InfoSection description={game.description_raw} genres={game.genres ?? []} />
-          <ScreenshotGallery screenshots={game.short_screenshots ?? []} />
+          <InfoSection
+            description={game.description_raw}
+            genres={game.genres ?? []}
+            redditUrl={game.reddit_url}
+          />
+          <ScreenshotGallery gameId={game.id} />
+          <TrailersSection gameId={game.id} />
           {entry != null && <PersonalTracking entry={entry} />}
+          <RelatedGamesSection gameId={game.id} />
           <RawgFooter />
         </View>
       </ScrollView>
@@ -637,11 +849,30 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     fontSize: 18,
   },
+  sectionState: {
+    minHeight: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.borderSoft,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surface,
+  },
+  genreHeader: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
   genreRow: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.xs,
-    marginBottom: Spacing.sm,
   },
   genreChip: {
     borderWidth: 1,
@@ -683,6 +914,75 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing.xl,
     right: Spacing.md,
+  },
+
+  // Related content
+  relatedRail: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  railTitle: {
+    color: Colors.textSecondary,
+  },
+  disabledCard: {
+    opacity: 0.62,
+  },
+
+  // Trailers
+  trailersRow: {
+    gap: Spacing.sm,
+    paddingRight: Spacing.md,
+  },
+  trailerCard: {
+    width: 260,
+    gap: Spacing.xs,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.sm,
+    overflow: 'hidden',
+  },
+  trailerPreview: {
+    position: 'relative',
+    backgroundColor: Colors.surfaceRaised,
+  },
+  trailerImage: {
+    width: '100%',
+    height: 146,
+    backgroundColor: Colors.surfaceRaised,
+  },
+  playBadge: {
+    position: 'absolute',
+    left: Spacing.sm,
+    bottom: Spacing.sm,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,82,255,0.88)',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  trailerTitle: {
+    minHeight: 44,
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    fontFamily: FontFamily.medium,
+  },
+
+  // Reddit
+  subredditButton: {
+    minHeight: 32,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: 'rgba(255,69,0,0.42)',
+    borderRadius: Radius.pill,
+    backgroundColor: 'transparent',
+    paddingHorizontal: Spacing.sm,
   },
 
   // Personal Tracking

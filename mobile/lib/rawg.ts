@@ -2,7 +2,9 @@ import type {
   GetGamesParams,
   RawgGame,
   RawgGameDetail,
+  RawgMovie,
   RawgPaginatedResponse,
+  RawgScreenshot,
 } from '@/types/rawg'
 
 const BASE = 'https://api.rawg.io/api'
@@ -43,6 +45,30 @@ export async function searchGames(
 
 export async function getGameDetail(id: number): Promise<RawgGameDetail> {
   return get<RawgGameDetail>(`/games/${id}`)
+}
+
+export async function getGameAdditions(id: number): Promise<RawgPaginatedResponse<RawgGame>> {
+  return get<RawgPaginatedResponse<RawgGame>>(`/games/${id}/additions`, {
+    page_size: 10,
+  })
+}
+
+export async function getGameSeries(id: number): Promise<RawgPaginatedResponse<RawgGame>> {
+  return get<RawgPaginatedResponse<RawgGame>>(`/games/${id}/game-series`, {
+    page_size: 10,
+  })
+}
+
+export async function getGameScreenshots(
+  id: number,
+): Promise<RawgPaginatedResponse<RawgScreenshot>> {
+  return get<RawgPaginatedResponse<RawgScreenshot>>(`/games/${id}/screenshots`, {
+    page_size: 12,
+  })
+}
+
+export async function getGameMovies(id: number): Promise<RawgPaginatedResponse<RawgMovie>> {
+  return get<RawgPaginatedResponse<RawgMovie>>(`/games/${id}/movies`)
 }
 
 export async function getGames(
