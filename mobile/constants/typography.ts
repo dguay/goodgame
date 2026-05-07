@@ -1,10 +1,10 @@
 export const FontSize = {
   xs:   11,
   sm:   13,
-  md:   15,
-  lg:   18,
-  xl:   22,
-  xxl:  28,
+  md:   16,
+  lg:   19,
+  xl:   23,
+  xxl:  29,
   xxxl: 36,
 }
 
@@ -18,10 +18,10 @@ export const FontFamily = {
   mono:     'JetBrainsMono-Medium',// weight 500, all numbers
 }
 
-// Negative tracking on display text only; body stays at 0
+// Keep app typography optically calm; labels are the only tracked text.
 export const LetterSpacing = {
-  display: -1.5,
-  tight:   -0.5,
+  display: 0,
+  tight:   0,
   normal:  0,
   label:   0.6,   // small-caps labels
 }

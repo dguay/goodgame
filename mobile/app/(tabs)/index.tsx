@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useNewReleases, useTopRated } from '@/hooks/useRawg'
 import { useRecommendations } from '@/hooks/useRecommendations'
-import { Colors, Radius, Spacing } from '@/constants'
+import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 import { STATUS_COLORS } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
@@ -47,7 +47,7 @@ function LibraryCard({ entry }: { entry: LibraryEntry }) {
         cachePolicy="disk"
       />
       <View style={styles.libraryCardInfo}>
-        <Text variant="caption" numberOfLines={2}>
+        <Text variant="caption" numberOfLines={2} style={styles.libraryCardTitle}>
           {entry.game_title}
         </Text>
       </View>
@@ -64,10 +64,10 @@ function SectionHeader({
 }) {
   return (
     <View style={styles.sectionHeader}>
-      <Text variant="subheading">{title}</Text>
+      <Text variant="body" style={styles.sectionTitle}>{title}</Text>
       {onSeeAll != null && (
         <Pressable onPress={onSeeAll}>
-          <Text variant="caption" color={Colors.primary}>
+          <Text variant="caption" color={Colors.primary} style={styles.sectionAction}>
             See all
           </Text>
         </Pressable>
@@ -141,7 +141,7 @@ function HomeHero({
         <Text variant="heading" style={styles.heroTitle} numberOfLines={2}>
           {displayName}'s shelf
         </Text>
-        <Text variant="caption" style={styles.heroSubtitle} numberOfLines={2}>
+        <Text variant="body" style={styles.heroSubtitle} numberOfLines={2}>
           {featuredEntry != null
             ? `Currently playing ${featuredEntry.game_title}`
             : 'Choose what belongs in your backlog next.'}
@@ -349,6 +349,7 @@ const styles = StyleSheet.create({
   },
   heroSubtitle: {
     maxWidth: 340,
+    color: Colors.textSecondary,
   },
   heroBody: {
     alignItems: 'stretch',
@@ -391,6 +392,8 @@ const styles = StyleSheet.create({
   },
   heroStatValue: {
     marginBottom: 2,
+    fontSize: FontSize.xl,
+    lineHeight: FontSize.xl * 1.2,
   },
   heroStatLabel: {
     color: Colors.textMuted,
@@ -404,6 +407,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     marginBottom: Spacing.sm,
+  },
+  sectionTitle: {
+    fontFamily: FontFamily.semibold,
+    lineHeight: FontSize.md * 1.3,
+  },
+  sectionAction: {
+    fontFamily: FontFamily.medium,
   },
   horizontalList: {
     paddingHorizontal: Spacing.md,
@@ -431,6 +441,11 @@ const styles = StyleSheet.create({
   },
   libraryCardInfo: {
     padding: Spacing.sm,
+  },
+  libraryCardTitle: {
+    color: Colors.textPrimary,
+    fontFamily: FontFamily.medium,
+    lineHeight: 18,
   },
 })
 

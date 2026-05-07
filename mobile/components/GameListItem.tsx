@@ -3,7 +3,7 @@ import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
-import { Colors, Spacing, Radius } from '@/constants'
+import { Colors, Spacing, Radius, FontFamily } from '@/constants'
 import type { RawgGame } from '@/types/rawg'
 
 function metacriticColor(score: number): string {
@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xxs,
   },
   title: {
+    fontFamily: FontFamily.medium,
     fontSize: 14,
     lineHeight: 20,
   },

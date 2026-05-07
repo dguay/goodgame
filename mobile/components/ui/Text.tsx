@@ -24,7 +24,7 @@ const variantStyles: Record<TextVariant, TextStyle> = {
     fontSize:      FontSize.xxl,
     color:         Colors.textPrimary,
     lineHeight:    FontSize.xxl * 1.0,
-    letterSpacing: -1.0,
+    letterSpacing: LetterSpacing.tight,
   },
   subheading: {
     fontFamily:    FontFamily.display,
@@ -51,6 +51,7 @@ const variantStyles: Record<TextVariant, TextStyle> = {
     fontFamily:    FontFamily.medium,
     fontSize:      FontSize.xs,
     color:         Colors.textMuted,
+    lineHeight:    FontSize.xs * 1.3,
     letterSpacing: LetterSpacing.label,
     textTransform: 'uppercase',
   },
@@ -59,7 +60,8 @@ const variantStyles: Record<TextVariant, TextStyle> = {
     fontFamily:    FontFamily.mono,
     fontSize:      FontSize.md,
     color:         Colors.textPrimary,
-    letterSpacing: -0.3,
+    lineHeight:    FontSize.md * 1.25,
+    letterSpacing: LetterSpacing.normal,
   },
 }
 

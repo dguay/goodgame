@@ -16,7 +16,7 @@ interface Props {
 export function Button({ variant = 'primary', onPress, children, disabled, loading, icon, style }: Props) {
   const textColor =
     variant === 'primary'
-      ? '#ffffff'
+      ? Colors.textPrimary
       : Colors.textPrimary
 
   return (
@@ -42,7 +42,7 @@ export function Button({ variant = 'primary', onPress, children, disabled, loadi
         <Text
           variant="label"
           color={textColor}
-          style={{ fontSize: FontSize.md, fontFamily: FontFamily.semibold, letterSpacing: 0, textTransform: 'none' }}
+          style={styles.label}
         >
           {children}
         </Text>
@@ -86,5 +86,11 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75,
+  },
+  label: {
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.semibold,
+    letterSpacing: 0,
+    textTransform: 'none',
   },
 })
