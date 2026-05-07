@@ -16,6 +16,7 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { RawgFooter } from '@/components/RawgFooter'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
+import { useProfile } from '@/hooks/useProfile'
 import { useNewReleases, useTopRated } from '@/hooks/useRawg'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
@@ -139,7 +140,7 @@ function HomeHero({
           {getGreeting()}
         </Text>
         <Text variant="heading" style={styles.heroTitle} numberOfLines={2}>
-          {displayName}'s shelf
+          {displayName}
         </Text>
         <Text variant="body" style={styles.heroSubtitle} numberOfLines={2}>
           {featuredEntry != null
@@ -191,6 +192,7 @@ export default function HomeScreen() {
   const user = useAuthStore(s => s.user)
   const [refreshing, setRefreshing] = useState(false)
 
+  const profileQuery = useProfile()
   const libraryQuery = useLibraryEntries()
   const newReleasesQuery = useNewReleases()
   const topRatedQuery = useTopRated()
@@ -205,6 +207,7 @@ export default function HomeScreen() {
   const recentlyAdded = entries.slice(0, 5)
 
   const displayName =
+    profileQuery.data?.display_name ??
     (user?.user_metadata?.['full_name'] as string | undefined) ??
     user?.email?.split('@')[0] ??
     'there'
@@ -213,6 +216,7 @@ export default function HomeScreen() {
     setRefreshing(true)
     try {
       await Promise.all([
+        profileQuery.refetch(),
         libraryQuery.refetch(),
         newReleasesQuery.refetch(),
         topRatedQuery.refetch(),
@@ -220,7 +224,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false)
     }
-  }, [libraryQuery, newReleasesQuery, topRatedQuery])
+  }, [profileQuery, libraryQuery, newReleasesQuery, topRatedQuery])
 
   const useRecommendationSection = hasEnoughData
   const recommendationLabel = useRecommendationSection ? 'Recommended for You' : 'Discover Games'
