@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   View,
   type GestureResponderEvent,
@@ -32,7 +31,7 @@ import {
   useUpdateLibraryEntry,
 } from '@/hooks/useLibrary'
 import { useUpdateUserPreferences, useUserPreferences } from '@/hooks/useUserPreferences'
-import { Colors, Spacing } from '@/constants'
+import { Colors, Radius, Spacing } from '@/constants'
 import {
   LIBRARY_SORT_KEYS,
   STATUS_COLORS,
@@ -48,11 +47,19 @@ type ViewMode = 'grid' | 'list'
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'want_to_play', label: 'Want to Play' },
+  { key: 'want_to_play', label: 'Wanted' },
   { key: 'playing', label: 'Playing' },
   { key: 'done', label: 'Done' },
   { key: 'did_not_finish', label: 'DNF' },
 ]
+
+const FILTER_ICONS: Record<FilterStatus, keyof typeof Ionicons.glyphMap> = {
+  all: 'library-outline',
+  want_to_play: 'bookmark-outline',
+  playing: 'game-controller-outline',
+  done: 'checkmark-circle-outline',
+  did_not_finish: 'ban-outline',
+}
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Recently Added' },
@@ -139,6 +146,11 @@ function swapItems<T>(items: T[], firstIndex: number, secondIndex: number): T[] 
   next[firstIndex] = secondItem
   next[secondIndex] = firstItem
   return next
+}
+
+function getFilterColor(filter: FilterStatus): string {
+  if (filter === 'all') return Colors.primary
+  return STATUS_COLORS[filter]
 }
 
 function LibraryEntryCard({
@@ -619,6 +631,142 @@ const spStyles = StyleSheet.create({
   },
 })
 
+function LibraryFilters({
+  activeFilter,
+  activeViewMode,
+  counts,
+  currentSortLabel,
+  filteredCount,
+  isCustomSort,
+  isWide,
+  onFilterChange,
+  onSortPress,
+  onViewModeChange,
+}: {
+  activeFilter: FilterStatus
+  activeViewMode: ViewMode
+  counts: Record<FilterStatus, number>
+  currentSortLabel: string
+  filteredCount: number
+  isCustomSort: boolean
+  isWide: boolean
+  onFilterChange: (filter: FilterStatus) => void
+  onSortPress: () => void
+  onViewModeChange: (viewMode: ViewMode) => void
+}) {
+  const resultLabel = filteredCount === 1 ? '1 game' : `${filteredCount} games`
+
+  return (
+    <View style={[styles.filterPanel, isWide && styles.filterPanelWide]}>
+      <View style={styles.filterHeader}>
+        <View style={styles.filterTitleRow}>
+          <Text variant="label" style={styles.filterEyebrow}>
+            Filters
+          </Text>
+          <Text variant="caption" style={styles.filterResult}>
+            {resultLabel}
+          </Text>
+        </View>
+
+        <View style={styles.controls}>
+          <View style={styles.viewToggle}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Grid view"
+              accessibilityState={{ selected: activeViewMode === 'grid', disabled: isCustomSort }}
+              style={[
+                styles.toggleBtn,
+                activeViewMode === 'grid' && styles.toggleBtnActive,
+                isCustomSort && styles.toggleBtnDisabled,
+              ]}
+              onPress={() => onViewModeChange('grid')}
+              disabled={isCustomSort}
+              hitSlop={4}
+            >
+              <Ionicons
+                name="grid-outline"
+                size={18}
+                color={activeViewMode === 'grid' ? Colors.primary : Colors.textSecondary}
+              />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="List view"
+              accessibilityState={{ selected: activeViewMode === 'list' }}
+              style={[styles.toggleBtn, activeViewMode === 'list' && styles.toggleBtnActive]}
+              onPress={() => onViewModeChange('list')}
+              hitSlop={4}
+            >
+              <Ionicons
+                name="list-outline"
+                size={18}
+                color={activeViewMode === 'list' ? Colors.primary : Colors.textSecondary}
+              />
+            </Pressable>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Sort by ${currentSortLabel}`}
+            style={({ pressed }) => [styles.sortBtn, pressed && styles.sortBtnPressed]}
+            onPress={onSortPress}
+          >
+            <Ionicons name="swap-vertical-outline" size={16} color={Colors.textSecondary} />
+            <Text variant="caption" numberOfLines={1} style={styles.sortLabel}>
+              {currentSortLabel}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={[styles.filterContent, isWide && styles.filterContentWide]}>
+        {FILTER_OPTIONS.map(({ key, label }) => {
+          const count = counts[key]
+          const isActive = activeFilter === key
+          const filterColor = getFilterColor(key)
+          const iconColor = isActive ? filterColor : Colors.textMuted
+
+          return (
+            <Pressable
+              key={key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+              style={({ pressed }) => [
+                styles.filterTab,
+                isActive && [
+                  styles.filterTabActive,
+                  { borderColor: filterColor },
+                ],
+                pressed && styles.filterTabPressed,
+              ]}
+              onPress={() => onFilterChange(key)}
+            >
+              <Ionicons name={FILTER_ICONS[key]} size={15} color={iconColor} />
+              <Text
+                variant="label"
+                style={[styles.filterLabel, isActive && { color: filterColor }]}
+              >
+                {label}
+              </Text>
+              <View
+                style={[
+                  styles.badge,
+                  isActive && [styles.badgeActive, { borderColor: filterColor }],
+                ]}
+              >
+                <Text variant="label" style={[styles.badgeText, isActive && { color: filterColor }]}>
+                  {count}
+                </Text>
+              </View>
+            </Pressable>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
 
 export default function LibraryScreen() {
   const [filter, setFilter] = useState<FilterStatus>('all')
@@ -639,6 +787,7 @@ export default function LibraryScreen() {
   const { width } = useWindowDimensions()
   const activeViewMode = sort === 'custom' ? 'list' : viewMode
   const numColumns = activeViewMode === 'grid' ? (width >= 768 ? 3 : 2) : 1
+  const isWide = width >= 768
 
   useEffect(() => {
     if (!preferencesLoaded || userPreferences == null) return
@@ -760,76 +909,18 @@ export default function LibraryScreen() {
         <Text variant="heading">Library</Text>
       </View>
 
-      {/* Filter tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
-        contentContainerStyle={styles.filterContent}
-      >
-        {FILTER_OPTIONS.map(({ key, label }) => {
-          const count = counts[key]
-          const isActive = filter === key
-          return (
-            <Pressable
-              key={key}
-              style={[styles.filterTab, isActive && styles.filterTabActive]}
-              onPress={() => setFilter(key)}
-            >
-              <Text
-                variant="label"
-                style={[styles.filterLabel, isActive && styles.filterLabelActive]}
-              >
-                {label}
-              </Text>
-              {count > 0 && (
-                <View style={[styles.badge, isActive && styles.badgeActive]}>
-                  <Text
-                    variant="label"
-                    style={[styles.badgeText, isActive && styles.badgeTextActive]}
-                  >
-                    {count}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          )
-        })}
-      </ScrollView>
-
-      {/* Controls row */}
-      <View style={styles.controls}>
-        <View style={styles.viewToggle}>
-          <Pressable
-            style={[styles.toggleBtn, activeViewMode === 'grid' && styles.toggleBtnActive]}
-            onPress={() => setViewMode('grid')}
-            disabled={sort === 'custom'}
-          >
-            <Ionicons
-              name="grid-outline"
-              size={18}
-              color={activeViewMode === 'grid' ? Colors.primary : Colors.textSecondary}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.toggleBtn, activeViewMode === 'list' && styles.toggleBtnActive]}
-            onPress={() => setViewMode('list')}
-          >
-            <Ionicons
-              name="list-outline"
-              size={18}
-              color={activeViewMode === 'list' ? Colors.primary : Colors.textSecondary}
-            />
-          </Pressable>
-        </View>
-        <Pressable style={styles.sortBtn} onPress={() => setSortPickerVisible(true)}>
-          <Ionicons name="swap-vertical-outline" size={15} color={Colors.textSecondary} />
-          <Text variant="caption" style={styles.sortLabel}>
-            {currentSortLabel}
-          </Text>
-          <Ionicons name="chevron-down" size={13} color={Colors.textMuted} />
-        </Pressable>
-      </View>
+      <LibraryFilters
+        activeFilter={filter}
+        activeViewMode={activeViewMode}
+        counts={counts}
+        currentSortLabel={currentSortLabel}
+        filteredCount={filtered.length}
+        isCustomSort={sort === 'custom'}
+        isWide={isWide}
+        onFilterChange={setFilter}
+        onSortPress={() => setSortPickerVisible(true)}
+        onViewModeChange={setViewMode}
+      />
 
       {/* Game list */}
       <FlatList
@@ -937,80 +1028,135 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  filterScroll: {
+  filterPanel: {
     flexShrink: 0,
+    gap: Spacing.sm,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  filterPanelWide: {
+    paddingHorizontal: Spacing.md,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+  },
+  filterTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: Spacing.sm,
+    flexShrink: 1,
+  },
+  filterEyebrow: {
+    color: Colors.textMuted,
+  },
+  filterResult: {
+    color: Colors.textSecondary,
   },
   filterContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
     gap: Spacing.xs,
+  },
+  filterContentWide: {
+    paddingHorizontal: 0,
   },
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.xs,
+    minHeight: 40,
+    flexGrow: 1,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
   },
   filterTabActive: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(124,106,247,0.12)',
+    backgroundColor: Colors.surfaceRaised,
+  },
+  filterTabPressed: {
+    backgroundColor: Colors.surfaceRaised,
   },
   filterLabel: {
     color: Colors.textSecondary,
-  },
-  filterLabelActive: {
-    color: Colors.primary,
+    flexShrink: 0,
   },
   badge: {
     backgroundColor: Colors.surfaceRaised,
-    borderRadius: 10,
-    minWidth: 18,
-    paddingHorizontal: 4,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.borderSoft,
+    minWidth: 22,
+    minHeight: 20,
+    paddingHorizontal: 6,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   badgeActive: {
-    backgroundColor: 'rgba(124,106,247,0.25)',
+    backgroundColor: Colors.surfaceRaised,
   },
   badgeText: {
     color: Colors.textMuted,
   },
-  badgeTextActive: {
-    color: Colors.primary,
-  },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    justifyContent: 'flex-end',
+    gap: Spacing.sm,
+    flexShrink: 1,
   },
   viewToggle: {
     flexDirection: 'row',
-    gap: 2,
+    padding: 3,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
   },
   toggleBtn: {
-    padding: Spacing.xs,
-    borderRadius: 6,
+    width: 36,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.pill,
   },
   toggleBtnActive: {
     backgroundColor: Colors.surfaceRaised,
   },
+  toggleBtnDisabled: {
+    opacity: 0.35,
+  },
   sortBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'flex-end',
+    gap: Spacing.xs,
+    minHeight: 40,
+    maxWidth: 190,
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  sortBtnPressed: {
+    backgroundColor: Colors.surfaceRaised,
   },
   sortLabel: {
     color: Colors.textSecondary,
+    flexShrink: 1,
   },
   listContent: {
     paddingTop: Spacing.sm,

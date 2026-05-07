@@ -10,7 +10,7 @@ const STATUS_ICONS: Record<LibraryStatus, keyof typeof Ionicons.glyphMap> = {
   want_to_play: 'bookmark-outline',
   playing: 'game-controller-outline',
   done: 'checkmark-circle-outline',
-  did_not_finish: 'close-circle-outline',
+  did_not_finish: 'ban-outline',
 }
 
 interface Props {

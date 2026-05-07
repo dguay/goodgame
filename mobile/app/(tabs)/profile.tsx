@@ -27,7 +27,7 @@ import { useProfileStats } from '@/hooks/useProfileStats'
 const STATUS_ORDER: LibraryStatus[] = ['want_to_play', 'playing', 'done', 'did_not_finish']
 
 const STAT_SHORT: Record<LibraryStatus, string> = {
-  want_to_play: 'Want',
+  want_to_play: 'Wanted',
   playing: 'Playing',
   done: 'Done',
   did_not_finish: 'DNF',

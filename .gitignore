@@ -39,3 +39,6 @@ Thumbs.db
 
 mobile/expo-env.d.ts
 # @end expo-cli
+
+# Impeccable
+.impeccable/
