@@ -18,12 +18,13 @@ import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useNewReleases, useTopRated } from '@/hooks/useRawg'
 import { useRecommendations } from '@/hooks/useRecommendations'
-import { Colors, Spacing } from '@/constants'
+import { Colors, Radius, Spacing } from '@/constants'
 import { STATUS_COLORS } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 
 const CARD_WIDTH = 160
+type HeroStatTone = 'library' | 'wanted' | 'playing' | 'done'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -81,6 +82,107 @@ function HorizontalSkeletons() {
       {[1, 2, 3].map(i => (
         <SkeletonLoader key={i} width={CARD_WIDTH} height={220} borderRadius={10} />
       ))}
+    </View>
+  )
+}
+
+function HeroStatPill({
+  value,
+  label,
+  tone,
+}: {
+  value: number
+  label: string
+  tone: HeroStatTone
+}) {
+  return (
+    <View style={[styles.heroStatPill, heroStatToneStyles[tone]]}>
+      <Text variant="mono" style={styles.heroStatValue}>
+        {value}
+      </Text>
+      <Text variant="label" style={styles.heroStatLabel}>
+        {label}
+      </Text>
+    </View>
+  )
+}
+
+function HomeHero({
+  displayName,
+  totalGames,
+  wantedCount,
+  playingEntries,
+  completedCount,
+}: {
+  displayName: string
+  totalGames: number
+  wantedCount: number
+  playingEntries: LibraryEntry[]
+  completedCount: number
+}) {
+  const featuredEntry = playingEntries[0] ?? null
+  const heroArtworkLabel =
+    featuredEntry != null ? `Open ${featuredEntry.game_title}` : 'Find games'
+  const primaryAction = () => {
+    if (featuredEntry != null) {
+      router.push(`/game/${featuredEntry.rawg_game_id}`)
+      return
+    }
+
+    router.push('/search')
+  }
+
+  return (
+    <View style={styles.hero}>
+      <View style={styles.heroCopy}>
+        <Text variant="label" style={styles.heroEyebrow}>
+          {getGreeting()}
+        </Text>
+        <Text variant="heading" style={styles.heroTitle} numberOfLines={2}>
+          {displayName}'s shelf
+        </Text>
+        <Text variant="caption" style={styles.heroSubtitle} numberOfLines={2}>
+          {featuredEntry != null
+            ? `Currently playing ${featuredEntry.game_title}`
+            : 'Choose what belongs in your backlog next.'}
+        </Text>
+      </View>
+
+      <View style={styles.heroBody}>
+        <Pressable
+          style={styles.heroArtwork}
+          onPress={primaryAction}
+          accessibilityRole="button"
+          accessibilityLabel={heroArtworkLabel}
+        >
+          {featuredEntry?.game_cover_url != null ? (
+            <Image
+              source={{ uri: featuredEntry.game_cover_url }}
+              style={styles.heroCover}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="disk"
+            />
+          ) : (
+            <View style={styles.heroCoverPlaceholder}>
+              <Text variant="label" color={Colors.textMuted}>
+                Goodgame
+              </Text>
+            </View>
+          )}
+        </Pressable>
+
+        <View style={styles.heroStatsGrid}>
+          <HeroStatPill value={totalGames} label="Games" tone="library" />
+          <HeroStatPill value={wantedCount} label="Wanted" tone="wanted" />
+          <HeroStatPill
+            value={playingEntries.length}
+            label="Playing"
+            tone="playing"
+          />
+          <HeroStatPill value={completedCount} label="Done" tone="done" />
+        </View>
+      </View>
     </View>
   )
 }
@@ -144,57 +246,13 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text variant="heading" style={styles.greeting}>
-            {getGreeting()}, {displayName}
-          </Text>
-          <View style={styles.statsStrip}>
-            <View style={styles.statItem}>
-              <Text variant="subheading" color={Colors.primary}>
-                {totalGames}
-              </Text>
-              <Text variant="caption">Games</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text variant="subheading" color={STATUS_COLORS.want_to_play}>
-                {wantedCount}
-              </Text>
-              <Text variant="caption">Wanted</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text variant="subheading" color={Colors.success}>
-                {playingEntries.length}
-              </Text>
-              <Text variant="caption">Playing</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text variant="subheading" color={Colors.warning}>
-                {completedCount}
-              </Text>
-              <Text variant="caption">Completed</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Continue Playing */}
-        {playingEntries.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader title="Currently Playing" />
-            <FlatList<LibraryEntry>
-              data={playingEntries}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => <LibraryCard entry={item} />}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-              ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-            />
-          </View>
-        )}
+        <HomeHero
+          displayName={displayName}
+          totalGames={totalGames}
+          wantedCount={wantedCount}
+          playingEntries={playingEntries}
+          completedCount={completedCount}
+        />
 
         {/* New Releases */}
         <View style={styles.section}>
@@ -272,31 +330,70 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Spacing.xl,
   },
-  header: {
+  hero: {
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
-  greeting: {
-    marginBottom: Spacing.md,
+  heroCopy: {
+    maxWidth: 520,
+    marginBottom: Spacing.lg,
   },
-  statsStrip: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: Spacing.md,
+  heroEyebrow: {
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  heroTitle: {
+    marginBottom: Spacing.xs,
+  },
+  heroSubtitle: {
+    maxWidth: 340,
+  },
+  heroBody: {
+    alignItems: 'stretch',
+    gap: Spacing.md,
+  },
+  heroArtwork: {
+    width: '100%',
+    height: 220,
+    backgroundColor: Colors.surfaceRaised,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  statItem: {
+  heroCover: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.surfaceRaised,
+  },
+  heroCoverPlaceholder: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    justifyContent: 'center',
+    padding: Spacing.sm,
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.border,
-    marginVertical: Spacing.xs,
+  heroStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  heroStatPill: {
+    width: '48%',
+    minHeight: 64,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  heroStatValue: {
+    marginBottom: 2,
+  },
+  heroStatLabel: {
+    color: Colors.textMuted,
   },
   section: {
     marginBottom: Spacing.lg,
@@ -334,5 +431,20 @@ const styles = StyleSheet.create({
   },
   libraryCardInfo: {
     padding: Spacing.sm,
+  },
+})
+
+const heroStatToneStyles = StyleSheet.create({
+  library: {
+    borderColor: Colors.border,
+  },
+  wanted: {
+    borderColor: STATUS_COLORS.want_to_play,
+  },
+  playing: {
+    borderColor: Colors.success,
+  },
+  done: {
+    borderColor: Colors.warning,
   },
 })
