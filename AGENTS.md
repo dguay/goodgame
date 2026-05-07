@@ -273,7 +273,5 @@ npx expo export --platform web
 
 ---
 
-## Current Phase Tracking
-
-See `PHASES.md` for the full implementation plan.
-Update the status of each phase as work progresses.
+## Frontend
+- Always make separate components when we think it could be reused

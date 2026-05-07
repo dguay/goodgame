@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Text } from '@/components/ui/Text'
 import { LoadingSpinner, EmptyState } from '@/components/ui'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
+import { DateField } from '@/components/DateField'
 import { GameCard } from '@/components/GameCard'
 import { RawgFooter } from '@/components/RawgFooter'
 
@@ -366,6 +367,11 @@ function PersonalTracking({ entry }: TrackingProps) {
     if (notesTimerRef.current != null) clearTimeout(notesTimerRef.current)
   }, [])
 
+  useEffect(() => {
+    setStartedAt(entry.started_at ?? '')
+    setFinishedAt(entry.finished_at ?? '')
+  }, [entry.finished_at, entry.started_at])
+
   function handleRatingChange(v: number | null) {
     setRating(v)
     updateMutation.mutate({ id: entry.id, personal_rating: v })
@@ -395,22 +401,14 @@ function PersonalTracking({ entry }: TrackingProps) {
     }, 500)
   }
 
-  const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
-
-  function handleStartedBlur() {
-    if (startedAt === '' || DATE_REGEX.test(startedAt)) {
-      updateMutation.mutate({ id: entry.id, started_at: startedAt === '' ? null : startedAt })
-    } else {
-      setStartedAt(entry.started_at ?? '')
-    }
+  function handleStartedChange(value: string) {
+    setStartedAt(value)
+    updateMutation.mutate({ id: entry.id, started_at: value === '' ? null : value })
   }
 
-  function handleFinishedBlur() {
-    if (finishedAt === '' || DATE_REGEX.test(finishedAt)) {
-      updateMutation.mutate({ id: entry.id, finished_at: finishedAt === '' ? null : finishedAt })
-    } else {
-      setFinishedAt(entry.finished_at ?? '')
-    }
+  function handleFinishedChange(value: string) {
+    setFinishedAt(value)
+    updateMutation.mutate({ id: entry.id, finished_at: value === '' ? null : value })
   }
 
   return (
@@ -459,13 +457,9 @@ function PersonalTracking({ entry }: TrackingProps) {
               <Text variant="label" style={styles.trackingLabel}>Started</Text>
             </View>
             <View style={styles.inputShell}>
-              <TextInput
+              <DateField
                 value={startedAt}
-                onChangeText={setStartedAt}
-                onBlur={handleStartedBlur}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.textMuted}
-                style={styles.shortInput}
+                onChange={handleStartedChange}
               />
             </View>
           </View>
@@ -476,13 +470,9 @@ function PersonalTracking({ entry }: TrackingProps) {
               <Text variant="label" style={styles.trackingLabel}>Finished</Text>
             </View>
             <View style={styles.inputShell}>
-              <TextInput
+              <DateField
                 value={finishedAt}
-                onChangeText={setFinishedAt}
-                onBlur={handleFinishedBlur}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.textMuted}
-                style={styles.shortInput}
+                onChange={handleFinishedChange}
               />
             </View>
           </View>
