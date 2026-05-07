@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import {
   View,
   ScrollView,
@@ -6,6 +6,10 @@ import {
   Pressable,
   TextInput,
   Modal,
+  PanResponder,
+  Platform,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -233,35 +237,107 @@ interface RatingInputProps {
   onChange: (v: number | null) => void
 }
 
+function normalizeRating(value: number): number {
+  const clamped = Math.min(10, Math.max(0, value))
+  return Math.round(clamped * 2) / 2
+}
+
 function RatingInput({ value, onChange }: RatingInputProps) {
-  function increment() {
-    const next = Math.min(10, Math.round(((value ?? 0) + 0.5) * 10) / 10)
+  const [trackWidth, setTrackWidth] = useState(0)
+  const [draftValue, setDraftValue] = useState(value != null ? value.toFixed(1) : '')
+  const ratingValue = value ?? 0
+  const ratingPercent = ratingValue / 10
+  const fillFlex = Math.max(0.001, ratingPercent)
+  const emptyFlex = Math.max(0.001, 1 - ratingPercent)
+
+  useEffect(() => {
+    setDraftValue(value != null ? value.toFixed(1) : '')
+  }, [value])
+
+  const setFromLocation = useCallback((event: GestureResponderEvent) => {
+    if (trackWidth <= 0) return
+    const next = normalizeRating((event.nativeEvent.locationX / trackWidth) * 10)
     onChange(next)
+  }, [onChange, trackWidth])
+
+  const sliderResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: setFromLocation,
+        onPanResponderMove: setFromLocation,
+      }),
+    [setFromLocation]
+  )
+
+  function handleTrackLayout(event: LayoutChangeEvent) {
+    setTrackWidth(event.nativeEvent.layout.width)
   }
-  function decrement() {
-    if (value == null) return
-    const next = Math.round((value - 0.5) * 10) / 10
-    onChange(next <= 0 ? null : next)
+
+  function commitDraftValue() {
+    const trimmed = draftValue.trim()
+    if (trimmed === '') {
+      onChange(null)
+      return
+    }
+
+    const parsed = Number(trimmed)
+    if (Number.isNaN(parsed)) {
+      setDraftValue(value != null ? value.toFixed(1) : '')
+      return
+    }
+
+    const next = normalizeRating(parsed)
+    setDraftValue(next.toFixed(1))
+    onChange(next)
   }
 
   return (
     <View style={styles.ratingRow}>
-      <Pressable onPress={decrement} hitSlop={8} style={styles.ratingBtn}>
-        <Ionicons name="remove-circle-outline" size={26} color={Colors.textSecondary} />
-      </Pressable>
-      <Pressable onPress={() => onChange(null)} hitSlop={4} style={styles.ratingDisplay}>
-        <Text
-          variant="subheading"
-          color={value != null ? Colors.warning : Colors.textMuted}
-          style={styles.ratingValue}
-        >
-          {value != null ? value.toFixed(1) : '-'}
-        </Text>
-        <Text variant="caption">/ 10 - tap to clear</Text>
-      </Pressable>
-      <Pressable onPress={increment} hitSlop={8} style={styles.ratingBtn}>
-        <Ionicons name="add-circle-outline" size={26} color={Colors.textSecondary} />
-      </Pressable>
+      <View
+        style={styles.ratingSlider}
+        onLayout={handleTrackLayout}
+        {...sliderResponder.panHandlers}
+      >
+        <View style={styles.ratingTrack}>
+          <View style={[styles.ratingTrackFill, { flex: fillFlex }]} />
+          <View style={[styles.ratingTrackEmpty, { flex: emptyFlex }]} />
+        </View>
+        <View style={styles.ratingTicks}>
+          {Array.from({ length: 11 }).map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.ratingTick,
+                index <= ratingValue && styles.ratingTickActive,
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+
+      <View style={[styles.ratingInputGroup, Platform.OS === 'web' && styles.ratingInputGroupWeb]}>
+        <TextInput
+          value={draftValue}
+          onChangeText={setDraftValue}
+          onBlur={commitDraftValue}
+          onSubmitEditing={commitDraftValue}
+          keyboardType="decimal-pad"
+          placeholder="-"
+          placeholderTextColor={Colors.textMuted}
+          selectTextOnFocus
+          style={[
+            styles.ratingValueInput,
+            Platform.OS !== 'web' && styles.ratingValueInputNative,
+          ]}
+        />
+        {value != null && (
+          <Pressable onPress={() => onChange(null)} hitSlop={8} style={styles.ratingClearBtn}>
+            <Ionicons name="close" size={14} color={Colors.textMuted} />
+          </Pressable>
+        )}
+      </View>
     </View>
   )
 }
@@ -339,68 +415,88 @@ function PersonalTracking({ entry }: TrackingProps) {
 
   return (
     <View style={styles.trackingSection}>
-      <Text variant="subheading" style={styles.sectionTitle}>My Playthrough</Text>
+      <View style={styles.trackingHeader}>
+        <Text variant="subheading" style={styles.trackingTitle}>My Playthrough</Text>
+        {updateMutation.isPending && (
+          <View style={styles.savingBadge}>
+            <Text variant="label" color={Colors.primary}>Saving</Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.trackingCard}>
-        {/* Rating */}
-        <View style={styles.trackingRow}>
-          <Text variant="caption" style={styles.trackingLabel}>Personal Rating</Text>
+        <View style={styles.ratingPanel}>
+          <View style={styles.fieldHeader}>
+            <Ionicons name="star-outline" size={17} color={Colors.warning} />
+            <Text variant="label" style={styles.trackingLabel}>Personal Rating</Text>
+          </View>
           <RatingInput value={rating} onChange={handleRatingChange} />
         </View>
 
-        <View style={styles.trackingDivider} />
+        <View style={styles.trackingGrid}>
+          <View style={styles.trackingField}>
+            <View style={styles.fieldHeader}>
+              <Ionicons name="time-outline" size={17} color={Colors.textSecondary} />
+              <Text variant="label" style={styles.trackingLabel}>Playtime</Text>
+            </View>
+            <View style={styles.inputShell}>
+              <TextInput
+                value={playtimeHours}
+                onChangeText={setPlaytimeHours}
+                onBlur={handlePlaytimeBlur}
+                placeholder="12.5"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="decimal-pad"
+                style={styles.shortInput}
+              />
+              <Text variant="caption" style={styles.inputSuffix}>hours</Text>
+            </View>
+          </View>
 
-        {/* Playtime */}
-        <View style={styles.trackingRow}>
-          <Text variant="caption" style={styles.trackingLabel}>Playtime (hours)</Text>
-          <TextInput
-            value={playtimeHours}
-            onChangeText={setPlaytimeHours}
-            onBlur={handlePlaytimeBlur}
-            placeholder="e.g. 12.5"
-            placeholderTextColor={Colors.textMuted}
-            keyboardType="decimal-pad"
-            style={styles.shortInput}
-          />
+          <View style={styles.trackingField}>
+            <View style={styles.fieldHeader}>
+              <Ionicons name="flag-outline" size={17} color={Colors.textSecondary} />
+              <Text variant="label" style={styles.trackingLabel}>Started</Text>
+            </View>
+            <View style={styles.inputShell}>
+              <TextInput
+                value={startedAt}
+                onChangeText={setStartedAt}
+                onBlur={handleStartedBlur}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={Colors.textMuted}
+                style={styles.shortInput}
+              />
+            </View>
+          </View>
+
+          <View style={styles.trackingField}>
+            <View style={styles.fieldHeader}>
+              <Ionicons name="checkmark-done-outline" size={17} color={Colors.textSecondary} />
+              <Text variant="label" style={styles.trackingLabel}>Finished</Text>
+            </View>
+            <View style={styles.inputShell}>
+              <TextInput
+                value={finishedAt}
+                onChangeText={setFinishedAt}
+                onBlur={handleFinishedBlur}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={Colors.textMuted}
+                style={styles.shortInput}
+              />
+            </View>
+          </View>
         </View>
 
-        <View style={styles.trackingDivider} />
-
-        {/* Dates */}
-        <View style={styles.datesRow}>
-          <View style={styles.dateField}>
-            <Text variant="caption" style={styles.trackingLabel}>Started</Text>
-            <TextInput
-              value={startedAt}
-              onChangeText={setStartedAt}
-              onBlur={handleStartedBlur}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.textMuted}
-              style={styles.shortInput}
-            />
+        <View style={styles.notesField}>
+          <View style={styles.fieldHeader}>
+            <Ionicons name="document-text-outline" size={17} color={Colors.textSecondary} />
+            <Text variant="label" style={styles.trackingLabel}>Notes</Text>
           </View>
-          <View style={styles.dateField}>
-            <Text variant="caption" style={styles.trackingLabel}>Finished</Text>
-            <TextInput
-              value={finishedAt}
-              onChangeText={setFinishedAt}
-              onBlur={handleFinishedBlur}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.textMuted}
-              style={styles.shortInput}
-            />
-          </View>
-        </View>
-
-        <View style={styles.trackingDivider} />
-
-        {/* Notes */}
-        <View>
-          <Text variant="caption" style={styles.trackingLabel}>Notes</Text>
           <TextInput
             value={notes}
             onChangeText={handleNotesChange}
-            placeholder="Your thoughts, strategies, memorable moments..."
+            placeholder="Write a few thoughts..."
             placeholderTextColor={Colors.textMuted}
             multiline
             numberOfLines={4}
@@ -670,73 +766,181 @@ const styles = StyleSheet.create({
   // Personal Tracking
   trackingSection: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  trackingHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  trackingTitle: {
+    fontSize: 18,
+  },
+  savingBadge: {
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(0,82,255,0.12)',
+  },
   trackingCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    overflow: 'hidden',
-  },
-  trackingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.md,
     gap: Spacing.sm,
+    padding: Spacing.md,
   },
   trackingLabel: {
-    flex: 1,
+    color: Colors.textPrimary,
   },
-  trackingDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  datesRow: {
+  fieldHeader: {
     flexDirection: 'row',
-  },
-  dateField: {
-    flex: 1,
-    padding: Spacing.md,
+    alignItems: 'center',
     gap: Spacing.xs,
-    borderRightWidth: 1,
-    borderRightColor: Colors.border,
+  },
+  ratingPanel: {
+    backgroundColor: Colors.surfaceRaised,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderSoft,
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  trackingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  trackingField: {
+    flexGrow: 1,
+    flexBasis: 150,
+    gap: Spacing.xs,
+  },
+  inputShell: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.sm,
   },
   shortInput: {
     fontFamily: 'Inter-Regular',
     fontSize: 15,
     color: Colors.textPrimary,
-    minWidth: 100,
-    textAlign: 'right',
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: Spacing.xs,
+  },
+  inputSuffix: {
+    color: Colors.textMuted,
+    flexShrink: 0,
+  },
+  notesField: {
+    gap: Spacing.xs,
   },
   notesInput: {
     fontFamily: 'Inter-Regular',
     fontSize: 15,
     color: Colors.textPrimary,
-    minHeight: 100,
-    padding: Spacing.md,
-    paddingTop: Spacing.sm,
+    minHeight: 118,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    lineHeight: 21,
   },
 
   // Rating
   ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: Spacing.sm,
   },
-  ratingBtn: {
-    padding: 2,
+  ratingSlider: {
+    minHeight: 52,
+    justifyContent: 'center',
+    gap: Spacing.sm,
   },
-  ratingDisplay: {
+  ratingTrack: {
+    height: 12,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  ratingTrackFill: {
+    backgroundColor: Colors.warning,
+  },
+  ratingTrackEmpty: {
+    backgroundColor: Colors.background,
+  },
+  ratingTicks: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 1,
+  },
+  ratingTick: {
+    width: 2,
+    height: 7,
+    borderRadius: 1,
+    backgroundColor: Colors.border,
+  },
+  ratingTickActive: {
+    backgroundColor: Colors.warning,
+  },
+  ratingInputGroup: {
+    minHeight: 42,
+    flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 70,
+    alignSelf: 'flex-start',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.xs,
   },
-  ratingValue: {
-    fontSize: 22,
-    lineHeight: 28,
+  ratingInputGroupWeb: {
+    alignSelf: 'center',
+    minHeight: 48,
+  },
+  ratingValueInput: {
+    minWidth: 48,
+    paddingVertical: 4,
+    fontFamily: 'JetBrainsMono-Medium',
+    fontSize: 19,
+    lineHeight: 24,
+    color: Colors.warning,
+    textAlign: 'center',
+  },
+  ratingValueInputNative: {
+    minWidth: 42,
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  ratingMax: {
+    color: Colors.textMuted,
+  },
+  ratingClearBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
   },
 
   // More Like This
