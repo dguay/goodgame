@@ -19,6 +19,7 @@ import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useNewReleases, useTopRated } from '@/hooks/useRawg'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import { Colors, Spacing } from '@/constants'
+import { STATUS_COLORS } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 
@@ -97,6 +98,7 @@ export default function HomeScreen() {
   const entries = libraryQuery.data ?? []
   const totalGames = entries.length
   const playingEntries = entries.filter(e => e.status === 'playing')
+  const wantedCount = entries.filter(e => e.status === 'want_to_play').length
   const completedCount = entries.filter(e => e.status === 'done').length
   const recentlyAdded = entries.slice(0, 5)
 
@@ -156,6 +158,13 @@ export default function HomeScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
+              <Text variant="subheading" color={STATUS_COLORS.want_to_play}>
+                {wantedCount}
+              </Text>
+              <Text variant="caption">Wanted</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
               <Text variant="subheading" color={Colors.success}>
                 {playingEntries.length}
               </Text>
@@ -174,7 +183,7 @@ export default function HomeScreen() {
         {/* Continue Playing */}
         {playingEntries.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title="Continue Playing" />
+            <SectionHeader title="Currently Playing" />
             <FlatList<LibraryEntry>
               data={playingEntries}
               keyExtractor={item => item.id}
