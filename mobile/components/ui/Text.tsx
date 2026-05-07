@@ -54,7 +54,7 @@ const variantStyles: Record<TextVariant, TextStyle> = {
     letterSpacing: LetterSpacing.label,
     textTransform: 'uppercase',
   },
-  // Use for all numerical values — JetBrains Mono for tabular data
+  // Use for all numerical values; JetBrains Mono for tabular data
   mono: {
     fontFamily:    FontFamily.mono,
     fontSize:      FontSize.md,

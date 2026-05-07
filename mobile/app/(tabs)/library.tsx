@@ -30,13 +30,9 @@ import { Colors, Spacing } from '@/constants'
 import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 type FilterStatus = LibraryStatus | 'all'
 type SortKey = 'recent' | 'title' | 'rating' | 'playtime'
 type ViewMode = 'grid' | 'list'
-
-// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -48,12 +44,10 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Recently Added' },
-  { key: 'title', label: 'Title Aâ€“Z' },
+  { key: 'title', label: 'Title' },
   { key: 'rating', label: 'Rating' },
   { key: 'playtime', label: 'Playtime' },
 ]
-
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatPlaytime(minutes: number): string {
   const h = Math.floor(minutes / 60)
@@ -83,8 +77,6 @@ function sortEntries(entries: LibraryEntry[], sort: SortKey): LibraryEntry[] {
     }
   })
 }
-
-// â”€â”€â”€ LibraryEntryCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function LibraryEntryCard({
   entry,
@@ -129,7 +121,7 @@ function LibraryEntryCard({
             (entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0)) && (
             <View style={lcStyles.metaRow}>
               {entry.personal_rating != null && (
-                <Text variant="caption">â˜… {entry.personal_rating.toFixed(1)}</Text>
+                <Text variant="caption">Rating {entry.personal_rating.toFixed(1)}</Text>
               )}
               {entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0 && (
                 <Text variant="caption">{formatPlaytime(entry.personal_playtime_minutes)}</Text>
@@ -173,7 +165,7 @@ function LibraryEntryCard({
           (entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0)) && (
           <View style={lcStyles.metaRow}>
             {entry.personal_rating != null && (
-              <Text variant="caption">â˜… {entry.personal_rating.toFixed(1)}</Text>
+              <Text variant="caption">Rating {entry.personal_rating.toFixed(1)}</Text>
             )}
             {entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0 && (
               <Text variant="caption">{formatPlaytime(entry.personal_playtime_minutes)}</Text>
@@ -252,7 +244,6 @@ const lcStyles = StyleSheet.create({
   },
 })
 
-// â”€â”€â”€ SortPicker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SortPicker({
   visible,
@@ -364,7 +355,6 @@ const spStyles = StyleSheet.create({
   },
 })
 
-// â”€â”€â”€ LibraryScreen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function LibraryScreen() {
   const [filter, setFilter] = useState<FilterStatus>('all')
@@ -733,4 +723,3 @@ const styles = StyleSheet.create({
     width: 72,
   },
 })
-

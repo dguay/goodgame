@@ -26,8 +26,8 @@ const H_PAD = Spacing.md      // 16
 const COL_GAP = Spacing.sm    // 8
 // Each card: marginHorizontal = COL_GAP/2 = 4
 // FlatList paddingHorizontal = H_PAD - COL_GAP/2 = 12
-// Net edge space = 12 + 4 = 16 = H_PAD âœ“
-// Net gap between cards = 4 + 4 = 8 = COL_GAP âœ“
+// Net edge space = 12 + 4 = 16 = H_PAD
+// Net gap between cards = 4 + 4 = 8 = COL_GAP
 const CARD_MARGIN = COL_GAP / 2
 
 function GridSkeletons({ cardWidth }: { cardWidth: number }) {
@@ -113,7 +113,7 @@ export default function SearchScreen() {
         <TextInput
           ref={inputRef}
           style={styles.searchInput}
-          placeholder="Search gamesâ€¦"
+          placeholder="Search games..."
           placeholderTextColor={Colors.textMuted}
           value={query}
           onChangeText={setQuery}
@@ -273,4 +273,3 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
 })
-

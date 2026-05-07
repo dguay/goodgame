@@ -39,12 +39,12 @@ function AuthGuard() {
     }
 
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('[Auth] getSession →', session?.user?.email ?? 'null', error ?? '')
+      console.log('[Auth] getSession -', session?.user?.email ?? 'null', error ?? '')
       setSession(session)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] onAuthStateChange →', event, session?.user?.email ?? 'null')
+      console.log('[Auth] onAuthStateChange -', event, session?.user?.email ?? 'null')
       setSession(session)
     })
 

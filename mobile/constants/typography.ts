@@ -10,12 +10,12 @@ export const FontSize = {
 
 // Loaded in app/_layout.tsx via expo-font
 export const FontFamily = {
-  display:  'Inter-Regular',       // weight 400 — display headlines
-  body:     'Inter-Regular',       // weight 400 — body text
-  medium:   'Inter-Medium',        // weight 500 — nav, labels
-  semibold: 'Inter-SemiBold',      // weight 600 — buttons, titles
-  bold:     'Inter-Bold',          // weight 700 — emphasized body
-  mono:     'JetBrainsMono-Medium',// weight 500 — all numbers
+  display:  'Inter-Regular',       // weight 400, display headlines
+  body:     'Inter-Regular',       // weight 400, body text
+  medium:   'Inter-Medium',        // weight 500, nav, labels
+  semibold: 'Inter-SemiBold',      // weight 600, buttons, titles
+  bold:     'Inter-Bold',          // weight 700, emphasized body
+  mono:     'JetBrainsMono-Medium',// weight 500, all numbers
 }
 
 // Negative tracking on display text only; body stays at 0

@@ -145,7 +145,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text variant="heading" style={styles.greeting}>
-            {getGreeting()}, {displayName} ðŸ‘¾
+            {getGreeting()}, {displayName}
           </Text>
           <View style={styles.statsStrip}>
             <View style={styles.statItem}>
@@ -327,4 +327,3 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
 })
-

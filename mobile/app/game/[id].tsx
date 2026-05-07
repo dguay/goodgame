@@ -26,7 +26,7 @@ import { Colors, Spacing } from '@/constants'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGameDetail, RawgScreenshot } from '@/types/rawg'
 
-// â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// helpers
 
 const PLATFORM_LABELS: Record<string, string> = {
   pc: 'PC',
@@ -49,7 +49,7 @@ function metacriticColor(score: number): string {
   return Colors.error
 }
 
-// â”€â”€â”€ HeroSection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// HeroSection
 
 interface HeroProps { game: RawgGameDetail }
 
@@ -126,7 +126,7 @@ function HeroSection({ game }: HeroProps) {
   )
 }
 
-// â”€â”€â”€ InfoSection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// InfoSection
 
 interface InfoProps {
   description: string
@@ -168,7 +168,7 @@ function InfoSection({ description, genres }: InfoProps) {
   )
 }
 
-// â”€â”€â”€ ScreenshotGallery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ScreenshotGallery
 
 interface GalleryProps { screenshots: RawgScreenshot[] }
 
@@ -226,7 +226,7 @@ function ScreenshotGallery({ screenshots }: GalleryProps) {
   )
 }
 
-// â”€â”€â”€ RatingInput â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// RatingInput
 
 interface RatingInputProps {
   value: number | null
@@ -255,9 +255,9 @@ function RatingInput({ value, onChange }: RatingInputProps) {
           color={value != null ? Colors.warning : Colors.textMuted}
           style={styles.ratingValue}
         >
-          {value != null ? value.toFixed(1) : 'â€”'}
+          {value != null ? value.toFixed(1) : '-'}
         </Text>
-        <Text variant="caption">/ 10  Â·  tap to clear</Text>
+        <Text variant="caption">/ 10 - tap to clear</Text>
       </Pressable>
       <Pressable onPress={increment} hitSlop={8} style={styles.ratingBtn}>
         <Ionicons name="add-circle-outline" size={26} color={Colors.textSecondary} />
@@ -266,7 +266,7 @@ function RatingInput({ value, onChange }: RatingInputProps) {
   )
 }
 
-// â”€â”€â”€ PersonalTracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PersonalTracking
 
 interface TrackingProps { entry: LibraryEntry }
 
@@ -413,7 +413,7 @@ function PersonalTracking({ entry }: TrackingProps) {
   )
 }
 
-// â”€â”€â”€ MoreLikeThis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MoreLikeThis
 
 interface MoreLikeThisProps { gameId: number }
 
@@ -438,7 +438,7 @@ function MoreLikeThis({ gameId }: MoreLikeThisProps) {
   )
 }
 
-// â”€â”€â”€ Main Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Main Screen
 
 export default function GameDetailScreen() {
   const { id: idParam } = useLocalSearchParams<{ id: string }>()
@@ -531,7 +531,7 @@ export default function GameDetailScreen() {
   )
 }
 
-// â”€â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Styles
 
 const styles = StyleSheet.create({
   root: {

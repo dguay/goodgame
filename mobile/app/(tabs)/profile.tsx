@@ -134,7 +134,7 @@ export default function ProfileScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* â”€â”€ Header â”€â”€ */}
+        {/* Header */}
         <View style={styles.header}>
           {avatarUrl != null ? (
             <Image
@@ -176,7 +176,7 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* â”€â”€ Stats Card â”€â”€ */}
+        {/* Stats Card */}
         <Card style={styles.card}>
           <Text variant="subheading" style={styles.cardTitle}>Stats</Text>
 
@@ -218,7 +218,7 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        {/* â”€â”€ Library Breakdown Chart â”€â”€ */}
+        {/* Library Breakdown Chart */}
         <Card style={styles.card}>
           <Text variant="subheading" style={styles.cardTitle}>Library Breakdown</Text>
 
@@ -267,7 +267,7 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        {/* â”€â”€ Top Genres â”€â”€ */}
+        {/* Top Genres */}
         {(stats.topGenres.length > 0 || statsLoading) && (
           <View style={styles.section}>
             <Text variant="subheading" style={styles.sectionTitle}>Top Genres</Text>
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* â”€â”€ Settings â”€â”€ */}
+        {/* Settings */}
         <View style={styles.settingsSection}>
           <Text variant="label" style={styles.settingsSectionTitle}>ACCOUNT</Text>
           <View style={styles.settingsCard}>
@@ -307,7 +307,7 @@ export default function ProfileScreen() {
             >
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
               <Text variant="body" style={[styles.settingsLabel, styles.signOutLabel]}>
-                {isSigningOut ? 'Signing outâ€¦' : 'Sign Out'}
+                {isSigningOut ? 'Signing out...' : 'Sign Out'}
               </Text>
             </Pressable>
           </View>
@@ -514,4 +514,3 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
 })
-
