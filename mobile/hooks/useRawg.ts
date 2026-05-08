@@ -96,7 +96,7 @@ export function useNewReleases() {
   })
 }
 
-export function useReleaseCalendar(platformId: number) {
+export function useReleaseCalendar(platformId: number | null) {
   return useInfiniteQuery({
     queryKey: ['rawg', 'releaseCalendar', platformId],
     queryFn: ({ pageParam }) => getReleaseCalendar(platformId, pageParam),

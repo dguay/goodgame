@@ -94,21 +94,23 @@ export async function getNewReleases(): Promise<RawgPaginatedResponse<RawgGame>>
 }
 
 export async function getReleaseCalendar(
-  platformId: number,
+  platformId: number | null,
   page = 1,
 ): Promise<RawgPaginatedResponse<RawgGame>> {
   const today = new Date()
   const oneYearFromNow = new Date(today)
   oneYearFromNow.setFullYear(today.getFullYear() + 1)
   const fmt = (d: Date) => d.toISOString().split('T')[0]
-
-  return get<RawgPaginatedResponse<RawgGame>>('/games', {
+  const params: Record<string, string | number> = {
     dates: `${fmt(today)},${fmt(oneYearFromNow)}`,
     ordering: 'released',
-    platforms: platformId,
     page,
     page_size: 20,
-  })
+  }
+
+  if (platformId !== null) params.platforms = platformId
+
+  return get<RawgPaginatedResponse<RawgGame>>('/games', params)
 }
 
 export async function getTopRated(): Promise<RawgPaginatedResponse<RawgGame>> {

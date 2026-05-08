@@ -14,11 +14,12 @@ import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 import type { RawgGame } from '@/types/rawg'
 
 interface PlatformFilter {
-  id: number
+  id: number | null
   label: string
 }
 
 const PLATFORM_FILTERS: PlatformFilter[] = [
+  { id: null, label: 'ALL' },
   { id: 187, label: 'PS5' },
   { id: 4, label: 'PC' },
 ]
@@ -139,7 +140,7 @@ export default function ReleaseCalendarScreen() {
           const isSelected = option.id === platform.id
           return (
             <Pressable
-              key={option.id}
+              key={option.label}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               style={[styles.filterChip, isSelected && styles.filterChipSelected]}
@@ -166,7 +167,9 @@ export default function ReleaseCalendarScreen() {
           <EmptyState
             icon="calendar-outline"
             heading="No releases found"
-            subtext={`RAWG does not have upcoming ${platform.label} releases for this range.`}
+            subtext={`RAWG does not have upcoming ${
+              platform.id === null ? 'game' : platform.label
+            } releases for this range.`}
           />
           <RawgFooter />
         </View>
