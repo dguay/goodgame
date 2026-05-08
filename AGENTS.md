@@ -51,6 +51,7 @@ package.json                  → root scripts (proxies to mobile/ + supabase co
 - All async functions must handle errors explicitly — no silent failures.
 - Use `Platform.OS` checks when behavior must differ between `web` and `native`.
 - Never use inline styles on web-facing components; use `StyleSheet.create` or design tokens.
+- Do not start the Expo dev server automatically; the user will start it when needed.
 
 ### Routing
 - Always use `expo-router` conventions. Never manually configure `react-navigation`.

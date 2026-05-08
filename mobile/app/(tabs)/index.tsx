@@ -281,7 +281,10 @@ export default function HomeScreen() {
 
         {/* New Releases */}
         <View style={styles.section}>
-          <SectionHeader title="New Releases" onSeeAll={() => router.push('/search')} />
+          <SectionHeader
+            title="New Releases"
+            onSeeAll={() => router.push('/release-calendar')}
+          />
           {newReleasesQuery.isLoading ? (
             <HorizontalSkeletons />
           ) : (

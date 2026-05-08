@@ -7,6 +7,7 @@ import {
   getGameScreenshots,
   getGameSeries,
   getNewReleases,
+  getReleaseCalendar,
   getTopRated,
 } from '@/lib/rawg'
 
@@ -90,6 +91,18 @@ export function useNewReleases() {
   return useQuery({
     queryKey: ['rawg', 'newReleases'],
     queryFn: getNewReleases,
+    staleTime: STALE,
+    gcTime: CACHE,
+  })
+}
+
+export function useReleaseCalendar(platformId: number) {
+  return useInfiniteQuery({
+    queryKey: ['rawg', 'releaseCalendar', platformId],
+    queryFn: ({ pageParam }) => getReleaseCalendar(platformId, pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.next != null ? lastPageParam + 1 : undefined,
     staleTime: STALE,
     gcTime: CACHE,
   })

@@ -93,6 +93,24 @@ export async function getNewReleases(): Promise<RawgPaginatedResponse<RawgGame>>
   })
 }
 
+export async function getReleaseCalendar(
+  platformId: number,
+  page = 1,
+): Promise<RawgPaginatedResponse<RawgGame>> {
+  const today = new Date()
+  const oneYearFromNow = new Date(today)
+  oneYearFromNow.setFullYear(today.getFullYear() + 1)
+  const fmt = (d: Date) => d.toISOString().split('T')[0]
+
+  return get<RawgPaginatedResponse<RawgGame>>('/games', {
+    dates: `${fmt(today)},${fmt(oneYearFromNow)}`,
+    ordering: 'released',
+    platforms: platformId,
+    page,
+    page_size: 20,
+  })
+}
+
 export async function getTopRated(): Promise<RawgPaginatedResponse<RawgGame>> {
   return get<RawgPaginatedResponse<RawgGame>>('/games', {
     ordering: '-metacritic',
