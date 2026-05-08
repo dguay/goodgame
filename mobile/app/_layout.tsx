@@ -60,7 +60,8 @@ function AuthGuard() {
   useEffect(() => {
     if (isLoading) return
     const inAuthGroup = segments[0] === '(auth)'
-    if (!isAuthenticated && !inAuthGroup) {
+    const inAuthCallback = segments[0] === 'auth' && segments[1] === 'callback'
+    if (!isAuthenticated && !inAuthGroup && !inAuthCallback) {
       router.replace('/(auth)/login')
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/')
@@ -96,6 +97,7 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
           <Stack.Screen name="game/[id]" options={{ headerShown: true }} />
         </Stack>
       </QueryClientProvider>

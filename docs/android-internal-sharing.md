@@ -73,6 +73,14 @@ On Windows PowerShell, if script execution policy blocks `pnpm` or `eas`, use th
 
 8. In Supabase Auth -> Providers -> Google, add the Android client ID from Google Cloud Console.
 
+9. In Supabase Auth -> URL Configuration, add the native redirect URL to **Redirect URLs**:
+
+   ```text
+   goodgame://auth/callback
+   ```
+
+   If this is missing in the hosted Supabase project, Supabase falls back to the site URL after Google sign-in and Chrome will load the website instead of returning to the installed app.
+
 ## Build
 
 Play Console requires every uploaded AAB to have a new Android `versionCode`. This project uses EAS remote versioning with `autoIncrement: true`, so EAS should increment `versionCode` on each production build.
