@@ -22,6 +22,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    marginTop: Spacing.xxs
   },
   text: {
     color: Colors.textMuted,

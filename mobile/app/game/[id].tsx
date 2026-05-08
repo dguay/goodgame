@@ -88,7 +88,12 @@ interface ReleaseDateInfo {
 }
 
 function getReleaseDateInfo(released: string | null): ReleaseDateInfo | null {
-  if (released == null) return null
+  if (released == null) {
+    return {
+      label: 'soon',
+      isFuture: true,
+    }
+  }
   const [year, month, day] = released.split('-')
   const monthIndex = Number(month) - 1
   const dayNumber = Number(day)
@@ -168,6 +173,10 @@ interface HeroProps { game: RawgGameDetail }
 
 function HeroSection({ game }: HeroProps) {
   const releaseDate = getReleaseDateInfo(game.released)
+  const releaseDateLabel =
+    releaseDate?.isFuture === true
+      ? `Coming ${releaseDate.label}`
+      : releaseDate?.label
   const developerLabel = (game.developers ?? []).map(d => d.name).join(', ')
   const publisherLabel = (game.publishers ?? []).map(p => p.name).join(', ')
   const platforms = (game.platforms ?? [])
@@ -198,29 +207,15 @@ function HeroSection({ game }: HeroProps) {
       />
       <View style={styles.heroContent}>
         <View style={styles.heroInfo}>
-          {/* {platforms.length > 0 && (
-            <View style={styles.platformRow}>
-              {platforms.map(p => (
-                <View key={p} style={styles.platformChip}>
-                  <Text variant="label">{p}</Text>
-                </View>
-              ))}
-              {hiddenPlatformCount > 0 && (
-                <View style={styles.platformChip}>
-                  <Text variant="label">+{hiddenPlatformCount}</Text>
-                </View>
-              )}
-            </View>
-          )} */}
           <Text variant="heading" numberOfLines={4} style={styles.heroTitle}>
             {game.name}
           </Text>
           {hasMetaLine && (
             <Text variant="caption" numberOfLines={2} style={styles.heroSubtitle}>
               {[
-                releaseDate?.isFuture === true ? `Coming ${releaseDate.label}` : releaseDate?.label,
-                developerLabel !== '' ? developerLabel : null,
-                publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
+releaseDate?.isFuture === true ? `Coming ${releaseDate.label}` : releaseDate?.label,
+developerLabel !== '' ? developerLabel : null,
+publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
               ].filter(Boolean).join('  /  ')}
             </Text>
           )}
@@ -749,7 +744,7 @@ export default function GameDetailScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 72 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
