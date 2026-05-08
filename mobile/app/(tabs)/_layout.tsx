@@ -2,6 +2,7 @@ import { Tabs, router, usePathname, type Href } from 'expo-router'
 import { Platform, useWindowDimensions, View, Pressable, StyleSheet, Text } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { TabActions } from '@react-navigation/native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Spacing, FontSize } from '@/constants'
 
 type IoniconsName = keyof typeof Ionicons.glyphMap
@@ -53,8 +54,10 @@ function SideNavBar() {
 }
 
 function BottomTabBar({ state, navigation }: TabBarProps) {
+  const insets = useSafeAreaInsets()
+
   return (
-    <View style={styles.bottomBar}>
+    <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.sm) }]}>
       {state.routes.map((route, index) => {
         const tab = TABS[index]
         const isFocused = state.index === index
@@ -173,7 +176,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    paddingBottom: Spacing.sm,
     paddingTop: Spacing.xs,
   },
   bottomTabItem: {
