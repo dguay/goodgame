@@ -148,6 +148,64 @@ pnpm run db:stop
 
 ---
 
+## Android production release
+
+Use this checklist every time you want to publish a new Android production build through EAS and Play Console.
+
+First-time EAS, Firebase, keystore, and OAuth setup is documented in [docs/android-internal-sharing.md](docs/android-internal-sharing.md). You only need to redo that setup if credentials, package name, Firebase project, or Google OAuth clients change.
+
+### 1. Prepare the release
+
+1. Confirm `mobile/google-services.json` exists locally.
+2. Confirm EAS has the production `GOOGLE_SERVICES_JSON`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and `EXPO_PUBLIC_RAWG_API_KEY` environment variables. Re-upload `GOOGLE_SERVICES_JSON` only if the Firebase file changed:
+   ```bash
+   cd mobile
+   eas env:create --name GOOGLE_SERVICES_JSON --environment production --visibility secret --type file --value ./google-services.json
+   ```
+3. Restore production values in `mobile/.env.local`.
+4. Run checks:
+   ```bash
+   pnpm run typecheck
+   pnpm run lint
+   ```
+5. Update the Expo app version in `mobile/app.json` if this is a new user-facing release.
+6. If Play Console rejected the previous upload with a reused version code, run `cd mobile && eas build:version:set`, choose Android, and enter the latest version code already accepted by Play Console.
+
+### 2. Build the Android AAB
+
+From the repo root:
+
+```bash
+pnpm run build:android
+```
+
+On Windows PowerShell, if script execution policy blocks `pnpm`, use:
+
+```bash
+pnpm.cmd run build:android
+```
+
+When EAS finishes, download the `.aab` from the EAS dashboard or the build link printed in the terminal.
+
+### 3. Upload to Play Console
+
+1. Open Google Play Console.
+2. Select the Goodgame app.
+3. Go to **Testing** -> **Internal testing** or **Internal app sharing**.
+4. Upload the `.aab`.
+5. Complete any Play Console release notes or review prompts.
+6. Copy the tester/sharing link.
+
+### 4. Verify on a physical Android device
+
+- App installs from the Play Console link.
+- Google sign-in works.
+- Session persists after closing and reopening the app.
+- Home, Search, Library, Profile, and Game Detail screens load.
+- The app does not crash on first launch.
+
+---
+
 ## All root scripts
 
 | Script | Description |

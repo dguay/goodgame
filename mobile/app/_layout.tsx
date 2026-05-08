@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect } from 'react'
@@ -34,17 +35,22 @@ function AuthGuard() {
   const router = useRouter()
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      console.log('[Auth] page URL on mount:', window.location.href)
-    }
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.warn('Could not restore auth session', error)
+          setSession(null)
+          return
+        }
+        setSession(session)
+      })
+      .catch((error: unknown) => {
+        console.warn('Could not restore auth session', error)
+        setSession(null)
+      })
 
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('[Auth] getSession -', session?.user?.email ?? 'null', error ?? '')
-      setSession(session)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] onAuthStateChange -', event, session?.user?.email ?? 'null')
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
 

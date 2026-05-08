@@ -21,7 +21,9 @@ TODO.md
 *.p12
 *.key
 *.mobileprovision
+google-services.json
 mobile/google-services.json
+client_secret*.json
 
 # Metro
 .metro-health-check*
