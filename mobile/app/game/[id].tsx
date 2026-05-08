@@ -696,6 +696,10 @@ export default function GameDetailScreen() {
 
   const { data: game, isLoading, isError } = useGameDetail(safeGameId)
   const entry = useLibraryEntry(safeGameId)
+  const actionBarBottomPadding =
+    Platform.OS === 'android'
+      ? Math.max(insets.bottom, Spacing.lg)
+      : Math.max(insets.bottom, Spacing.md)
 
   if (isLoading) {
     return (
@@ -744,7 +748,7 @@ export default function GameDetailScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom }}
+        contentContainerStyle={{ paddingBottom: actionBarBottomPadding }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -765,7 +769,7 @@ export default function GameDetailScreen() {
       </ScrollView>
 
       {/* Sticky bottom action bar */}
-      <View style={[styles.actionBar, { paddingBottom: insets.bottom > 0 ? insets.bottom : Spacing.md }]}>
+      <View style={[styles.actionBar, { paddingBottom: actionBarBottomPadding }]}>
         <View style={styles.actionBarInner}>
           <View style={styles.actionBarGame}>
             <Text variant="body" numberOfLines={1} style={styles.actionBarTitle}>
