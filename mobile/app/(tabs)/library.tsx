@@ -45,12 +45,12 @@ type FilterStatus = LibraryStatus | 'all'
 type SortKey = LibrarySortKey
 type ViewMode = 'grid' | 'list'
 
-const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'want_to_play', label: 'Wanted' },
-  { key: 'playing', label: 'Playing' },
-  { key: 'done', label: 'Done' },
-  { key: 'did_not_finish', label: 'DNF' },
+const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }[] = [
+  { key: 'all', label: 'All', compactLabel: 'All' },
+  { key: 'want_to_play', label: 'TBP', compactLabel: 'TBP' },
+  { key: 'playing', label: 'Playing', compactLabel: 'Play' },
+  { key: 'done', label: 'Done', compactLabel: 'Done' },
+  { key: 'did_not_finish', label: 'DNF', compactLabel: 'DNF' },
 ]
 
 const FILTER_KEYS: FilterStatus[] = FILTER_OPTIONS.map(option => option.key)
@@ -727,11 +727,12 @@ function LibraryFilters({
       </View>
 
       <View style={[styles.filterContent, isWide && styles.filterContentWide]}>
-        {FILTER_OPTIONS.map(({ key, label }) => {
+        {FILTER_OPTIONS.map(({ key, label, compactLabel }) => {
           const count = counts[key]
           const isActive = activeFilter === key
           const filterColor = getFilterColor(key)
           const iconColor = isActive ? filterColor : Colors.textMuted
+          const displayLabel = isWide ? label : compactLabel
 
           return (
             <Pressable
@@ -741,6 +742,7 @@ function LibraryFilters({
               style={({ pressed }) => [
                 styles.filterTab,
                 isWide && styles.filterTabWide,
+                !isWide && styles.filterTabCompact,
                 isActive && [
                   styles.filterTabActive,
                   { borderColor: filterColor },
@@ -749,12 +751,13 @@ function LibraryFilters({
               ]}
               onPress={() => onFilterChange(key)}
             >
-              <Ionicons name={FILTER_ICONS[key]} size={15} color={iconColor} />
+              <Ionicons name={FILTER_ICONS[key]} size={isWide ? 15 : 14} color={iconColor} />
               <Text
                 variant="label"
+                numberOfLines={1}
                 style={[styles.filterLabel, isActive && { color: filterColor }]}
               >
-                {label}
+                {displayLabel}
               </Text>
               <View
                 style={[
@@ -762,7 +765,11 @@ function LibraryFilters({
                   isActive && [styles.badgeActive, { borderColor: filterColor }],
                 ]}
               >
-                <Text variant="label" style={[styles.badgeText, isActive && { color: filterColor }]}>
+                <Text
+                  variant="label"
+                  numberOfLines={1}
+                  style={[styles.badgeText, isActive && { color: filterColor }]}
+                >
                   {count}
                 </Text>
               </View>
@@ -1097,6 +1104,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: 'transparent',
   },
+  filterTabCompact: {
+    gap: Spacing.xxs,
+    paddingHorizontal: 6,
+  },
   filterTabWide: {
     width: 132,
   },
@@ -1108,18 +1119,20 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     color: Colors.textSecondary,
-    flexShrink: 0,
+    flexShrink: 1,
+    minWidth: 0,
   },
   badge: {
     backgroundColor: Colors.surfaceRaised,
     borderRadius: Radius.xs,
     borderWidth: 1,
     borderColor: Colors.borderSoft,
-    minWidth: 22,
+    minWidth: 20,
     minHeight: 20,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   badgeActive: {
     backgroundColor: Colors.surfaceRaised,

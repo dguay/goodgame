@@ -192,7 +192,7 @@ function HomeHero({
           <HeroStatPill value={totalGames} label="Games" tone="library" filter="all" />
           <HeroStatPill
             value={wantedCount}
-            label="Wanted"
+            label="TBP"
             tone="wanted"
             filter="want_to_play"
           />

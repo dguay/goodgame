@@ -5,14 +5,14 @@ export type LibraryStatus =
   | 'did_not_finish'
 
 export const STATUS_LABELS: Record<LibraryStatus, string> = {
-  want_to_play:   'Wanted',
+  want_to_play:   'TBP',
   playing:        'Playing',
   done:           'Done',
   did_not_finish: 'Did Not Finish',
 }
 
 export const STATUS_COLORS: Record<LibraryStatus, string> = {
-  want_to_play:   '#7ba7ff',   // soft steel blue, queued/wanted
+  want_to_play:   '#7ba7ff',   // soft steel blue, queued/TBP
   playing:        '#05b169',   // success / semantic up
   done:           '#f4b000',   // amber / gold
   did_not_finish: '#6b7178',   // textMuted, deprioritized

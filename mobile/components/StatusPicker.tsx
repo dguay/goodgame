@@ -13,6 +13,11 @@ const STATUS_ICONS: Record<LibraryStatus, keyof typeof Ionicons.glyphMap> = {
   did_not_finish: 'ban-outline',
 }
 
+const STATUS_PICKER_LABELS: Record<LibraryStatus, string> = {
+  ...STATUS_LABELS,
+  want_to_play: 'To Be Played',
+}
+
 interface Props {
   visible: boolean
   currentStatus: LibraryStatus | null
@@ -64,7 +69,7 @@ export function StatusPicker({ visible, currentStatus, onSelect, onRemove, onDis
                   currentStatus === status && { color: STATUS_COLORS[status] },
                 ]}
               >
-                {STATUS_LABELS[status]}
+                {STATUS_PICKER_LABELS[status]}
               </Text>
               {currentStatus === status && (
                 <Ionicons name="checkmark" size={18} color={STATUS_COLORS[status]} />
