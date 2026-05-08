@@ -76,7 +76,9 @@ export function GameCard({ game, style }: Props) {
             </View>
           )}
         </View>
-        <AddToLibraryButton game={game} />
+        <View style={styles.addButtonContainer}>
+          <AddToLibraryButton game={game} />
+        </View>
       </View>
     </Pressable>
   )
@@ -110,6 +112,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   info: {
+    flex: 1,
     padding: Spacing.xs,
     gap: Spacing.xxs,
   },
@@ -123,6 +126,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: Spacing.xs,
+  },
+  addButtonContainer: {
+    marginTop: 'auto',
+    paddingTop: Spacing.xxs,
   },
   platforms: {
     flexDirection: 'row',
