@@ -16,7 +16,7 @@ import {
 } from 'react-native'
 import { Swipeable } from 'react-native-gesture-handler'
 import { Image } from 'expo-image'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Text } from '@/components/ui/Text'
@@ -53,6 +53,8 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string }[] = [
   { key: 'did_not_finish', label: 'DNF' },
 ]
 
+const FILTER_KEYS: FilterStatus[] = FILTER_OPTIONS.map(option => option.key)
+
 const FILTER_ICONS: Record<FilterStatus, keyof typeof Ionicons.glyphMap> = {
   all: 'library-outline',
   want_to_play: 'bookmark-outline',
@@ -71,6 +73,10 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 
 function isSortKey(value: string | null): value is SortKey {
   return value != null && LIBRARY_SORT_KEYS.includes(value as SortKey)
+}
+
+function isFilterStatus(value: string | null): value is FilterStatus {
+  return value != null && FILTER_KEYS.includes(value as FilterStatus)
 }
 
 function formatPlaytime(minutes: number): string {
@@ -770,6 +776,7 @@ function LibraryFilters({
 
 
 export default function LibraryScreen() {
+  const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>()
   const [filter, setFilter] = useState<FilterStatus>('all')
   const [sort, setSort] = useState<SortKey>('recent')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -789,6 +796,13 @@ export default function LibraryScreen() {
   const activeViewMode = sort === 'custom' ? 'list' : viewMode
   const numColumns = activeViewMode === 'grid' ? (width >= 768 ? 3 : 2) : 1
   const isWide = width >= 768
+
+  useEffect(() => {
+    const nextFilter = Array.isArray(filterParam) ? filterParam[0] : filterParam
+    if (isFilterStatus(nextFilter)) {
+      setFilter(nextFilter)
+    }
+  }, [filterParam])
 
   useEffect(() => {
     if (!preferencesLoaded || userPreferences == null) return

@@ -20,12 +20,13 @@ import { useProfile } from '@/hooks/useProfile'
 import { useNewReleases, useTopRated } from '@/hooks/useRawg'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-import { STATUS_COLORS } from '@/types'
+import { STATUS_COLORS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 
 const CARD_WIDTH = 160
 type HeroStatTone = 'library' | 'wanted' | 'playing' | 'done'
+type HeroStatFilter = LibraryStatus | 'all'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -91,20 +92,34 @@ function HeroStatPill({
   value,
   label,
   tone,
+  filter,
 }: {
   value: number
   label: string
   tone: HeroStatTone
+  filter: HeroStatFilter
 }) {
   return (
-    <View style={[styles.heroStatPill, heroStatToneStyles[tone]]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Show ${label} in library`}
+      style={({ pressed }) => [
+        styles.heroStatPill,
+        heroStatToneStyles[tone],
+        pressed && styles.heroStatPillPressed,
+      ]}
+      onPress={() => router.push({
+        pathname: '/(tabs)/library',
+        params: { filter },
+      })}
+    >
       <Text variant="mono" style={styles.heroStatValue}>
         {value}
       </Text>
       <Text variant="label" style={styles.heroStatLabel}>
         {label}
       </Text>
-    </View>
+    </Pressable>
   )
 }
 
@@ -174,14 +189,20 @@ function HomeHero({
         </Pressable>
 
         <View style={styles.heroStatsGrid}>
-          <HeroStatPill value={totalGames} label="Games" tone="library" />
-          <HeroStatPill value={wantedCount} label="Wanted" tone="wanted" />
+          <HeroStatPill value={totalGames} label="Games" tone="library" filter="all" />
+          <HeroStatPill
+            value={wantedCount}
+            label="Wanted"
+            tone="wanted"
+            filter="want_to_play"
+          />
           <HeroStatPill
             value={playingEntries.length}
             label="Playing"
             tone="playing"
+            filter="playing"
           />
-          <HeroStatPill value={completedCount} label="Done" tone="done" />
+          <HeroStatPill value={completedCount} label="Done" tone="done" filter="done" />
         </View>
       </View>
     </View>
@@ -393,6 +414,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
+  },
+  heroStatPillPressed: {
+    backgroundColor: Colors.surface,
   },
   heroStatValue: {
     marginBottom: 2,
