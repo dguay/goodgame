@@ -4,7 +4,8 @@
       "Bash(mkdir -p 'app/\\(auth\\)' 'app/\\(tabs\\)' app/game hooks lib stores types supabase/migrations)",
       "Bash(touch 'app/\\(auth\\)/login.tsx' 'app/game/[id].tsx' hooks/.gitkeep lib/.gitkeep stores/.gitkeep types/.gitkeep supabase/migrations/.gitkeep)",
       "Bash(npx expo *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(dir C:\\\\Users\\\\David\\\\git\\\\goodgame\\\\mobile\\\\hooks *)"
     ]
   }
 }

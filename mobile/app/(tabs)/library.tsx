@@ -47,7 +47,7 @@ type ViewMode = 'grid' | 'list'
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }[] = [
   { key: 'all', label: 'All', compactLabel: 'All' },
-  { key: 'want_to_play', label: 'TBP', compactLabel: 'TBP' },
+  { key: 'want_to_play', label: 'Wanted', compactLabel: 'Want' },
   { key: 'playing', label: 'Playing', compactLabel: 'Play' },
   { key: 'done', label: 'Done', compactLabel: 'Done' },
   { key: 'did_not_finish', label: 'DNF', compactLabel: 'DNF' },

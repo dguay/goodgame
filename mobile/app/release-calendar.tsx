@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { FlatList, Pressable, StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
@@ -97,17 +97,26 @@ function CalendarSkeletons() {
 export default function ReleaseCalendarScreen() {
   const [platform, setPlatform] = useState(PLATFORM_FILTERS[0])
   const calendarQuery = useReleaseCalendar(platform.id)
+  const flatListRef = useRef<FlatList<RawgGame>>(null)
+  const calendarQueryRef = useRef(calendarQuery)
+  calendarQueryRef.current = calendarQuery
 
   const games = useMemo(
     () => calendarQuery.data?.pages.flatMap(page => page.results) ?? [],
     [calendarQuery.data],
   )
 
+  const handleSelectPlatform = useCallback((option: PlatformFilter) => {
+    setPlatform(option)
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false })
+  }, [])
+
   const handleLoadMore = useCallback(() => {
-    if (calendarQuery.hasNextPage && !calendarQuery.isFetchingNextPage) {
-      void calendarQuery.fetchNextPage()
+    const query = calendarQueryRef.current
+    if (query.hasNextPage && !query.isFetchingNextPage) {
+      void query.fetchNextPage()
     }
-  }, [calendarQuery])
+  }, [])
 
   const renderItem = useCallback(
     ({ item }: { item: RawgGame }) => <ReleaseCalendarItem game={item} />,
@@ -144,7 +153,7 @@ export default function ReleaseCalendarScreen() {
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               style={[styles.filterChip, isSelected && styles.filterChipSelected]}
-              onPress={() => setPlatform(option)}
+              onPress={() => handleSelectPlatform(option)}
             >
               <Text
                 variant="label"
@@ -175,6 +184,7 @@ export default function ReleaseCalendarScreen() {
         </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={games}
           keyExtractor={item => String(item.id)}
           renderItem={renderItem}
