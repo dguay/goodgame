@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     gap: Spacing.xs,
     borderWidth: 1,
     borderColor: Colors.border,

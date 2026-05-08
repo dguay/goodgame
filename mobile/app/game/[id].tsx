@@ -1114,7 +1114,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   trackingGridMobile: {
-    alignItems: 'flex-start',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     flexWrap: 'nowrap',
   },
   trackingField: {
@@ -1123,8 +1124,8 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   trackingFieldMobile: {
-    flex: 1,
-    flexBasis: 0,
+    width: '100%',
+    flexBasis: 'auto',
     minWidth: 0,
   },
   trackingDateStack: {
@@ -1136,8 +1137,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   trackingDateStackMobile: {
-    flex: 1,
-    flexBasis: 0,
+    width: '100%',
+    flexBasis: 'auto',
     flexDirection: 'column',
     flexWrap: 'nowrap',
     minWidth: 0,

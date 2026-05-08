@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Modal, Pressable, StyleSheet, View } from 'react-native'
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 
 import { Text } from '@/components/ui/Text'
 import { Colors, Radius, Spacing } from '@/constants'
@@ -133,11 +134,43 @@ export function DateField({ value, onChange, placeholder = 'Select date' }: Prop
     setIsOpen(false)
   }
 
+  function handleAndroidDateChange(event: DateTimePickerEvent, date?: Date) {
+    if (event.type === 'neutralButtonPressed') {
+      onChange('')
+      return
+    }
+
+    if (event.type === 'set' && date != null) {
+      onChange(formatDateValue(date))
+    }
+  }
+
+  function handlePress() {
+    if (Platform.OS !== 'android') {
+      setIsOpen(true)
+      return
+    }
+
+    try {
+      DateTimePickerAndroid.open({
+        value: parseDateValue(value) ?? new Date(),
+        mode: 'date',
+        display: 'calendar',
+        onChange: handleAndroidDateChange,
+        neutralButton: { label: 'Clear', textColor: Colors.textSecondary },
+        positiveButton: { label: 'OK', textColor: Colors.primary },
+        negativeButton: { label: 'Cancel', textColor: Colors.textSecondary },
+      })
+    } catch (error) {
+      console.warn('Unable to open Android date picker', error)
+    }
+  }
+
   return (
     <>
       <Pressable
         accessibilityRole="button"
-        onPress={() => setIsOpen(true)}
+        onPress={handlePress}
         style={styles.inputButton}
       >
         <Text
