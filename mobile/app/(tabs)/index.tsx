@@ -88,6 +88,34 @@ function HorizontalSkeletons() {
   )
 }
 
+function HeroHeaderSkeleton() {
+  return (
+    <View style={styles.heroHeaderSkeleton}>
+      <SkeletonLoader width={112} height={16} borderRadius={Radius.xs} />
+      <SkeletonLoader width={220} height={34} borderRadius={Radius.sm} />
+    </View>
+  )
+}
+
+function HeroStatsSkeleton() {
+  return (
+    <View style={styles.heroStatsGrid}>
+      {[1, 2, 3, 4].map(i => (
+        <SkeletonLoader
+          key={i}
+          width="48%"
+          height={64}
+          borderRadius={Radius.md}
+        />
+      ))}
+    </View>
+  )
+}
+
+function CurrentlyPlayingSkeleton() {
+  return <SkeletonLoader width="80%" height={22} borderRadius={Radius.xs} />
+}
+
 function HeroStatPill({
   value,
   label,
@@ -125,12 +153,18 @@ function HeroStatPill({
 
 function HomeHero({
   displayName,
+  isHeaderLoading,
+  isCurrentlyPlayingLoading,
+  isStatsLoading,
   totalGames,
   wantedCount,
   playingEntries,
   completedCount,
 }: {
   displayName: string
+  isHeaderLoading: boolean
+  isCurrentlyPlayingLoading: boolean
+  isStatsLoading: boolean
   totalGames: number
   wantedCount: number
   playingEntries: LibraryEntry[]
@@ -151,59 +185,77 @@ function HomeHero({
   return (
     <View style={styles.hero}>
       <View style={styles.heroCopy}>
-        <Text variant="label" style={styles.heroEyebrow}>
-          {getGreeting()}
-        </Text>
-        <Text variant="heading" style={styles.heroTitle} numberOfLines={2}>
-          {displayName}
-        </Text>
-        <Text variant="body" style={styles.heroSubtitle} numberOfLines={2}>
-          {featuredEntry != null
-            ? `Currently playing ${featuredEntry.game_title}`
-            : 'Choose what belongs in your backlog next.'}
-        </Text>
+        {isHeaderLoading ? (
+          <HeroHeaderSkeleton />
+        ) : (
+          <>
+            <Text variant="label" style={styles.heroEyebrow}>
+              {getGreeting()}
+            </Text>
+            <Text variant="heading" style={styles.heroTitle} numberOfLines={2}>
+              {displayName}
+            </Text>
+          </>
+        )}
+        {isCurrentlyPlayingLoading ? (
+          <CurrentlyPlayingSkeleton />
+        ) : (
+          <Text variant="body" style={styles.heroSubtitle} numberOfLines={2}>
+            {featuredEntry != null
+              ? `Currently playing ${featuredEntry.game_title}`
+              : 'Choose what belongs in your backlog next.'}
+          </Text>
+        )}
       </View>
 
       <View style={styles.heroBody}>
-        <Pressable
-          style={styles.heroArtwork}
-          onPress={primaryAction}
-          accessibilityRole="button"
-          accessibilityLabel={heroArtworkLabel}
-        >
-          {featuredEntry?.game_cover_url != null ? (
-            <Image
-              source={{ uri: featuredEntry.game_cover_url }}
-              style={styles.heroCover}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="disk"
-            />
-          ) : (
-            <View style={styles.heroCoverPlaceholder}>
-              <Text variant="label" color={Colors.textMuted}>
-                Goodgame
-              </Text>
-            </View>
-          )}
-        </Pressable>
+        {isCurrentlyPlayingLoading ? (
+          <SkeletonLoader width="100%" height={220} borderRadius={Radius.lg} />
+        ) : (
+          <Pressable
+            style={styles.heroArtwork}
+            onPress={primaryAction}
+            accessibilityRole="button"
+            accessibilityLabel={heroArtworkLabel}
+          >
+            {featuredEntry?.game_cover_url != null ? (
+              <Image
+                source={{ uri: featuredEntry.game_cover_url }}
+                style={styles.heroCover}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="disk"
+              />
+            ) : (
+              <View style={styles.heroCoverPlaceholder}>
+                <Text variant="label" color={Colors.textMuted}>
+                  Goodgame
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        )}
 
-        <View style={styles.heroStatsGrid}>
-          <HeroStatPill value={totalGames} label="Games" tone="library" filter="all" />
-          <HeroStatPill
-            value={wantedCount}
-            label="TBP"
-            tone="wanted"
-            filter="want_to_play"
-          />
-          <HeroStatPill
-            value={playingEntries.length}
-            label="Playing"
-            tone="playing"
-            filter="playing"
-          />
-          <HeroStatPill value={completedCount} label="Done" tone="done" filter="done" />
-        </View>
+        {isStatsLoading ? (
+          <HeroStatsSkeleton />
+        ) : (
+          <View style={styles.heroStatsGrid}>
+            <HeroStatPill value={totalGames} label="Games" tone="library" filter="all" />
+            <HeroStatPill
+              value={wantedCount}
+              label="TBP"
+              tone="wanted"
+              filter="want_to_play"
+            />
+            <HeroStatPill
+              value={playingEntries.length}
+              label="Playing"
+              tone="playing"
+              filter="playing"
+            />
+            <HeroStatPill value={completedCount} label="Done" tone="done" filter="done" />
+          </View>
+        )}
       </View>
     </View>
   )
@@ -211,6 +263,7 @@ function HomeHero({
 
 export default function HomeScreen() {
   const user = useAuthStore(s => s.user)
+  const isAuthLoading = useAuthStore(s => s.isLoading)
   const [refreshing, setRefreshing] = useState(false)
 
   const profileQuery = useProfile()
@@ -227,11 +280,17 @@ export default function HomeScreen() {
   const completedCount = entries.filter(e => e.status === 'done').length
   const recentlyAdded = entries.slice(0, 5)
 
-  const displayName =
+  const resolvedDisplayName =
     profileQuery.data?.display_name ??
     (user?.user_metadata?.['full_name'] as string | undefined) ??
-    user?.email?.split('@')[0] ??
-    'there'
+    user?.email?.split('@')[0]
+  const isHeaderLoading =
+    isAuthLoading ||
+    (user != null && profileQuery.isLoading && profileQuery.data == null)
+  const isLibraryLoading =
+    isAuthLoading ||
+    (user != null && libraryQuery.isLoading && libraryQuery.data == null)
+  const displayName = resolvedDisplayName ?? 'there'
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -273,6 +332,9 @@ export default function HomeScreen() {
       >
         <HomeHero
           displayName={displayName}
+          isHeaderLoading={isHeaderLoading}
+          isCurrentlyPlayingLoading={isLibraryLoading}
+          isStatsLoading={isLibraryLoading}
           totalGames={totalGames}
           wantedCount={wantedCount}
           playingEntries={playingEntries}
@@ -367,6 +429,10 @@ const styles = StyleSheet.create({
   heroCopy: {
     maxWidth: 520,
     marginBottom: Spacing.lg,
+  },
+  heroHeaderSkeleton: {
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   heroEyebrow: {
     color: Colors.textMuted,
