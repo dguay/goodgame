@@ -1,9 +1,10 @@
 import { Platform } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
-import { makeRedirectUri } from 'expo-auth-session'
 import { supabase } from './supabase'
 
 WebBrowser.maybeCompleteAuthSession()
+
+const NativeRedirectUrl = 'goodgame://auth/callback'
 
 function authParamsFromUrl(url: string): URLSearchParams {
   const parsedUrl = new URL(url)
@@ -59,22 +60,17 @@ export async function signInWithGoogle(): Promise<void> {
     return
   }
 
-  // Native: open Google OAuth in an in-app browser, then exchange the code for a session.
-  // makeRedirectUri returns goodgame://auth/callback in standalone builds,
-  // or exp://... in Expo Go development.
-  const redirectUrl = makeRedirectUri({ scheme: 'goodgame', path: 'auth/callback' })
-
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: redirectUrl,
+      redirectTo: NativeRedirectUrl,
       skipBrowserRedirect: true,
     },
   })
   if (error) throw error
   if (!data.url) throw new Error('No auth URL returned from Supabase')
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
+  const result = await WebBrowser.openAuthSessionAsync(data.url, NativeRedirectUrl)
   if (result.type !== 'success') return
 
   await completeNativeAuthSession(result.url)
