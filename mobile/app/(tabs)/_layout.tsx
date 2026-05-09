@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { TabActions } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Spacing, FontSize } from '@/constants'
+import { useNotificationSync } from '@/hooks/useNotificationSync'
 
 type IoniconsName = keyof typeof Ionicons.glyphMap
 
@@ -88,6 +89,7 @@ function BottomTabBar({ state, navigation }: TabBarProps) {
 }
 
 export default function TabLayout() {
+  useNotificationSync()
   const { width } = useWindowDimensions()
   const isSideNav = Platform.OS === 'web' && width >= 768
 

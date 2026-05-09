@@ -729,6 +729,7 @@ export default function GameDetailScreen() {
     id: game.id,
     name: game.name,
     background_image: game.background_image,
+    released: game.released,
   }
 
   return (

@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  scheduleReleaseNotifications,
+  cancelReleaseNotifications,
+} from '@/lib/notifications'
 import type { LibraryEntry, LibraryEntryInsert, LibraryEntryUpdate } from '@/types/database'
 
 function libraryKey(userId: string) {
@@ -82,10 +86,16 @@ export function useAddToLibrary() {
         game_cover_url: entry.game_cover_url ?? null,
         game_title: entry.game_title,
         rawg_game_id: entry.rawg_game_id,
+        release_date: entry.release_date ?? null,
         status: entry.status,
       }
       queryClient.setQueryData<LibraryEntry[]>(key, old => [optimistic, ...(old ?? [])])
       return { prev }
+    },
+    onSuccess: async (entry) => {
+      if (entry.status === 'want_to_play' && entry.release_date != null) {
+        await scheduleReleaseNotifications(entry.rawg_game_id, entry.game_title, entry.release_date)
+      }
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev != null && user != null) {
@@ -174,6 +184,15 @@ export function useUpdateLibraryEntry() {
       )
       return { prev }
     },
+    onSuccess: async (entry, variables) => {
+      if (variables.status != null) {
+        if (entry.status === 'want_to_play' && entry.release_date != null) {
+          await scheduleReleaseNotifications(entry.rawg_game_id, entry.game_title, entry.release_date)
+        } else {
+          await cancelReleaseNotifications(entry.rawg_game_id)
+        }
+      }
+    },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev != null && user != null) {
         queryClient.setQueryData(libraryKey(user.id), ctx.prev)
@@ -204,10 +223,16 @@ export function useRemoveFromLibrary() {
       const key = libraryKey(user.id)
       await queryClient.cancelQueries({ queryKey: key })
       const prev = queryClient.getQueryData<LibraryEntry[]>(key)
+      const rawgGameId = prev?.find(e => e.id === id)?.rawg_game_id ?? null
       queryClient.setQueryData<LibraryEntry[]>(key, old =>
         (old ?? []).filter(e => e.id !== id)
       )
-      return { prev }
+      return { prev, rawgGameId }
+    },
+    onSuccess: async (_data, _vars, context) => {
+      if (context?.rawgGameId != null) {
+        await cancelReleaseNotifications(context.rawgGameId)
+      }
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev != null && user != null) {

@@ -26,6 +26,7 @@ export type Database = {
           personal_playtime_minutes: number | null
           personal_rating: number | null
           rawg_game_id: number
+          release_date: string | null
           started_at: string | null
           status: string
           updated_at: string
@@ -42,6 +43,7 @@ export type Database = {
           personal_playtime_minutes?: number | null
           personal_rating?: number | null
           rawg_game_id: number
+          release_date?: string | null
           started_at?: string | null
           status: string
           updated_at?: string
@@ -58,6 +60,7 @@ export type Database = {
           personal_playtime_minutes?: number | null
           personal_rating?: number | null
           rawg_game_id?: number
+          release_date?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string

@@ -15,7 +15,7 @@ import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { RawgGame } from '@/types/rawg'
 
 interface Props {
-  game: Pick<RawgGame, 'id' | 'name' | 'background_image'>
+  game: Pick<RawgGame, 'id' | 'name' | 'background_image' | 'released'>
 }
 
 export function AddToLibraryButton({ game }: Props) {
@@ -39,12 +39,19 @@ export function AddToLibraryButton({ game }: Props) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
     }
     if (entry != null) {
-      updateMutation.mutate({ id: entry.id, status })
+      updateMutation.mutate({
+        id: entry.id,
+        status,
+        ...(entry.release_date == null && game.released != null
+          ? { release_date: game.released }
+          : {}),
+      })
     } else {
       addMutation.mutate({
         rawg_game_id: game.id,
         game_title: game.name,
         game_cover_url: game.background_image ?? null,
+        release_date: game.released ?? null,
         status,
       })
     }
