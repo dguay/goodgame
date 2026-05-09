@@ -55,14 +55,6 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }
 
 const FILTER_KEYS: FilterStatus[] = FILTER_OPTIONS.map(option => option.key)
 
-const FILTER_ICONS: Record<FilterStatus, keyof typeof Ionicons.glyphMap> = {
-  all: 'library-outline',
-  want_to_play: 'bookmark-outline',
-  playing: 'game-controller-outline',
-  done: 'checkmark-circle-outline',
-  did_not_finish: 'ban-outline',
-}
-
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Recently Added' },
   { key: 'title', label: 'Title' },
@@ -640,9 +632,7 @@ const spStyles = StyleSheet.create({
 function LibraryFilters({
   activeFilter,
   activeViewMode,
-  counts,
   currentSortLabel,
-  filteredCount,
   isCustomSort,
   isWide,
   onFilterChange,
@@ -651,87 +641,70 @@ function LibraryFilters({
 }: {
   activeFilter: FilterStatus
   activeViewMode: ViewMode
-  counts: Record<FilterStatus, number>
   currentSortLabel: string
-  filteredCount: number
   isCustomSort: boolean
   isWide: boolean
   onFilterChange: (filter: FilterStatus) => void
   onSortPress: () => void
   onViewModeChange: (viewMode: ViewMode) => void
 }) {
-  const resultLabel = filteredCount === 1 ? '1 game' : `${filteredCount} games`
-
   return (
     <View style={[styles.filterPanel, isWide && styles.filterPanelWide]}>
-      <View style={styles.filterHeader}>
-        <View style={styles.filterTitleRow}>
-          <Text variant="label" style={styles.filterEyebrow}>
-            Filters
-          </Text>
-          <Text variant="caption" style={styles.filterResult}>
-            {resultLabel}
-          </Text>
-        </View>
-
-        <View style={styles.controls}>
-          <View style={styles.viewToggle}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Grid view"
-              accessibilityState={{ selected: activeViewMode === 'grid', disabled: isCustomSort }}
-              style={[
-                styles.toggleBtn,
-                activeViewMode === 'grid' && styles.toggleBtnActive,
-                isCustomSort && styles.toggleBtnDisabled,
-              ]}
-              onPress={() => onViewModeChange('grid')}
-              disabled={isCustomSort}
-              hitSlop={4}
-            >
-              <Ionicons
-                name="grid-outline"
-                size={18}
-                color={activeViewMode === 'grid' ? Colors.primary : Colors.textSecondary}
-              />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="List view"
-              accessibilityState={{ selected: activeViewMode === 'list' }}
-              style={[styles.toggleBtn, activeViewMode === 'list' && styles.toggleBtnActive]}
-              onPress={() => onViewModeChange('list')}
-              hitSlop={4}
-            >
-              <Ionicons
-                name="list-outline"
-                size={18}
-                color={activeViewMode === 'list' ? Colors.primary : Colors.textSecondary}
-              />
-            </Pressable>
-          </View>
-
+      <View style={styles.controls}>
+        <View style={styles.viewToggle}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Sort by ${currentSortLabel}`}
-            style={({ pressed }) => [styles.sortBtn, pressed && styles.sortBtnPressed]}
-            onPress={onSortPress}
+            accessibilityLabel="Grid view"
+            accessibilityState={{ selected: activeViewMode === 'grid', disabled: isCustomSort }}
+            style={[
+              styles.toggleBtn,
+              activeViewMode === 'grid' && styles.toggleBtnActive,
+              isCustomSort && styles.toggleBtnDisabled,
+            ]}
+            onPress={() => onViewModeChange('grid')}
+            disabled={isCustomSort}
+            hitSlop={4}
           >
-            <Ionicons name="swap-vertical-outline" size={16} color={Colors.textSecondary} />
-            <Text variant="caption" numberOfLines={1} style={styles.sortLabel}>
-              {currentSortLabel}
-            </Text>
-            <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
+            <Ionicons
+              name="grid-outline"
+              size={18}
+              color={activeViewMode === 'grid' ? Colors.textPrimary : Colors.textSecondary}
+            />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="List view"
+            accessibilityState={{ selected: activeViewMode === 'list' }}
+            style={[styles.toggleBtn, activeViewMode === 'list' && styles.toggleBtnActive]}
+            onPress={() => onViewModeChange('list')}
+            hitSlop={4}
+          >
+            <Ionicons
+              name="list-outline"
+              size={18}
+              color={activeViewMode === 'list' ? Colors.textPrimary : Colors.textSecondary}
+            />
           </Pressable>
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Sort by ${currentSortLabel}`}
+          style={({ pressed }) => [styles.sortBtn, pressed && styles.sortBtnPressed]}
+          onPress={onSortPress}
+        >
+          <Ionicons name="swap-vertical-outline" size={16} color={Colors.textSecondary} />
+          <Text variant="caption" numberOfLines={1} style={styles.sortLabel}>
+            {currentSortLabel}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
+        </Pressable>
       </View>
 
       <View style={[styles.filterContent, isWide && styles.filterContentWide]}>
         {FILTER_OPTIONS.map(({ key, label, compactLabel }) => {
-          const count = counts[key]
           const isActive = activeFilter === key
           const filterColor = getFilterColor(key)
-          const iconColor = isActive ? filterColor : Colors.textMuted
           const displayLabel = isWide ? label : compactLabel
 
           return (
@@ -743,15 +716,11 @@ function LibraryFilters({
                 styles.filterTab,
                 isWide && styles.filterTabWide,
                 !isWide && styles.filterTabCompact,
-                isActive && [
-                  styles.filterTabActive,
-                  { borderColor: filterColor },
-                ],
-                pressed && styles.filterTabPressed,
+                isActive && [styles.filterTabActive, { borderColor: filterColor }],
+                pressed && !isActive && styles.filterTabPressed,
               ]}
               onPress={() => onFilterChange(key)}
             >
-              <Ionicons name={FILTER_ICONS[key]} size={isWide ? 15 : 14} color={iconColor} />
               <Text
                 variant="label"
                 numberOfLines={1}
@@ -759,20 +728,6 @@ function LibraryFilters({
               >
                 {displayLabel}
               </Text>
-              <View
-                style={[
-                  styles.badge,
-                  isActive && [styles.badgeActive, { borderColor: filterColor }],
-                ]}
-              >
-                <Text
-                  variant="label"
-                  numberOfLines={1}
-                  style={[styles.badgeText, isActive && { color: filterColor }]}
-                >
-                  {count}
-                </Text>
-              </View>
             </Pressable>
           )
         })}
@@ -836,17 +791,6 @@ export default function LibraryScreen() {
     const byStatus = filter === 'all' ? all : all.filter(e => e.status === filter)
     return sort === 'custom' ? orderEntriesByIds(byStatus, customOrderIds) : sortEntries(byStatus, sort)
   }, [customOrderIds, entries, filter, sort])
-
-  const counts = useMemo((): Record<FilterStatus, number> => {
-    const all = entries ?? []
-    return {
-      all: all.length,
-      want_to_play: all.filter(e => e.status === 'want_to_play').length,
-      playing: all.filter(e => e.status === 'playing').length,
-      done: all.filter(e => e.status === 'done').length,
-      did_not_finish: all.filter(e => e.status === 'did_not_finish').length,
-    }
-  }, [entries])
 
   function handleDelete(id: string) {
     if (Platform.OS === 'web') {
@@ -929,14 +873,15 @@ export default function LibraryScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text variant="heading">Library</Text>
+        <Text variant="caption" style={styles.resultLabel}>
+          {filtered.length === 1 ? '1 game' : `${filtered.length} games`}
+        </Text>
       </View>
 
       <LibraryFilters
         activeFilter={filter}
         activeViewMode={activeViewMode}
-        counts={counts}
         currentSortLabel={currentSortLabel}
-        filteredCount={filtered.length}
         isCustomSort={sort === 'custom'}
         isWide={isWide}
         onFilterChange={setFilter}
@@ -1046,15 +991,17 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    gap: Spacing.xxs,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   filterPanel: {
     flexShrink: 0,
     gap: Spacing.sm,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.sm,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     backgroundColor: Colors.background,
@@ -1062,23 +1009,7 @@ const styles = StyleSheet.create({
   filterPanelWide: {
     paddingHorizontal: Spacing.md,
   },
-  filterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.md,
-  },
-  filterTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.sm,
-    flexShrink: 1,
-  },
-  filterEyebrow: {
-    color: Colors.textMuted,
-  },
-  filterResult: {
+  resultLabel: {
     color: Colors.textSecondary,
   },
   filterContent: {
@@ -1095,75 +1026,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xs,
-    minHeight: 40,
-    width: '31%',
+    minHeight: 34,
+    width: 92,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.surface,
   },
   filterTabCompact: {
     gap: Spacing.xxs,
-    paddingHorizontal: 6,
+    width: '31%',
+    paddingHorizontal: Spacing.sm,
   },
   filterTabWide: {
-    width: 132,
+    width: 108,
   },
   filterTabActive: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.surfaceRaised,
   },
   filterTabPressed: {
-    borderColor: Colors.textMuted,
+    backgroundColor: Colors.surfaceRaised,
   },
   filterLabel: {
     color: Colors.textSecondary,
     flexShrink: 1,
     minWidth: 0,
   },
-  badge: {
-    backgroundColor: Colors.surfaceRaised,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-    borderColor: Colors.borderSoft,
-    minWidth: 20,
-    minHeight: 20,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  badgeActive: {
-    backgroundColor: Colors.surfaceRaised,
-  },
-  badgeText: {
-    color: Colors.textMuted,
-  },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     gap: Spacing.sm,
     flexShrink: 1,
+    marginLeft: Spacing.md,
   },
   viewToggle: {
     flexDirection: 'row',
-    padding: 3,
-    borderRadius: Radius.sm,
+    gap: Spacing.xs,
+  },
+  toggleBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
   },
-  toggleBtn: {
-    width: 36,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.xs,
-  },
   toggleBtnActive: {
-    backgroundColor: Colors.surfaceRaised,
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   toggleBtnDisabled: {
     opacity: 0.35,
@@ -1175,9 +1090,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     minHeight: 40,
     maxWidth: 190,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
