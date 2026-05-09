@@ -81,7 +81,7 @@ pnpm run db:types
 **Logic:**
 
 1. Obtain Reddit app-only OAuth token via `POST https://www.reddit.com/api/v1/access_token` with `grant_type=client_credentials`. Header: `User-Agent: server:com.goodgame.app:v1.0 (by /u/yourusername)`.
-2. For each of the 7 subreddits: `GET /r/{sub}/top.json?t=day&limit=25`
+2. For each of the 9 subreddits: `GET /r/{sub}/hot.json?t=day&limit=25`
 3. Flatten all posts into one array
 4. Dedupe by `url` — keep highest-score post per URL
 5. Compute `rank_score = score + num_comments * 3` for each
@@ -93,7 +93,7 @@ pnpm run db:types
    ```
    Use Supabase service role client (`createClient` with `SUPABASE_SERVICE_ROLE_KEY`).
 
-**Subreddits:** `games`, `gaming`, `pcgaming`, `PS5`, `XboxSeriesX`, `NintendoSwitch`, `Steam`
+**Subreddits:** `games`, `gaming`, `pcgaming`, `PS5`, `pcmasterrace`, `GamingLeaksAndRumours`, `patientgamers`, `playstation`, `Steam`,
 
 **Thumbnail handling:** Reddit thumbnails are often `"self"`, `"default"`, or `"nsfw"` strings. Store `null` for non-URL values.
 
