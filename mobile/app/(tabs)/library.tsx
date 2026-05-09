@@ -146,11 +146,6 @@ function swapItems<T>(items: T[], firstIndex: number, secondIndex: number): T[] 
   return next
 }
 
-function getFilterColor(filter: FilterStatus): string {
-  if (filter === 'all') return Colors.primary
-  return STATUS_COLORS[filter]
-}
-
 function LibraryEntryCard({
   entry,
   mode,
@@ -704,7 +699,6 @@ function LibraryFilters({
       <View style={[styles.filterContent, isWide && styles.filterContentWide]}>
         {FILTER_OPTIONS.map(({ key, label, compactLabel }) => {
           const isActive = activeFilter === key
-          const filterColor = getFilterColor(key)
           const displayLabel = isWide ? label : compactLabel
 
           return (
@@ -716,7 +710,7 @@ function LibraryFilters({
                 styles.filterTab,
                 isWide && styles.filterTabWide,
                 !isWide && styles.filterTabCompact,
-                isActive && [styles.filterTabActive, { borderColor: filterColor }],
+                isActive && styles.filterTabActive,
                 pressed && !isActive && styles.filterTabPressed,
               ]}
               onPress={() => onFilterChange(key)}
@@ -724,7 +718,7 @@ function LibraryFilters({
               <Text
                 variant="label"
                 numberOfLines={1}
-                style={[styles.filterLabel, isActive && { color: filterColor }]}
+                style={[styles.filterLabel, isActive && styles.filterLabelActive]}
               >
                 {displayLabel}
               </Text>
@@ -999,33 +993,33 @@ const styles = StyleSheet.create({
   },
   filterPanel: {
     flexShrink: 0,
-    gap: Spacing.sm,
-    paddingTop: Spacing.md,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    marginTop: -Spacing.xs,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.borderSoft,
     backgroundColor: Colors.background,
   },
   filterPanelWide: {
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   resultLabel: {
     color: Colors.textSecondary,
   },
   filterContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: Spacing.md,
+    flexWrap: 'nowrap',
     gap: Spacing.xs,
   },
   filterContentWide: {
-    paddingHorizontal: 0,
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
   },
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.xs,
     minHeight: 34,
     width: 92,
     paddingHorizontal: Spacing.sm,
@@ -1036,15 +1030,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   filterTabCompact: {
-    gap: Spacing.xxs,
-    width: '31%',
-    paddingHorizontal: Spacing.sm,
+    width: 60,
+    minHeight: 40,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: Spacing.xxs,
   },
   filterTabWide: {
     width: 108,
+    paddingHorizontal: Spacing.md,
   },
   filterTabActive: {
-    backgroundColor: Colors.surfaceRaised,
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   filterTabPressed: {
     backgroundColor: Colors.surfaceRaised,
@@ -1054,31 +1051,40 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  filterLabelActive: {
+    color: Colors.textPrimary,
+  },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: Spacing.sm,
-    flexShrink: 1,
-    marginLeft: Spacing.md,
+    padding: Spacing.xs,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderSoft,
+    backgroundColor: Colors.background,
   },
   viewToggle: {
     flexDirection: 'row',
-    gap: Spacing.xs,
+    gap: Spacing.xxs,
+    padding: 1,
+    marginBottom: Spacing.xs,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.borderSoft,
+    backgroundColor: Colors.surface,
   },
   toggleBtn: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    backgroundColor: 'transparent',
   },
   toggleBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.surfaceRaised,
   },
   toggleBtnDisabled: {
     opacity: 0.35,
@@ -1088,9 +1094,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: Spacing.xs,
-    minHeight: 40,
-    maxWidth: 190,
-    paddingVertical: Spacing.sm,
+    marginLeft: 'auto',
+    minHeight: 36,
+    paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.pill,
     borderWidth: 1,
@@ -1098,7 +1104,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   sortBtnPressed: {
-    backgroundColor: Colors.surfaceRaised,
+    opacity: 0.82,
   },
   sortLabel: {
     color: Colors.textSecondary,
