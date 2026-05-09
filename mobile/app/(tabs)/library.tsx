@@ -13,7 +13,7 @@ import {
   type NativeTouchEvent,
   useWindowDimensions,
 } from 'react-native'
-import { Swipeable } from 'react-native-gesture-handler'
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -31,6 +31,7 @@ import {
 } from '@/hooks/useLibrary'
 import { useUpdateUserPreferences, useUserPreferences } from '@/hooks/useUserPreferences'
 import { Colors, Radius, Spacing } from '@/constants'
+import { isUpcomingRelease } from '@/lib/releaseDates'
 import {
   LIBRARY_SORT_KEYS,
   STATUS_COLORS,
@@ -76,6 +77,20 @@ function formatPlaytime(minutes: number): string {
   if (h === 0) return `${m}m`
   if (m === 0) return `${h}h`
   return `${h}h ${m}m`
+}
+
+function getReleaseMeta(releaseDate: string | null): { year: string; isUpcoming: boolean } | null {
+  const yearPart = releaseDate?.split('-')[0]
+  if (yearPart == null || yearPart.length === 0) return null
+
+  const year = Number(yearPart)
+  if (isNaN(year)) return null
+
+  if (releaseDate === yearPart) {
+    return { year: yearPart, isUpcoming: year > new Date().getFullYear() }
+  }
+
+  return { year: yearPart, isUpcoming: isUpcomingRelease(releaseDate) }
 }
 
 function sortEntries(entries: LibraryEntry[], sort: SortKey): LibraryEntry[] {
@@ -157,6 +172,7 @@ function LibraryEntryCard({
   onDelete: (id: string) => void
 }) {
   const status = entry.status as LibraryStatus
+  const releaseMeta = getReleaseMeta(entry.release_date)
 
   if (mode === 'list') {
     return (
@@ -175,6 +191,7 @@ function LibraryEntryCard({
           <Text variant="body" numberOfLines={2} style={lcStyles.listTitle}>
             {entry.game_title}
           </Text>
+          <ReleaseMeta meta={releaseMeta} />
           <Pressable
             style={[lcStyles.chip, { borderColor: STATUS_COLORS[status] }]}
             onPress={() => onStatusPress(entry)}
@@ -219,6 +236,7 @@ function LibraryEntryCard({
         <Text variant="body" numberOfLines={2} style={lcStyles.gridTitle}>
           {entry.game_title}
         </Text>
+        <ReleaseMeta meta={releaseMeta} />
         <Pressable
           style={[lcStyles.chip, { borderColor: STATUS_COLORS[status] }]}
           onPress={() => onStatusPress(entry)}
@@ -241,6 +259,19 @@ function LibraryEntryCard({
         )}
       </View>
     </Pressable>
+  )
+}
+
+function ReleaseMeta({ meta }: { meta: { year: string; isUpcoming: boolean } | null }) {
+  if (meta == null) return null
+
+  return (
+    <View style={lcStyles.releaseMeta}>
+      <Text variant="caption">{meta.year}</Text>
+      {meta.isUpcoming && (
+        <Ionicons name="calendar-outline" size={12} color={Colors.success} />
+      )}
+    </View>
   )
 }
 
@@ -305,6 +336,11 @@ const lcStyles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
     flexWrap: 'wrap',
+  },
+  releaseMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   pressed: {
     opacity: 0.85,
@@ -910,7 +946,7 @@ export default function LibraryScreen() {
           }
           if (activeViewMode === 'list' && Platform.OS !== 'web') {
             return (
-              <Swipeable
+              <ReanimatedSwipeable
                 renderRightActions={() => (
                   <Pressable
                     style={styles.swipeDeleteAction}
@@ -924,7 +960,7 @@ export default function LibraryScreen() {
                 friction={2}
               >
                 {card}
-              </Swipeable>
+              </ReanimatedSwipeable>
             )
           }
           return card
@@ -1061,7 +1097,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.xxs,
     padding: 1,
-    marginBottom: Spacing.xs,
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.borderSoft,
