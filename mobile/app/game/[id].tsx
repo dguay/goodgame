@@ -699,7 +699,7 @@ export default function GameDetailScreen() {
   const actionBarBottomPadding =
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.lg)
-      : Math.max(insets.bottom, Spacing.md)
+      : Math.max(insets.bottom, Spacing.lg)
 
   if (isLoading) {
     return (

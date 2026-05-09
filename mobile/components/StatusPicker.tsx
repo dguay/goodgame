@@ -1,5 +1,6 @@
 import { Modal, View, Pressable, StyleSheet, Platform } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@/components/ui/Text'
 import { Colors, Spacing, Radius } from '@/constants'
 import { STATUS_LABELS, STATUS_COLORS, type LibraryStatus } from '@/types'
@@ -28,6 +29,7 @@ interface Props {
 
 export function StatusPicker({ visible, currentStatus, onSelect, onRemove, onDismiss }: Props) {
   const isWeb = Platform.OS === 'web'
+  const insets = useSafeAreaInsets()
 
   return (
     <Modal
@@ -40,7 +42,7 @@ export function StatusPicker({ visible, currentStatus, onSelect, onRemove, onDis
       <View style={[styles.overlay, isWeb ? styles.overlayCenter : styles.overlayBottom]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
         <View
-          style={isWeb ? styles.card : styles.sheet}
+          style={[isWeb ? styles.card : styles.sheet, !isWeb && { paddingBottom: Math.max(insets.bottom, Spacing.xl) }]}
           onStartShouldSetResponder={(_e) => true}
         >
           {!isWeb && <View style={styles.handle} />}
