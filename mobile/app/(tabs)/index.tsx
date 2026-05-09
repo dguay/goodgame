@@ -17,13 +17,13 @@ import { RawgFooter } from '@/components/RawgFooter'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
-import { useNewReleases, useTopRated } from '@/hooks/useRawg'
-import { useRecommendations } from '@/hooks/useRecommendations'
+import { useNewReleases } from '@/hooks/useRawg'
+import { useRedditThreads } from '@/hooks/useRedditThreads'
+import { RedditThreadCard } from '@/components/RedditThreadCard'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 import { STATUS_COLORS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
-
 const CARD_WIDTH = 160
 type HeroStatTone = 'library' | 'wanted' | 'playing' | 'done'
 type HeroStatFilter = LibraryStatus | 'all'
@@ -35,38 +35,18 @@ function getGreeting(): string {
   return 'Good evening'
 }
 
-function LibraryCard({ entry }: { entry: LibraryEntry }) {
-  return (
-    <Pressable
-      style={styles.libraryCard}
-      onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
-    >
-      <Image
-        source={entry.game_cover_url != null ? { uri: entry.game_cover_url } : null}
-        style={styles.libraryCardCover}
-        contentFit="cover"
-        transition={200}
-        cachePolicy="disk"
-      />
-      <View style={styles.libraryCardInfo}>
-        <Text variant="caption" numberOfLines={2} style={styles.libraryCardTitle}>
-          {entry.game_title}
-        </Text>
-      </View>
-    </Pressable>
-  )
-}
-
 function SectionHeader({
   title,
+  meta,
   onSeeAll,
 }: {
   title: string
+  meta?: string
   onSeeAll?: () => void
 }) {
   return (
     <View style={styles.sectionHeader}>
-      <Text variant="body" style={styles.sectionTitle}>{title}</Text>
+      <Text variant="body" style={styles.sectionTitle} numberOfLines={1}>{title}</Text>
       {onSeeAll != null && (
         <Pressable onPress={onSeeAll}>
           <Text variant="caption" color={Colors.primary} style={styles.sectionAction}>
@@ -74,8 +54,27 @@ function SectionHeader({
           </Text>
         </Pressable>
       )}
+      {onSeeAll == null && meta != null && (
+        <Text variant="caption" color={Colors.textMuted} style={styles.sectionMeta} numberOfLines={1}>
+          {meta}
+        </Text>
+      )}
     </View>
   )
+}
+
+function formatUpdatedAt(value: string | null): string | undefined {
+  if (value == null) return undefined
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return undefined
+
+  return `Updated ${date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })}`
 }
 
 function HorizontalSkeletons() {
@@ -269,17 +268,13 @@ export default function HomeScreen() {
   const profileQuery = useProfile()
   const libraryQuery = useLibraryEntries()
   const newReleasesQuery = useNewReleases()
-  const topRatedQuery = useTopRated()
-  const { data: recommendations, isLoading: isRecommendationsLoading, hasEnoughData } =
-    useRecommendations()
+  const redditQuery = useRedditThreads()
 
   const entries = libraryQuery.data ?? []
   const totalGames = entries.length
   const playingEntries = entries.filter(e => e.status === 'playing')
   const wantedCount = entries.filter(e => e.status === 'want_to_play').length
   const completedCount = entries.filter(e => e.status === 'done').length
-  const recentlyAdded = entries.slice(0, 5)
-
   const resolvedDisplayName =
     profileQuery.data?.display_name ??
     (user?.user_metadata?.['full_name'] as string | undefined) ??
@@ -291,6 +286,12 @@ export default function HomeScreen() {
     isAuthLoading ||
     (user != null && libraryQuery.isLoading && libraryQuery.data == null)
   const displayName = resolvedDisplayName ?? 'there'
+  const redditUpdatedAt = formatUpdatedAt(
+    (redditQuery.data ?? []).reduce<string | null>((latest, thread) => {
+      if (latest == null) return thread.fetched_at
+      return thread.fetched_at > latest ? thread.fetched_at : latest
+    }, null)
+  )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -299,21 +300,12 @@ export default function HomeScreen() {
         profileQuery.refetch(),
         libraryQuery.refetch(),
         newReleasesQuery.refetch(),
-        topRatedQuery.refetch(),
+        redditQuery.refetch(),
       ])
     } finally {
       setRefreshing(false)
     }
-  }, [profileQuery, libraryQuery, newReleasesQuery, topRatedQuery])
-
-  const useRecommendationSection = hasEnoughData
-  const recommendationLabel = useRecommendationSection ? 'Recommended for You' : 'Discover Games'
-  const recommendationData: RawgGame[] = useRecommendationSection
-    ? recommendations
-    : (topRatedQuery.data?.results ?? [])
-  const isRecommendationLoading = useRecommendationSection
-    ? isRecommendationsLoading
-    : topRatedQuery.isLoading
+  }, [profileQuery, libraryQuery, newReleasesQuery, redditQuery])
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -364,42 +356,26 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Recommended / Discover */}
-        <View style={styles.section}>
-          <SectionHeader title={recommendationLabel} />
-          {isRecommendationLoading ? (
-            <HorizontalSkeletons />
-          ) : (
-            <FlatList<RawgGame>
-              data={recommendationData}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <GameCard game={item} style={{ width: CARD_WIDTH }} />
-              )}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-              ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-            />
-          )}
-        </View>
-
-        {/* Recently Added */}
-        {recentlyAdded.length > 0 && (
+        {/* Trending on Reddit */}
+        {(redditQuery.isLoading || (redditQuery.data != null && redditQuery.data.length > 0)) && (
           <View style={styles.section}>
-            <SectionHeader
-              title="Recently Added"
-              onSeeAll={() => router.push('/library')}
-            />
-            <FlatList<LibraryEntry>
-              data={recentlyAdded}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => <LibraryCard entry={item} />}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-              ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-            />
+            <SectionHeader title="Trending on Reddit" meta={redditUpdatedAt} />
+            {redditQuery.isLoading ? (
+              <View style={styles.redditSkeletons}>
+                {[1, 2, 3].map(i => (
+                  <SkeletonLoader key={i} width="100%" height={90} borderRadius={Radius.lg} style={styles.redditSkeleton} />
+                ))}
+              </View>
+            ) : (
+              <View>
+                {(redditQuery.data ?? []).map((thread, i) => (
+                  <View key={thread.id}>
+                    {i > 0 && <View style={styles.redditSeparator} />}
+                    <RedditThreadCard thread={thread} />
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -506,10 +482,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   sectionTitle: {
+    flex: 1,
     fontFamily: FontFamily.semibold,
     lineHeight: FontSize.md * 1.3,
+    marginRight: Spacing.sm,
   },
   sectionAction: {
+    fontFamily: FontFamily.medium,
+  },
+  sectionMeta: {
+    flexShrink: 0,
     fontFamily: FontFamily.medium,
   },
   horizontalList: {
@@ -523,26 +505,15 @@ const styles = StyleSheet.create({
   itemSeparator: {
     width: Spacing.sm,
   },
-  libraryCard: {
-    width: CARD_WIDTH,
-    backgroundColor: Colors.surface,
-    borderRadius: 10,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
+  redditSkeletons: {
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
   },
-  libraryCardCover: {
-    width: '100%',
-    height: 130,
-    backgroundColor: Colors.surfaceRaised,
+  redditSkeleton: {
+    marginBottom: 0,
   },
-  libraryCardInfo: {
-    padding: Spacing.sm,
-  },
-  libraryCardTitle: {
-    color: Colors.textPrimary,
-    fontFamily: FontFamily.medium,
-    lineHeight: 18,
+  redditSeparator: {
+    height: Spacing.xs,
   },
 })
 

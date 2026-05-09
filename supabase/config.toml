@@ -395,6 +395,9 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+[functions.fetch-reddit-threads]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54227
