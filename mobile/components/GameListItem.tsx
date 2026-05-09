@@ -1,9 +1,11 @@
 import { Pressable, View, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { Text } from '@/components/ui/Text'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
 import { Colors, Spacing, Radius, FontFamily } from '@/constants'
+import { isUpcomingRelease } from '@/lib/releaseDates'
 import type { RawgGame } from '@/types/rawg'
 
 function metacriticColor(score: number): string {
@@ -18,8 +20,8 @@ interface Props {
 
 export function GameListItem({ game }: Props) {
   const year = game.released != null ? game.released.split('-')[0] : null
+  const isUpcoming = isUpcomingRelease(game.released)
   const topGenre = (game.genres ?? [])[0]?.name ?? null
-  const meta = [year, topGenre].filter(Boolean).join(' - ')
 
   return (
     <Pressable
@@ -37,8 +39,23 @@ export function GameListItem({ game }: Props) {
         <Text variant="body" numberOfLines={2} style={styles.title}>
           {game.name}
         </Text>
-        {meta.length > 0 && (
-          <Text variant="caption">{meta}</Text>
+        {(year != null || topGenre != null) && (
+          <View style={styles.metaRow}>
+            {year != null && (
+              <View style={styles.releaseMeta}>
+                <Text variant="caption">{year}</Text>
+                {isUpcoming && (
+                  <Ionicons name="calendar-outline" size={12} color={Colors.success} />
+                )}
+              </View>
+            )}
+            {year != null && topGenre != null && (
+              <Text variant="caption" color={Colors.textMuted}>
+                -
+              </Text>
+            )}
+            {topGenre != null && <Text variant="caption">{topGenre}</Text>}
+          </View>
         )}
         {game.metacritic != null && (
           <View style={[styles.metaBadge, { borderColor: metacriticColor(game.metacritic) }]}>
@@ -78,6 +95,17 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     fontSize: 14,
     lineHeight: 20,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  releaseMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   metaBadge: {
     alignSelf: 'flex-start',

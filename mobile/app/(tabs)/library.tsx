@@ -6,7 +6,6 @@ import {
   PanResponder,
   Platform,
   Pressable,
-  RefreshControl,
   StyleSheet,
   View,
   type GestureResponderEvent,
@@ -18,7 +17,7 @@ import { Swipeable } from 'react-native-gesture-handler'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@/components/ui/Text'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
@@ -47,7 +46,7 @@ type ViewMode = 'grid' | 'list'
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }[] = [
   { key: 'all', label: 'All', compactLabel: 'All' },
-  { key: 'want_to_play', label: 'Wanted', compactLabel: 'Want' },
+  { key: 'want_to_play', label: 'TBP', compactLabel: 'TBP' },
   { key: 'playing', label: 'Playing', compactLabel: 'Play' },
   { key: 'done', label: 'Done', compactLabel: 'Done' },
   { key: 'did_not_finish', label: 'DNF', compactLabel: 'DNF' },
@@ -526,13 +525,15 @@ function SortPicker({
   onDismiss: () => void
 }) {
   const isWeb = Platform.OS === 'web'
+  const insets = useSafeAreaInsets()
+  const sheetPaddingBottom = isWeb ? Spacing.md : Math.max(insets.bottom + Spacing.xl, Spacing.section)
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={[spStyles.overlay, isWeb ? spStyles.overlayCenter : spStyles.overlayBottom]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
         <View
-          style={isWeb ? spStyles.card : spStyles.sheet}
+          style={[isWeb ? spStyles.card : spStyles.sheet, { paddingBottom: sheetPaddingBottom }]}
           onStartShouldSetResponder={(_e) => true}
         >
           {!isWeb && <View style={spStyles.handle} />}
@@ -582,7 +583,6 @@ const spStyles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingBottom: Spacing.xl,
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: Colors.border,
@@ -733,15 +733,15 @@ function LibraryFilters({
 
 export default function LibraryScreen() {
   const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>()
-  const [filter, setFilter] = useState<FilterStatus>('all')
-  const [sort, setSort] = useState<SortKey>('recent')
+  const [filter, setFilter] = useState<FilterStatus>('want_to_play')
+  const [sort, setSort] = useState<SortKey>('custom')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortPickerVisible, setSortPickerVisible] = useState(false)
   const [statusPickerEntry, setStatusPickerEntry] = useState<LibraryEntry | null>(null)
   const [customOrderIds, setCustomOrderIds] = useState<string[]>([])
   const customOrderIdsRef = useRef<string[]>([])
 
-  const { data: entries, isLoading, refetch, isRefetching } = useLibraryEntries()
+  const { data: entries, isLoading } = useLibraryEntries()
   const { mutate: updateEntry } = useUpdateLibraryEntry()
   const { mutate: removeEntry } = useRemoveFromLibrary()
   const { mutate: updateCustomOrder } = useUpdateLibraryCustomOrder()
@@ -938,14 +938,6 @@ export default function LibraryScreen() {
         ]}
         columnWrapperStyle={activeViewMode === 'grid' ? styles.gridRow : undefined}
         ItemSeparatorComponent={activeViewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={Colors.primary}
-            colors={[Colors.primary]}
-          />
-        }
         ListEmptyComponent={
           <View style={styles.emptyWrapper}>
             <EmptyState

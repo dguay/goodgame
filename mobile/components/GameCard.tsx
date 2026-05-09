@@ -1,9 +1,11 @@
 import { Pressable, View, StyleSheet, StyleProp, ViewStyle } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { Text } from '@/components/ui/Text'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
 import { Colors, Spacing, Radius, FontFamily } from '@/constants'
+import { isUpcomingRelease } from '@/lib/releaseDates'
 import type { RawgGame } from '@/types/rawg'
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -34,6 +36,7 @@ interface Props {
 
 export function GameCard({ game, style }: Props) {
   const year = game.released != null ? game.released.split('-')[0] : null
+  const isUpcoming = isUpcomingRelease(game.released)
   const platforms = (game.platforms ?? [])
     .map(p => PLATFORM_LABELS[p.platform.slug])
     .filter((p): p is string => p !== undefined)
@@ -65,7 +68,14 @@ export function GameCard({ game, style }: Props) {
           {game.name}
         </Text>
         <View style={styles.meta}>
-          {year != null && <Text variant="caption">{year}</Text>}
+          {year != null && (
+            <View style={styles.releaseMeta}>
+              <Text variant="caption">{year}</Text>
+              {isUpcoming && (
+                <Ionicons name="calendar-outline" size={12} color={Colors.success} />
+              )}
+            </View>
+          )}
           {platforms.length > 0 && (
             <View style={styles.platforms}>
               {platforms.map(p => (
@@ -126,6 +136,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: Spacing.xs,
+  },
+  releaseMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   addButtonContainer: {
     marginTop: 'auto',

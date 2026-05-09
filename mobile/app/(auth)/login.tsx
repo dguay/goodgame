@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { View, StyleSheet, Pressable, ActivityIndicator, Alert } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import { Text } from '@/components/ui/Text'
 import { RawgFooter } from '@/components/RawgFooter'
 import { signInWithGoogle } from '@/lib/auth'
-import { Colors, Spacing, FontSize } from '@/constants'
+import { Colors, Spacing, FontSize, Radius } from '@/constants'
+import appIcon from '../../assets/images/icon.png'
 
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false)
@@ -25,6 +27,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.hero}>
+          <Image source={appIcon} style={styles.appIcon} contentFit="cover" />
           <Text variant="display" style={styles.logo}>Goodgame</Text>
           <Text variant="body" color={Colors.textSecondary} style={styles.tagline}>
             Your gaming journey, tracked.
@@ -68,6 +71,12 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
     gap: Spacing.sm,
+  },
+  appIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: Radius.xl,
+    marginBottom: Spacing.sm,
   },
   logo: {
     color: Colors.primary,

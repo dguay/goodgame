@@ -34,6 +34,7 @@ import {
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
 
 import { Colors, FontFamily, Radius, Spacing } from '@/constants'
+import { isUpcomingRelease } from '@/lib/releaseDates'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame, RawgGameDetail, RawgMovie } from '@/types/rawg'
 
@@ -102,21 +103,9 @@ function getReleaseDateInfo(released: string | null): ReleaseDateInfo | null {
   if (monthIndex < 0 || monthIndex >= MONTH_NAMES.length) return null
   if (isNaN(yearNumber) || isNaN(dayNumber)) return null
 
-  const releaseDate = new Date(yearNumber, monthIndex, dayNumber)
-  if (
-    releaseDate.getFullYear() !== yearNumber ||
-    releaseDate.getMonth() !== monthIndex ||
-    releaseDate.getDate() !== dayNumber
-  ) {
-    return null
-  }
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
   return {
     label: `${MONTH_NAMES[monthIndex]} ${dayNumber}, ${year}`,
-    isFuture: releaseDate.getTime() > today.getTime(),
+    isFuture: isUpcomingRelease(released),
   }
 }
 
@@ -698,7 +687,7 @@ export default function GameDetailScreen() {
   const entry = useLibraryEntry(safeGameId)
   const actionBarBottomPadding =
     Platform.OS === 'android'
-      ? Math.max(insets.bottom, Spacing.lg)
+      ? Math.max(insets.bottom, Spacing.xl)
       : Math.max(insets.bottom, Spacing.lg)
 
   if (isLoading) {
