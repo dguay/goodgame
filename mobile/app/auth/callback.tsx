@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { RawgFooter } from '@/components/RawgFooter'
 import { completeNativeAuthSession } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import { Colors, Spacing } from '@/constants'
 
 const NativeRedirectUrl = 'goodgame://auth/callback'
@@ -43,6 +44,14 @@ export default function AuthCallbackScreen() {
           router.replace('/')
         }
       } catch (error: unknown) {
+        // On Android, openAuthSessionAsync and the deep link both deliver the
+        // callback URL, so signInWithGoogle() may have already exchanged the
+        // code and consumed the PKCE verifier. If a session exists, just navigate.
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          if (isMounted) router.replace('/')
+          return
+        }
         const message = error instanceof Error ? error.message : 'Could not finish sign in'
         if (isMounted) {
           setErrorMessage(message)
