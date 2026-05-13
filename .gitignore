@@ -44,3 +44,7 @@ mobile/expo-env.d.ts
 
 # Impeccable
 .impeccable/
+
+#graphify
+graphify-out/
+.graphify_python

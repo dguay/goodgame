@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  TextInput,
   View,
   type GestureResponderEvent,
   type NativeSyntheticEvent,
@@ -44,6 +45,7 @@ import type { LibraryEntry } from '@/types/database'
 type FilterStatus = LibraryStatus | 'all'
 type SortKey = LibrarySortKey
 type ViewMode = 'grid' | 'list'
+type SortDirection = 'asc' | 'desc'
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }[] = [
   { key: 'all', label: 'All', compactLabel: 'All' },
@@ -59,9 +61,19 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Recently Added' },
   { key: 'title', label: 'Title' },
   { key: 'rating', label: 'Rating' },
-  { key: 'playtime', label: 'Playtime' },
+  { key: 'release_date', label: 'Release Date' },
+  { key: 'finished_at', label: 'Finished Date' },
   { key: 'custom', label: 'Custom' },
 ]
+
+const SORT_DEFAULT_DIRECTION: Record<SortKey, SortDirection> = {
+  recent: 'desc',
+  title: 'asc',
+  rating: 'desc',
+  release_date: 'desc',
+  finished_at: 'desc',
+  custom: 'asc',
+}
 
 function isSortKey(value: string | null): value is SortKey {
   return value != null && LIBRARY_SORT_KEYS.includes(value as SortKey)
@@ -69,6 +81,17 @@ function isSortKey(value: string | null): value is SortKey {
 
 function isFilterStatus(value: string | null): value is FilterStatus {
   return value != null && FILTER_KEYS.includes(value as FilterStatus)
+}
+
+function fuzzyMatch(text: string, query: string): boolean {
+  if (query.length === 0) return true
+  const t = text.toLowerCase()
+  const q = query.toLowerCase()
+  let qi = 0
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) qi++
+  }
+  return qi === q.length
 }
 
 function formatPlaytime(minutes: number): string {
@@ -93,22 +116,28 @@ function getReleaseMeta(releaseDate: string | null): { year: string; isUpcoming:
   return { year: yearPart, isUpcoming: isUpcomingRelease(releaseDate) }
 }
 
-function sortEntries(entries: LibraryEntry[], sort: SortKey): LibraryEntry[] {
+function sortEntries(entries: LibraryEntry[], sort: SortKey, direction: SortDirection): LibraryEntry[] {
+  const dir = direction === 'asc' ? 1 : -1
   return [...entries].sort((a, b) => {
     switch (sort) {
       case 'recent':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       case 'title':
-        return a.game_title.localeCompare(b.game_title)
+        return dir * a.game_title.localeCompare(b.game_title)
       case 'rating': {
         const rA = a.personal_rating ?? -1
         const rB = b.personal_rating ?? -1
-        return rB - rA
+        return dir * (rA - rB)
       }
-      case 'playtime': {
-        const pA = a.personal_playtime_minutes ?? -1
-        const pB = b.personal_playtime_minutes ?? -1
-        return pB - pA
+      case 'release_date': {
+        const dA = a.release_date != null ? new Date(a.release_date).getTime() : -1
+        const dB = b.release_date != null ? new Date(b.release_date).getTime() : -1
+        return dir * (dA - dB)
+      }
+      case 'finished_at': {
+        const dA = a.finished_at != null ? new Date(a.finished_at).getTime() : -1
+        const dB = b.finished_at != null ? new Date(b.finished_at).getTime() : -1
+        return dir * (dA - dB)
       }
       case 'custom':
         return 0
@@ -165,11 +194,13 @@ function LibraryEntryCard({
   mode,
   onStatusPress,
   onDelete,
+  onLongPress,
 }: {
   entry: LibraryEntry
   mode: ViewMode
   onStatusPress: (entry: LibraryEntry) => void
   onDelete: (id: string) => void
+  onLongPress?: () => void
 }) {
   const status = entry.status as LibraryStatus
   const releaseMeta = getReleaseMeta(entry.release_date)
@@ -179,6 +210,8 @@ function LibraryEntryCard({
       <Pressable
         style={({ pressed }) => [lcStyles.listItem, pressed && lcStyles.pressed]}
         onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
+        onLongPress={onLongPress}
+        delayLongPress={400}
       >
         <Image
           source={entry.game_cover_url != null ? { uri: entry.game_cover_url } : null}
@@ -224,6 +257,8 @@ function LibraryEntryCard({
     <Pressable
       style={({ pressed }) => [lcStyles.gridCard, pressed && lcStyles.pressed]}
       onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
+      onLongPress={onLongPress}
+      delayLongPress={400}
     >
       <Image
         source={entry.game_cover_url != null ? { uri: entry.game_cover_url } : null}
@@ -660,40 +695,179 @@ const spStyles = StyleSheet.create({
   },
 })
 
+function GameContextMenu({
+  visible,
+  entry,
+  isCustomSort,
+  isFirst,
+  isLast,
+  onDelete,
+  onPushToTop,
+  onPushToBottom,
+  onDismiss,
+}: {
+  visible: boolean
+  entry: LibraryEntry | null
+  isCustomSort: boolean
+  isFirst: boolean
+  isLast: boolean
+  onDelete: (id: string) => void
+  onPushToTop: (id: string) => void
+  onPushToBottom: (id: string) => void
+  onDismiss: () => void
+}) {
+  const isWeb = Platform.OS === 'web'
+  const insets = useSafeAreaInsets()
+  const sheetPaddingBottom = isWeb ? Spacing.md : Math.max(insets.bottom + Spacing.xl, Spacing.section)
+
+  if (entry == null) return null
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
+      <View style={[cmStyles.overlay, isWeb ? cmStyles.overlayCenter : cmStyles.overlayBottom]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
+        <View
+          style={[isWeb ? cmStyles.card : cmStyles.sheet, { paddingBottom: sheetPaddingBottom }]}
+          onStartShouldSetResponder={() => true}
+        >
+          {!isWeb && <View style={cmStyles.handle} />}
+          <Text variant="subheading" style={cmStyles.title} numberOfLines={2}>
+            {entry.game_title}
+          </Text>
+          {isCustomSort && !isFirst && (
+            <Pressable
+              style={({ pressed }) => [cmStyles.row, pressed && cmStyles.rowPressed]}
+              onPress={() => { onPushToTop(entry.id); onDismiss() }}
+            >
+              <Ionicons name="arrow-up-circle-outline" size={20} color={Colors.textSecondary} />
+              <Text variant="body">Move to top</Text>
+            </Pressable>
+          )}
+          {isCustomSort && !isLast && (
+            <Pressable
+              style={({ pressed }) => [cmStyles.row, pressed && cmStyles.rowPressed]}
+              onPress={() => { onPushToBottom(entry.id); onDismiss() }}
+            >
+              <Ionicons name="arrow-down-circle-outline" size={20} color={Colors.textSecondary} />
+              <Text variant="body">Move to bottom</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={({ pressed }) => [cmStyles.row, pressed && cmStyles.rowPressed]}
+            onPress={() => { onDismiss(); onDelete(entry.id) }}
+          >
+            <Ionicons name="trash-outline" size={20} color={Colors.error} />
+            <Text variant="body" style={{ color: Colors.error }}>Delete</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+const cmStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  overlayBottom: {
+    justifyContent: 'flex-end',
+  },
+  overlayCenter: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: Colors.border,
+  },
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    width: 300,
+    paddingBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  title: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  rowPressed: {
+    backgroundColor: Colors.surfaceRaised,
+  },
+})
+
 function LibraryFilters({
   activeFilter,
   activeViewMode,
   currentSortLabel,
   isCustomSort,
   isWide,
+  searchQuery,
+  sortDirection,
   onFilterChange,
   onSortPress,
   onViewModeChange,
+  onSearchChange,
+  onDirectionToggle,
 }: {
   activeFilter: FilterStatus
   activeViewMode: ViewMode
   currentSortLabel: string
   isCustomSort: boolean
   isWide: boolean
+  searchQuery: string
+  sortDirection: SortDirection
   onFilterChange: (filter: FilterStatus) => void
   onSortPress: () => void
   onViewModeChange: (viewMode: ViewMode) => void
+  onSearchChange: (q: string) => void
+  onDirectionToggle: () => void
 }) {
   return (
     <View style={[styles.filterPanel, isWide && styles.filterPanelWide]}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search games..."
+        placeholderTextColor={Colors.textMuted}
+        value={searchQuery}
+        onChangeText={onSearchChange}
+        clearButtonMode="while-editing"
+        returnKeyType="search"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+
       <View style={styles.controls}>
         <View style={styles.viewToggle}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Grid view"
-            accessibilityState={{ selected: activeViewMode === 'grid', disabled: isCustomSort }}
-            style={[
-              styles.toggleBtn,
-              activeViewMode === 'grid' && styles.toggleBtnActive,
-              isCustomSort && styles.toggleBtnDisabled,
-            ]}
+            accessibilityState={{ selected: activeViewMode === 'grid' }}
+            style={[styles.toggleBtn, activeViewMode === 'grid' && styles.toggleBtnActive]}
             onPress={() => onViewModeChange('grid')}
-            disabled={isCustomSort}
             hitSlop={4}
           >
             <Ionicons
@@ -730,6 +904,22 @@ function LibraryFilters({
           </Text>
           <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
         </Pressable>
+
+        {!isCustomSort && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={sortDirection === 'asc' ? 'Ascending order' : 'Descending order'}
+            style={({ pressed }) => [styles.directionBtn, pressed && styles.sortBtnPressed]}
+            onPress={onDirectionToggle}
+            hitSlop={4}
+          >
+            <Ionicons
+              name={sortDirection === 'asc' ? 'arrow-up-outline' : 'arrow-down-outline'}
+              size={16}
+              color={Colors.textSecondary}
+            />
+          </Pressable>
+        )}
       </View>
 
       <View style={[styles.filterContent, isWide && styles.filterContentWide]}>
@@ -771,9 +961,12 @@ export default function LibraryScreen() {
   const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>()
   const [filter, setFilter] = useState<FilterStatus>('want_to_play')
   const [sort, setSort] = useState<SortKey>('custom')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [searchQuery, setSearchQuery] = useState('')
   const [sortPickerVisible, setSortPickerVisible] = useState(false)
   const [statusPickerEntry, setStatusPickerEntry] = useState<LibraryEntry | null>(null)
+  const [contextMenuEntry, setContextMenuEntry] = useState<LibraryEntry | null>(null)
   const [customOrderIds, setCustomOrderIds] = useState<string[]>([])
   const customOrderIdsRef = useRef<string[]>([])
 
@@ -785,7 +978,7 @@ export default function LibraryScreen() {
   const { mutate: updateUserPreferences } = useUpdateUserPreferences()
 
   const { width } = useWindowDimensions()
-  const activeViewMode = sort === 'custom' ? 'list' : viewMode
+  const activeViewMode = viewMode
   const numColumns = activeViewMode === 'grid' ? (width >= 768 ? 3 : 2) : 1
   const isWide = width >= 768
 
@@ -800,6 +993,7 @@ export default function LibraryScreen() {
     if (!preferencesLoaded || userPreferences == null) return
     if (isSortKey(userPreferences.library_sort)) {
       setSort(userPreferences.library_sort)
+      setSortDirection(SORT_DEFAULT_DIRECTION[userPreferences.library_sort])
     }
   }, [preferencesLoaded, userPreferences])
 
@@ -819,8 +1013,14 @@ export default function LibraryScreen() {
   const filtered = useMemo(() => {
     const all = entries ?? []
     const byStatus = filter === 'all' ? all : all.filter(e => e.status === filter)
-    return sort === 'custom' ? orderEntriesByIds(byStatus, customOrderIds) : sortEntries(byStatus, sort)
-  }, [customOrderIds, entries, filter, sort])
+    return sort === 'custom' ? orderEntriesByIds(byStatus, customOrderIds) : sortEntries(byStatus, sort, sortDirection)
+  }, [customOrderIds, entries, filter, sort, sortDirection])
+
+  const searchFiltered = useMemo(() => {
+    const q = searchQuery.trim()
+    if (q.length === 0) return filtered
+    return filtered.filter(e => fuzzyMatch(e.game_title, q))
+  }, [filtered, searchQuery])
 
   function handleDelete(id: string) {
     if (Platform.OS === 'web') {
@@ -865,8 +1065,23 @@ export default function LibraryScreen() {
     updateCustomOrder(customOrderIdsRef.current)
   }, [updateCustomOrder])
 
+  const handlePushToTop = useCallback((id: string) => {
+    const next = [id, ...customOrderIdsRef.current.filter(i => i !== id)]
+    customOrderIdsRef.current = next
+    setCustomOrderIds(next)
+    updateCustomOrder(next)
+  }, [updateCustomOrder])
+
+  const handlePushToBottom = useCallback((id: string) => {
+    const next = [...customOrderIdsRef.current.filter(i => i !== id), id]
+    customOrderIdsRef.current = next
+    setCustomOrderIds(next)
+    updateCustomOrder(next)
+  }, [updateCustomOrder])
+
   const handleSortSelect = useCallback((nextSort: SortKey) => {
     setSort(nextSort)
+    setSortDirection(SORT_DEFAULT_DIRECTION[nextSort])
     setSortPickerVisible(false)
     updateUserPreferences({ library_sort: nextSort })
   }, [updateUserPreferences])
@@ -899,12 +1114,14 @@ export default function LibraryScreen() {
     )
   }
 
+  const contextMenuIndex = contextMenuEntry != null ? filtered.findIndex(e => e.id === contextMenuEntry.id) : -1
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text variant="heading">Library</Text>
         <Text variant="caption" style={styles.resultLabel}>
-          {filtered.length === 1 ? '1 game' : `${filtered.length} games`}
+          {searchFiltered.length === 1 ? '1 game' : `${searchFiltered.length} games`}
         </Text>
       </View>
 
@@ -914,14 +1131,18 @@ export default function LibraryScreen() {
         currentSortLabel={currentSortLabel}
         isCustomSort={sort === 'custom'}
         isWide={isWide}
+        searchQuery={searchQuery}
+        sortDirection={sortDirection}
         onFilterChange={setFilter}
         onSortPress={() => setSortPickerVisible(true)}
         onViewModeChange={setViewMode}
+        onSearchChange={setSearchQuery}
+        onDirectionToggle={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
       />
 
       {/* Game list */}
       <FlatList
-        data={filtered}
+        data={searchFiltered}
         renderItem={({ item, index }) => {
           const card = (
             <LibraryEntryCard
@@ -929,14 +1150,15 @@ export default function LibraryScreen() {
               mode={activeViewMode}
               onStatusPress={setStatusPickerEntry}
               onDelete={handleDelete}
+              onLongPress={() => setContextMenuEntry(item)}
             />
           )
-          if (sort === 'custom') {
+          if (sort === 'custom' && activeViewMode === 'list' && searchQuery.trim().length === 0) {
             return (
               <ReorderableLibraryEntry
                 entry={item}
                 canMoveUp={index > 0}
-                canMoveDown={index < filtered.length - 1}
+                canMoveDown={index < searchFiltered.length - 1}
                 onMove={handleCustomMove}
                 onDragEnd={handleCustomDragEnd}
               >
@@ -970,7 +1192,7 @@ export default function LibraryScreen() {
         key={`${activeViewMode}-${numColumns}-${sort}`}
         contentContainerStyle={[
           styles.listContent,
-          filtered.length === 0 && styles.listContentEmpty,
+          searchFiltered.length === 0 && styles.listContentEmpty,
         ]}
         columnWrapperStyle={activeViewMode === 'grid' ? styles.gridRow : undefined}
         ItemSeparatorComponent={activeViewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
@@ -1001,6 +1223,18 @@ export default function LibraryScreen() {
         onSelect={handleStatusSelect}
         onRemove={handleStatusRemove}
         onDismiss={() => setStatusPickerEntry(null)}
+      />
+
+      <GameContextMenu
+        visible={contextMenuEntry != null}
+        entry={contextMenuEntry}
+        isCustomSort={sort === 'custom'}
+        isFirst={contextMenuIndex === 0}
+        isLast={contextMenuIndex === filtered.length - 1}
+        onDelete={handleDelete}
+        onPushToTop={handlePushToTop}
+        onPushToBottom={handlePushToBottom}
+        onDismiss={() => setContextMenuEntry(null)}
       />
     </SafeAreaView>
   )
@@ -1171,5 +1405,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: 72,
+  },
+  searchInput: {
+    height: 38,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md,
+    color: Colors.textPrimary,
+    fontSize: 14,
+  },
+  directionBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
   },
 })

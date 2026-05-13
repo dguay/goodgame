@@ -18,12 +18,13 @@ export const STATUS_COLORS: Record<LibraryStatus, string> = {
   did_not_finish: '#6b7178',   // textMuted, deprioritized
 }
 
-export type LibrarySortKey = 'recent' | 'title' | 'rating' | 'playtime' | 'custom'
+export type LibrarySortKey = 'recent' | 'title' | 'rating' | 'release_date' | 'finished_at' | 'custom'
 
 export const LIBRARY_SORT_KEYS: LibrarySortKey[] = [
   'recent',
   'title',
   'rating',
-  'playtime',
+  'release_date',
+  'finished_at',
   'custom',
 ]

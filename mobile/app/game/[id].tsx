@@ -208,7 +208,7 @@ publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
               ].filter(Boolean).join('  /  ')}
             </Text>
           )}
-          {(releaseDate?.isFuture === true || game.metacritic != null || hasRating || game.playtime > 0) && (
+          {(releaseDate?.isFuture === true || game.metacritic != null || hasRating || platforms.length > 0) && (
             <View style={styles.heroBadgeRow}>
               {releaseDate?.isFuture === true && (
                 <View style={[styles.heroBadge, styles.heroBadgeSuccess]}>
@@ -239,29 +239,20 @@ publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
                   </Text>
                 </View>
               )}
-              {game.playtime > 0 && (
-                <View style={styles.heroBadge}>
-                  <Ionicons name="time-outline" size={14} color={Colors.textSecondary} />
-                  <Text variant="mono" color={Colors.textPrimary} style={styles.heroBadgeNumber}>
-                    {game.playtime}
-                  </Text>
-                  <Text variant="label">Hours</Text>
+              {platforms.length > 0 && (
+                <View style={styles.platformRow}>
+                  {platforms.map(p => (
+                    <View key={p} style={styles.platformChip}>
+                      <Text variant="label">{p}</Text>
+                    </View>
+                  ))}
+                  {hiddenPlatformCount > 0 && (
+                    <View style={styles.platformChip}>
+                      <Text variant="label">+{hiddenPlatformCount}</Text>
+                    </View>
+                  )}
                 </View>
               )}
-               {platforms.length > 0 && (
-              <View style={styles.platformRow}>
-                {platforms.map(p => (
-                  <View key={p} style={styles.platformChip}>
-                    <Text variant="label">{p}</Text>
-                  </View>
-                ))}
-                {hiddenPlatformCount > 0 && (
-                  <View style={styles.platformChip}>
-                    <Text variant="label">+{hiddenPlatformCount}</Text>
-                  </View>
-                )}
-              </View>
-            )}
             </View>
           )}
         </View>
@@ -687,7 +678,7 @@ export default function GameDetailScreen() {
   const entry = useLibraryEntry(safeGameId)
   const actionBarBottomPadding =
     Platform.OS === 'android'
-      ? Math.max(insets.bottom, Spacing.xl)
+      ? Math.max(insets.bottom, Spacing.xl) + Spacing.xs
       : Math.max(insets.bottom, Spacing.lg)
 
   if (isLoading) {
