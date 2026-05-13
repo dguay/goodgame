@@ -4,14 +4,22 @@ import { Ionicons } from '@expo/vector-icons'
 import { TabActions } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Spacing, FontSize } from '@/constants'
+import { GoodgameLibraryIcon } from '@/components/GoodgameLibraryIcon'
 import { useNotificationSync } from '@/hooks/useNotificationSync'
 
 type IoniconsName = keyof typeof Ionicons.glyphMap
 
-const TABS: { name: string; path: Href; label: string; icon: IoniconsName; iconActive: IoniconsName }[] = [
+const TABS: {
+  name: string
+  path: Href
+  label: string
+  icon: IoniconsName
+  iconActive: IoniconsName
+  useGoodgameIcon?: boolean
+}[] = [
   { name: 'index', path: '/', label: 'Home', icon: 'home-outline', iconActive: 'home' },
   { name: 'search', path: '/search', label: 'Search', icon: 'search-outline', iconActive: 'search' },
-  { name: 'library', path: '/library', label: 'Library', icon: 'bookmark-outline', iconActive: 'bookmark' },
+  { name: 'library', path: '/library', label: 'Library', icon: 'bookmark-outline', iconActive: 'bookmark', useGoodgameIcon: true },
   { name: 'profile', path: '/profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' },
 ]
 
@@ -22,6 +30,17 @@ type TabNavigation = {
   dispatch: (action: ReturnType<typeof TabActions.jumpTo>) => void
 }
 type TabBarProps = { state: TabState; descriptors: Record<string, unknown>; navigation: TabNavigation }
+type TabItem = (typeof TABS)[number]
+
+function TabIcon({ tab, focused, size }: { tab: TabItem; focused: boolean; size: number }) {
+  const color = focused ? Colors.primary : Colors.textSecondary
+
+  if (tab.useGoodgameIcon) {
+    return <GoodgameLibraryIcon size={size + 12} color={color} focused={focused} />
+  }
+
+  return <Ionicons name={focused ? tab.iconActive : tab.icon} size={size} color={color} />
+}
 
 function SideNavBar() {
   const pathname = usePathname()
@@ -39,11 +58,7 @@ function SideNavBar() {
             onPress={() => router.push(tab.path)}
             style={[styles.sideNavItem, isFocused && styles.sideNavItemActive]}
           >
-            <Ionicons
-              name={isFocused ? tab.iconActive : tab.icon}
-              size={20}
-              color={isFocused ? Colors.primary : Colors.textSecondary}
-            />
+            <TabIcon tab={tab} focused={isFocused} size={20} />
             <Text style={[styles.sideNavLabel, isFocused && styles.sideNavLabelActive]}>
               {tab.label}
             </Text>
@@ -73,11 +88,7 @@ function BottomTabBar({ state, navigation }: TabBarProps) {
             }}
             style={styles.bottomTabItem}
           >
-            <Ionicons
-              name={isFocused ? tab.iconActive : tab.icon}
-              size={24}
-              color={isFocused ? Colors.primary : Colors.textSecondary}
-            />
+            <TabIcon tab={tab} focused={isFocused} size={24} />
             <Text style={[styles.bottomTabLabel, isFocused && styles.bottomTabLabelActive]}>
               {tab.label}
             </Text>
