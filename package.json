@@ -8,6 +8,7 @@
     "android": "pnpm --dir mobile run android",
     "ios": "pnpm --dir mobile run ios",
     "build:web": "pnpm --dir mobile run build:web",
+    "test": "pnpm --dir mobile run test",
     "eas:login": "pnpm --dir mobile run eas:login",
     "eas:configure": "pnpm --dir mobile run eas:configure",
     "android:credentials": "pnpm --dir mobile run android:credentials",

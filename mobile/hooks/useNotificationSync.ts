@@ -10,9 +10,7 @@ import type { LibraryEntry } from '@/types/database'
 async function enrichMissingReleaseDates(
   entries: LibraryEntry[],
 ): Promise<{ enriched: LibraryEntry[]; anyUpdated: boolean }> {
-  const needEnrich = entries.filter(
-    e => e.status === 'want_to_play' && e.release_date == null,
-  )
+  const needEnrich = entries.filter(e => e.release_date == null)
   if (needEnrich.length === 0) return { enriched: entries, anyUpdated: false }
 
   const enriched = [...entries]
@@ -51,7 +49,7 @@ export function useNotificationSync() {
     void syncAllReleaseNotifications(entries)
 
     const enrichmentKey = entries
-      .filter(e => e.status === 'want_to_play' && e.release_date == null)
+      .filter(e => e.release_date == null)
       .map(e => `${e.id}:${e.updated_at}`)
       .sort()
       .join('|')

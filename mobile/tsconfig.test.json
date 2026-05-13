@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "target": "es2022",
+    "outDir": ".test-build",
+    "rootDir": ".",
+    "noEmit": false,
+    "types": []
+  },
+  "include": [
+    "lib/releaseDates.ts",
+    "lib/releaseDates.test.ts"
+  ]
+}

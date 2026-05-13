@@ -42,7 +42,7 @@ import {
 } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 
-type FilterStatus = LibraryStatus | 'all'
+type FilterStatus = Exclude<LibraryStatus, 'playing'> | 'all' | 'next'
 type SortKey = LibrarySortKey
 type ViewMode = 'grid' | 'list'
 type SortDirection = 'asc' | 'desc'
@@ -50,9 +50,9 @@ type SortDirection = 'asc' | 'desc'
 const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }[] = [
   { key: 'all', label: 'All', compactLabel: 'All' },
   { key: 'want_to_play', label: 'TBP', compactLabel: 'TBP' },
-  { key: 'playing', label: 'Playing', compactLabel: 'Play' },
   { key: 'done', label: 'Done', compactLabel: 'Done' },
   { key: 'did_not_finish', label: 'DNF', compactLabel: 'DNF' },
+  { key: 'next', label: 'Next', compactLabel: 'Next' },
 ]
 
 const FILTER_KEYS: FilterStatus[] = FILTER_OPTIONS.map(option => option.key)
@@ -1012,7 +1012,12 @@ export default function LibraryScreen() {
 
   const filtered = useMemo(() => {
     const all = entries ?? []
-    const byStatus = filter === 'all' ? all : all.filter(e => e.status === filter)
+    const byStatus =
+      filter === 'all'
+        ? all
+        : filter === 'next'
+          ? all.filter(e => isUpcomingRelease(e.release_date))
+          : all.filter(e => e.status === filter)
     return sort === 'custom' ? orderEntriesByIds(byStatus, customOrderIds) : sortEntries(byStatus, sort, sortDirection)
   }, [customOrderIds, entries, filter, sort, sortDirection])
 
@@ -1091,11 +1096,15 @@ export default function LibraryScreen() {
   const emptyHeading =
     filter === 'all'
       ? 'No games yet'
-      : `No ${filter === 'did_not_finish' ? 'Did Not Finish' : STATUS_LABELS[filter]} games`
+      : filter === 'next'
+        ? 'No upcoming games'
+        : `No ${filter === 'did_not_finish' ? 'Did Not Finish' : STATUS_LABELS[filter]} games`
 
   const emptySubtext =
     filter === 'all'
       ? 'Search for games and add them to your library'
+      : filter === 'next'
+        ? 'Games that are not yet released will appear here'
       : 'Games with this status will appear here'
 
   if (isLoading) {
