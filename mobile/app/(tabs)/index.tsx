@@ -17,7 +17,7 @@ import { RawgFooter } from '@/components/RawgFooter'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
-import { useNewReleases } from '@/hooks/useRawg'
+import { useReleasePreview } from '@/hooks/useRawg'
 import { useRedditThreads } from '@/hooks/useRedditThreads'
 import { RedditThreadCard } from '@/components/RedditThreadCard'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
@@ -267,7 +267,8 @@ export default function HomeScreen() {
 
   const profileQuery = useProfile()
   const libraryQuery = useLibraryEntries()
-  const newReleasesQuery = useNewReleases()
+  const newReleasesQuery = useReleasePreview('new')
+  const comingUpQuery = useReleasePreview('upcoming')
   const redditQuery = useRedditThreads()
 
   const entries = libraryQuery.data ?? []
@@ -300,12 +301,13 @@ export default function HomeScreen() {
         profileQuery.refetch(),
         libraryQuery.refetch(),
         newReleasesQuery.refetch(),
+        comingUpQuery.refetch(),
         redditQuery.refetch(),
       ])
     } finally {
       setRefreshing(false)
     }
-  }, [profileQuery, libraryQuery, newReleasesQuery, redditQuery])
+  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, redditQuery])
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -337,13 +339,42 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             title="New Releases"
-            onSeeAll={() => router.push('/release-calendar')}
+            onSeeAll={() => router.push({
+              pathname: '/release-calendar',
+              params: { mode: 'new' },
+            })}
           />
           {newReleasesQuery.isLoading ? (
             <HorizontalSkeletons />
           ) : (
             <FlatList<RawgGame>
               data={newReleasesQuery.data?.results ?? []}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <GameCard game={item} style={{ width: CARD_WIDTH }} />
+              )}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+              ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+            />
+          )}
+        </View>
+
+        {/* Coming Up */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Coming Up"
+            onSeeAll={() => router.push({
+              pathname: '/release-calendar',
+              params: { mode: 'upcoming' },
+            })}
+          />
+          {comingUpQuery.isLoading ? (
+            <HorizontalSkeletons />
+          ) : (
+            <FlatList<RawgGame>
+              data={comingUpQuery.data?.results ?? []}
               keyExtractor={item => String(item.id)}
               renderItem={({ item }) => (
                 <GameCard game={item} style={{ width: CARD_WIDTH }} />

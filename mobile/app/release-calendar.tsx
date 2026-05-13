@@ -3,13 +3,13 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { RawgFooter } from '@/components/RawgFooter'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
-import { useReleaseCalendar } from '@/hooks/useRawg'
+import { useReleaseCalendar, type ReleaseCalendarMode } from '@/hooks/useRawg'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 import type { RawgGame } from '@/types/rawg'
 
@@ -95,11 +95,18 @@ function CalendarSkeletons() {
 }
 
 export default function ReleaseCalendarScreen() {
+  const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>()
+  const mode: ReleaseCalendarMode = modeParam === 'new' ? 'new' : 'upcoming'
   const [platform, setPlatform] = useState(PLATFORM_FILTERS[0])
-  const calendarQuery = useReleaseCalendar(platform.id)
+  const calendarQuery = useReleaseCalendar(platform.id, mode)
   const flatListRef = useRef<FlatList<RawgGame>>(null)
   const calendarQueryRef = useRef(calendarQuery)
   calendarQueryRef.current = calendarQuery
+  const heading = mode === 'new' ? 'New Releases' : 'Release Calendar'
+  const subtitle =
+    mode === 'new'
+      ? 'Recent games that just got released'
+      : 'Upcoming games'
 
   const games = useMemo(
     () => calendarQuery.data?.pages.flatMap(page => page.results) ?? [],
@@ -136,10 +143,10 @@ export default function ReleaseCalendarScreen() {
         </Pressable>
         <View style={styles.headerCopy}>
           <Text variant="heading" style={styles.title}>
-            Release Calendar
+            {heading}
           </Text>
           <Text variant="caption" style={styles.subtitle}>
-            Upcoming games ordered by release date.
+            {subtitle}
           </Text>
         </View>
       </View>
@@ -176,7 +183,9 @@ export default function ReleaseCalendarScreen() {
           <EmptyState
             icon="calendar-outline"
             heading="No releases found"
-            subtext={`RAWG does not have upcoming ${
+            subtext={`RAWG does not have ${
+              mode === 'new' ? 'recent' : 'upcoming'
+            } ${
               platform.id === null ? 'game' : platform.label
             } releases for this range.`}
           />

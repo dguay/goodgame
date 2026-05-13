@@ -87,19 +87,29 @@ export function useGameMovies(id: number | null) {
   })
 }
 
-export function useNewReleases() {
+export type ReleaseCalendarMode = 'upcoming' | 'new'
+
+export function useReleasePreview(mode: ReleaseCalendarMode) {
   return useQuery({
-    queryKey: ['rawg', 'newReleases'],
-    queryFn: getNewReleases,
+    queryKey: ['rawg', 'releasePreview', mode],
+    queryFn: () => mode === 'new' ? getNewReleases() : getReleaseCalendar(),
     staleTime: STALE,
     gcTime: CACHE,
   })
 }
 
-export function useReleaseCalendar(platformId: number | null) {
+export function useReleaseCalendar(
+  platformId: number | null,
+  mode: ReleaseCalendarMode = 'upcoming',
+) {
   return useInfiniteQuery({
-    queryKey: ['rawg', 'releaseCalendar', platformId],
-    queryFn: ({ pageParam }) => getReleaseCalendar(platformId, pageParam),
+    queryKey: ['rawg', 'releaseCalendar', mode, platformId],
+    queryFn: ({ pageParam }) => {
+      const page = typeof pageParam === 'number' ? pageParam : 1
+      return mode === 'new'
+        ? getNewReleases(platformId, page)
+        : getReleaseCalendar(platformId, page)
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.next != null ? lastPageParam + 1 : undefined,

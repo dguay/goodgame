@@ -81,20 +81,28 @@ export async function getGames(
   return get<RawgPaginatedResponse<RawgGame>>('/games', mapped)
 }
 
-export async function getNewReleases(): Promise<RawgPaginatedResponse<RawgGame>> {
+export async function getNewReleases(
+  platformId: number | null = null,
+  page = 1,
+): Promise<RawgPaginatedResponse<RawgGame>> {
   const today = new Date()
   const thirtyDaysAgo = new Date(today)
   thirtyDaysAgo.setDate(today.getDate() - 30)
   const fmt = (d: Date) => d.toISOString().split('T')[0]
-  return get<RawgPaginatedResponse<RawgGame>>('/games', {
+  const params: Record<string, string | number> = {
     dates: `${fmt(thirtyDaysAgo)},${fmt(today)}`,
     ordering: '-released',
+    page,
     page_size: 20,
-  })
+  }
+
+  if (platformId !== null) params.platforms = platformId
+
+  return get<RawgPaginatedResponse<RawgGame>>('/games', params)
 }
 
 export async function getReleaseCalendar(
-  platformId: number | null,
+  platformId: number | null = null,
   page = 1,
 ): Promise<RawgPaginatedResponse<RawgGame>> {
   const today = new Date()
