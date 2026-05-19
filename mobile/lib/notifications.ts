@@ -14,19 +14,9 @@ Notifications.setNotificationHandler({
 const earlyId = (rawgGameId: number) => `tbp-early-${rawgGameId}`
 const dayId = (rawgGameId: number) => `tbp-day-${rawgGameId}`
 
-function sameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
-}
-
 // Returns the trigger date to use, or null if the window has fully passed.
-// If target is in the past but still the same calendar day, fires in 5 seconds.
 function resolveTrigger(target: Date, now: Date): Date | null {
   if (target > now) return target
-  if (sameCalendarDay(target, now)) return new Date(now.getTime() + 5000)
   return null
 }
 
