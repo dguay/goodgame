@@ -1,4 +1,4 @@
-import { isUpcomingRelease } from './releaseDates'
+import { addLocalDays, formatLocalDate, isUpcomingRelease } from './releaseDates'
 
 declare const require: (module: string) => unknown
 
@@ -16,6 +16,15 @@ test('treats null release dates as upcoming', () => {
 
 test('returns true for future release dates', () => {
   assert.equal(isUpcomingRelease('2999-01-01'), true)
+})
+
+test('formats local dates without UTC conversion', () => {
+  assert.equal(formatLocalDate(new Date(2026, 4, 9)), '2026-05-09')
+})
+
+test('adds local calendar days', () => {
+  assert.equal(formatLocalDate(addLocalDays(new Date(2026, 4, 19), 1)), '2026-05-20')
+  assert.equal(formatLocalDate(addLocalDays(new Date(2026, 4, 19), -30)), '2026-04-19')
 })
 
 test('returns false for past release dates', () => {

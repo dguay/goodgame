@@ -6,6 +6,7 @@ import type {
   RawgPaginatedResponse,
   RawgScreenshot,
 } from '@/types/rawg'
+import { addLocalDays, formatLocalDate } from '@/lib/releaseDates'
 
 const BASE = 'https://api.rawg.io/api'
 
@@ -86,11 +87,9 @@ export async function getNewReleases(
   page = 1,
 ): Promise<RawgPaginatedResponse<RawgGame>> {
   const today = new Date()
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setDate(today.getDate() - 30)
-  const fmt = (d: Date) => d.toISOString().split('T')[0]
+  const thirtyDaysAgo = addLocalDays(today, -30)
   const params: Record<string, string | number> = {
-    dates: `${fmt(thirtyDaysAgo)},${fmt(today)}`,
+    dates: `${formatLocalDate(thirtyDaysAgo)},${formatLocalDate(today)}`,
     ordering: '-released',
     page,
     page_size: 20,
@@ -106,11 +105,11 @@ export async function getReleaseCalendar(
   page = 1,
 ): Promise<RawgPaginatedResponse<RawgGame>> {
   const today = new Date()
+  const tomorrow = addLocalDays(today, 1)
   const oneYearFromNow = new Date(today)
   oneYearFromNow.setFullYear(today.getFullYear() + 1)
-  const fmt = (d: Date) => d.toISOString().split('T')[0]
   const params: Record<string, string | number> = {
-    dates: `${fmt(today)},${fmt(oneYearFromNow)}`,
+    dates: `${formatLocalDate(tomorrow)},${formatLocalDate(oneYearFromNow)}`,
     ordering: 'released',
     page,
     page_size: 20,
