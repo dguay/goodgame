@@ -6,7 +6,7 @@ import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { RawgFooter } from '@/components/RawgFooter'
-import { LibraryReleaseItem } from '@/components/LibraryReleaseItem'
+import { UnreleasedGameCard } from '@/components/UnreleasedGameCard'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
@@ -315,11 +315,11 @@ export default function HomeScreen() {
   }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, redditQuery])
 
   const renderUpcomingLibraryItem = useCallback(
-    ({ item }: { item: LibraryEntry }) => <LibraryReleaseItem entry={item} />,
+    ({ item }: { item: LibraryEntry }) => <UnreleasedGameCard entry={item} />,
     []
   )
   const renderRawgReleaseItem = useCallback(
-    ({ item }: { item: RawgGame }) => <LibraryReleaseItem game={item} />,
+    ({ item }: { item: RawgGame }) => <UnreleasedGameCard game={item} />,
     []
   )
 

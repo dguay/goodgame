@@ -7,7 +7,7 @@ import { Text } from '@/components/ui/Text'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { RawgFooter } from '@/components/RawgFooter'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
-import { LibraryReleaseItem } from '@/components/LibraryReleaseItem'
+import { UnreleasedGameCard } from '@/components/UnreleasedGameCard'
 import { useReleaseCalendar, type ReleaseCalendarMode } from '@/hooks/useRawg'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { Colors, FontSize, Radius, Spacing } from '@/constants'
@@ -94,12 +94,12 @@ export default function ReleaseCalendarScreen() {
   }, [])
 
   const renderItem = useCallback(
-    ({ item }: { item: RawgGame }) => <LibraryReleaseItem game={item} layout="row" />,
+    ({ item }: { item: RawgGame }) => <UnreleasedGameCard game={item} layout="row" />,
     []
   )
 
   const renderLibraryItem = useCallback(
-    ({ item }: { item: LibraryEntry }) => <LibraryReleaseItem entry={item} layout="row" />,
+    ({ item }: { item: LibraryEntry }) => <UnreleasedGameCard entry={item} layout="row" />,
     []
   )
 

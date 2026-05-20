@@ -36,7 +36,7 @@ function getPlatformLabels(game: RawgGame): string {
     .join(' / ')
 }
 
-export function LibraryReleaseItem({ entry, game, layout = 'card' }: Props) {
+export function UnreleasedGameCard({ entry, game, layout = 'card' }: Props) {
   const isRow = layout === 'row'
   const release =
     entry != null
