@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
   FlatList,
@@ -40,6 +41,7 @@ import {
   type LibraryStatus,
 } from '@/types'
 import type { LibraryEntry } from '@/types/database'
+import type { RawgGameDetail } from '@/types/rawg'
 
 type FilterStatus = Exclude<LibraryStatus, 'playing'> | 'all' | 'next'
 type SortKey = LibrarySortKey
@@ -742,6 +744,7 @@ function LibraryFilters({
 
 
 export default function LibraryScreen() {
+  const queryClient = useQueryClient()
   const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>()
   const [filter, setFilter] = useState<FilterStatus>('want_to_play')
   const [sort, setSort] = useState<SortKey>('custom')
@@ -763,7 +766,6 @@ export default function LibraryScreen() {
 
   const { width } = useWindowDimensions()
   const activeViewMode = viewMode
-  const numColumns = activeViewMode === 'grid' ? (width >= 768 ? 3 : 2) : 1
   const isWide = width >= 768
 
   useEffect(() => {
@@ -941,6 +943,11 @@ export default function LibraryScreen() {
             activeViewMode === 'grid' ? (
               <LargeGameCard
                 entry={item}
+                gameDetail={queryClient.getQueryData<RawgGameDetail>([
+                  'rawg',
+                  'game',
+                  item.rawg_game_id,
+                ])}
                 onStatusPress={setStatusPickerEntry}
                 onLongPress={() => setContextMenuEntry(item)}
               />
@@ -987,13 +994,12 @@ export default function LibraryScreen() {
           return card
         }}
         keyExtractor={item => item.id}
-        numColumns={numColumns}
-        key={`${activeViewMode}-${numColumns}-${sort}`}
+        key={`${activeViewMode}-${sort}`}
         contentContainerStyle={[
           styles.listContent,
+          activeViewMode === 'grid' && styles.gridContent,
           searchFiltered.length === 0 && styles.listContentEmpty,
         ]}
-        columnWrapperStyle={activeViewMode === 'grid' ? styles.gridRow : undefined}
         ItemSeparatorComponent={activeViewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
         ListEmptyComponent={
           <View style={styles.emptyWrapper}>
@@ -1175,15 +1181,15 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
     flexGrow: 1,
   },
+  gridContent: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+  },
   listContentEmpty: {
     flex: 1,
   },
-  gridRow: {
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-  },
   gridGap: {
-    height: Spacing.sm,
+    height: Spacing.md,
   },
   emptyWrapper: {
     flex: 1,
@@ -1191,13 +1197,11 @@ const styles = StyleSheet.create({
   },
   skeletonGrid: {
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     padding: Spacing.md,
     gap: Spacing.sm,
   },
   skeletonCard: {
-    width: '47%',
+    width: '100%',
   },
   swipeDeleteAction: {
     backgroundColor: Colors.error,

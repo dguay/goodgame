@@ -1,4 +1,11 @@
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -8,7 +15,7 @@ import { Colors, FontFamily, Radius, Spacing } from '@/constants'
 import { isUpcomingRelease } from '@/lib/releaseDates'
 import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
-import type { RawgGame } from '@/types/rawg'
+import type { RawgGame, RawgGameDetail } from '@/types/rawg'
 
 const PLATFORM_LABELS: Record<string, string> = {
   pc: 'PC',
@@ -44,6 +51,7 @@ type SmallGameCardProps = GameSource & {
 
 interface LargeGameCardProps {
   entry: LibraryEntry
+  gameDetail?: RawgGameDetail
   onStatusPress: (entry: LibraryEntry) => void
   onLongPress?: () => void
 }
@@ -92,17 +100,33 @@ function metacriticColor(score: number): string {
   return Colors.error
 }
 
-function formatDate(date: string): string {
+function formatRatingCount(count: number): string {
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
+  return count.toString()
+}
+
+function formatDate(
+  date: string,
+  options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  },
+): string {
   if (date.length < 10) return date
 
   const parsedDate = new Date(`${date}T00:00:00`)
   if (Number.isNaN(parsedDate.getTime())) return date
 
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
+  return new Intl.DateTimeFormat('en', options).format(parsedDate)
+}
+
+function formatFullDate(date: string): string {
+  return formatDate(date, {
+    month: 'long',
     day: 'numeric',
     year: 'numeric',
-  }).format(parsedDate)
+  })
 }
 
 function getReleaseLabel(
@@ -140,6 +164,12 @@ function getPlatformLabels(game: RawgGame): string[] {
 
 function getGenreLabel(game: RawgGame): string | null {
   return (game.genres ?? [])[0]?.name ?? null
+}
+
+function getDeveloperLabel(game: RawgGameDetail): string | null {
+  const developers = game.developers
+  if (developers.length === 0) return null
+  return developers.map(developer => developer.name).join(', ')
 }
 
 function formatPlaytime(minutes: number): string {
@@ -279,34 +309,109 @@ export function SmallGameCard({
   )
 }
 
-export function LargeGameCard({ entry, onStatusPress, onLongPress }: LargeGameCardProps) {
+export function LargeGameCard({
+  entry,
+  gameDetail,
+  onStatusPress,
+  onLongPress,
+}: LargeGameCardProps) {
+  const developerLabel = gameDetail != null ? getDeveloperLabel(gameDetail) : null
+  const coverUrl = gameDetail?.background_image ?? entry.game_cover_url
+  const releaseDate = gameDetail?.released ?? entry.release_date
+  const hasRawgRating = gameDetail?.rating != null && gameDetail.rating > 0
+
   return (
-    <Pressable
-      style={({ pressed }) => [styles.largeCard, pressed && styles.pressed]}
-      onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
-      onLongPress={onLongPress}
-      delayLongPress={400}
-    >
-      {entry.game_cover_url != null ? (
-        <Image
-          source={{ uri: entry.game_cover_url }}
-          style={styles.coverFull}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="disk"
-        />
-      ) : (
-        <CoverPlaceholder style={styles.coverFull} />
-      )}
-      <View style={styles.largeInfo}>
-        <Text variant="body" numberOfLines={2} style={styles.smallTitle}>
-          {entry.game_title}
+    <View style={styles.largeCardShadow}>
+      <Pressable
+        style={({ pressed }) => [styles.largeCard, pressed && styles.largeCardPressed]}
+        onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
+        onLongPress={onLongPress}
+        delayLongPress={400}
+      >
+        {coverUrl != null ? (
+          <Image
+            source={{ uri: coverUrl }}
+            style={styles.largeCover}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="disk"
+          />
+        ) : (
+          <CoverPlaceholder style={styles.largeCover} />
+        )}
+        <View style={styles.largeInfo}>
+          <View style={styles.largeHeader}>
+            <View style={styles.largeTitleBlock}>
+              <Text variant="body" numberOfLines={2} style={styles.largeTitle}>
+                {entry.game_title}
+              </Text>
+              {developerLabel != null && (
+                <Text variant="caption" numberOfLines={1} style={styles.developerText}>
+                  {developerLabel}
+                </Text>
+              )}
+            </View>
+            <StatusChip entry={entry} onPress={onStatusPress} />
+          </View>
+          <View style={styles.largeDetails}>
+            <View style={styles.largeBadgeRow}>
+              {gameDetail?.metacritic != null && (
+                <View style={[styles.largeScoreBadge, { borderColor: metacriticColor(gameDetail.metacritic) }]}>
+                  <Text variant="mono" color={metacriticColor(gameDetail.metacritic)} style={styles.largeScoreNumber}>
+                    {gameDetail.metacritic}
+                  </Text>
+                  <Text variant="label" color={metacriticColor(gameDetail.metacritic)}>
+                    Meta
+                  </Text>
+                </View>
+              )}
+              {hasRawgRating && (
+                <View style={styles.largeScoreBadge}>
+                  <Ionicons name="star" size={14} color={Colors.warning} />
+                  <Text variant="mono" style={styles.largeScoreNumber}>
+                    {gameDetail.rating.toFixed(1)}
+                  </Text>
+                  <Text variant="label">
+                    {gameDetail.ratings_count > 0 ? formatRatingCount(gameDetail.ratings_count) : 'RAWG'}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <LargeDateStack
+              releaseDate={releaseDate}
+              finishedDate={entry.finished_at}
+            />
+          </View>
+        </View>
+      </Pressable>
+    </View>
+  )
+}
+
+function LargeDateStack({
+  releaseDate,
+  finishedDate,
+}: {
+  releaseDate: string | null
+  finishedDate: string | null
+}) {
+  return (
+    <View style={styles.largeDateStack}>
+      <View style={styles.largeDateRow}>
+        <Text variant="label" style={styles.largeDateLabel}>Released</Text>
+        <Text variant="caption" numberOfLines={1} style={styles.largeDateValue}>
+          {releaseDate != null ? formatFullDate(releaseDate) : 'Date TBA'}
         </Text>
-        <ReleaseMeta releaseDate={entry.release_date} format="year" />
-        <StatusChip entry={entry} onPress={onStatusPress} />
-        <LibraryPersonalMeta entry={entry} />
       </View>
-    </Pressable>
+      {finishedDate != null && (
+        <View style={styles.largeDateRow}>
+          <Text variant="label" style={styles.largeDateLabel}>Finished</Text>
+          <Text variant="caption" numberOfLines={1} style={styles.largeDateValue}>
+            {formatFullDate(finishedDate)}
+          </Text>
+        </View>
+      )}
+    </View>
   )
 }
 
@@ -416,10 +521,22 @@ const styles = StyleSheet.create({
   largeCard: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  largeCardShadow: {
+    flex: 1,
+    borderRadius: Radius.xl,
+    shadowColor: '#020305',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: Platform.OS === 'web' ? 0.22 : 0.28,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  largeCardPressed: {
+    borderColor: Colors.borderSoft,
   },
   listItem: {
     flexDirection: 'row',
@@ -442,6 +559,11 @@ const styles = StyleSheet.create({
     height: 130,
     backgroundColor: Colors.surfaceRaised,
   },
+  largeCover: {
+    width: '100%',
+    height: 164,
+    backgroundColor: Colors.surfaceRaised,
+  },
   listCover: {
     width: 60,
     height: 80,
@@ -459,7 +581,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xxs,
   },
   largeInfo: {
-    padding: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
     gap: Spacing.xs,
   },
   listInfo: {
@@ -470,6 +594,71 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     fontSize: 13,
     lineHeight: 18,
+  },
+  largeHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  largeTitleBlock: {
+    flex: 1,
+    gap: Spacing.xxs,
+    minWidth: 0,
+  },
+  largeTitle: {
+    fontFamily: FontFamily.semibold,
+    fontSize: 16,
+    lineHeight: 21,
+  },
+  developerText: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  largeDetails: {
+    gap: Spacing.xs,
+  },
+  largeBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  largeScoreBadge: {
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: Colors.background,
+  },
+  largeScoreNumber: {
+    fontSize: 13,
+    lineHeight: 17,
+  },
+  largeDateStack: {
+    gap: 2,
+  },
+  largeDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  largeDateLabel: {
+    width: 56,
+    color: Colors.textMutedSoft,
+    fontSize: 10,
+    lineHeight: 13,
+  },
+  largeDateValue: {
+    flex: 1,
+    color: Colors.textMuted,
+    fontSize: 12,
+    lineHeight: 16,
   },
   listTitle: {
     fontFamily: FontFamily.medium,
