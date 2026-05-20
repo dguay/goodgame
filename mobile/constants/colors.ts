@@ -26,4 +26,6 @@ export const Colors = {
   success:         '#05b169',             // price up / playing
   error:           '#cf202f',             // price down / danger
   warning:         '#f4b000',             // amber / done rating
+  rawg:            '#c49aff',                // RAWG rating
+  personal:        '#9ae7ff',            // personal user's main color
 }

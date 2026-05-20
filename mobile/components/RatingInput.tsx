@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   ratingTrackFill: {
-    backgroundColor: Colors.warning,
+    backgroundColor: Colors.personal,
   },
   ratingTrackEmpty: {
     backgroundColor: Colors.background,
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   ratingTickActive: {
-    backgroundColor: Colors.warning,
+    backgroundColor: Colors.personal,
   },
   ratingInputControls: {
     flexDirection: 'row',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     fontFamily: 'JetBrainsMono-Medium',
     fontSize: 19,
     lineHeight: 24,
-    color: Colors.warning,
+    color: Colors.personal,
     textAlign: 'center',
   },
   ratingValueInputNative: {

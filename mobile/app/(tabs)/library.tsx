@@ -954,6 +954,11 @@ export default function LibraryScreen() {
             ) : (
               <GameListCard
                 entry={item}
+                gameDetail={queryClient.getQueryData<RawgGameDetail>([
+                  'rawg',
+                  'game',
+                  item.rawg_game_id,
+                ])}
                 onStatusPress={setStatusPickerEntry}
                 onDelete={handleDelete}
                 onLongPress={() => setContextMenuEntry(item)}

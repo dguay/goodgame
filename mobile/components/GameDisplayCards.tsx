@@ -12,6 +12,8 @@ import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
 import { Colors, FontFamily, Radius, Spacing } from '@/constants'
+import { formatRatingCount } from '@/lib/rating'
+import { useGameDetail } from '@/hooks/useRawg'
 import { isUpcomingRelease } from '@/lib/releaseDates'
 import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
@@ -57,6 +59,7 @@ interface LargeGameCardProps {
 }
 
 type GameListCardProps = GameSource & {
+  gameDetail?: RawgGameDetail
   onDelete?: (id: string) => void
   onLongPress?: () => void
   onStatusPress?: (entry: LibraryEntry) => void
@@ -98,11 +101,6 @@ function metacriticColor(score: number): string {
   if (score >= 75) return Colors.success
   if (score >= 60) return Colors.warning
   return Colors.error
-}
-
-function formatRatingCount(count: number): string {
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
-  return count.toString()
 }
 
 function formatDate(
@@ -162,22 +160,10 @@ function getPlatformLabels(game: RawgGame): string[] {
     .slice(0, 3)
 }
 
-function getGenreLabel(game: RawgGame): string | null {
-  return (game.genres ?? [])[0]?.name ?? null
-}
-
 function getDeveloperLabel(game: RawgGameDetail): string | null {
   const developers = game.developers
   if (developers.length === 0) return null
   return developers.map(developer => developer.name).join(', ')
-}
-
-function formatPlaytime(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  if (hours === 0) return `${remainingMinutes}m`
-  if (remainingMinutes === 0) return `${hours}h`
-  return `${hours}h ${remainingMinutes}m`
 }
 
 function StatusChip({
@@ -367,7 +353,7 @@ export function LargeGameCard({
               )}
               {hasRawgRating && (
                 <View style={styles.largeScoreBadge}>
-                  <Ionicons name="star" size={14} color={Colors.warning} />
+                  <Ionicons name="star" size={14} color={Colors.rawg} />
                   <Text variant="mono" style={styles.largeScoreNumber}>
                     {gameDetail.rating.toFixed(1)}
                   </Text>
@@ -418,14 +404,22 @@ function LargeDateStack({
 export function GameListCard({
   entry,
   game,
+  gameDetail,
   onDelete,
   onLongPress,
   onStatusPress,
-  releaseDateFormat = 'year',
 }: GameListCardProps) {
   const data = getDisplayData(entry != null ? { entry } : { game })
-  const topGenre = data.game != null ? getGenreLabel(data.game) : null
   const libraryEntry = data.entry
+  const detailId = libraryEntry != null && gameDetail == null ? data.id : null
+  const { data: fetchedGameDetail } = useGameDetail(detailId)
+  const resolvedGameDetail = gameDetail ?? fetchedGameDetail
+  const developerLabel = resolvedGameDetail != null ? getDeveloperLabel(resolvedGameDetail) : null
+  const releaseDate = resolvedGameDetail?.released ?? data.releaseDate
+  const releaseLabel = getListReleaseLabel(releaseDate)
+  const metacriticScore = resolvedGameDetail?.metacritic ?? data.game?.metacritic ?? null
+  const rawgRating = resolvedGameDetail?.rating ?? data.game?.rating ?? null
+  const hasRawgRating = rawgRating != null && rawgRating > 0
 
   return (
     <Pressable
@@ -449,30 +443,33 @@ export function GameListCard({
         <Text variant="body" numberOfLines={2} style={styles.listTitle}>
           {data.title}
         </Text>
-        <View style={styles.metaRow}>
-          <ReleaseMeta releaseDate={data.releaseDate} format={releaseDateFormat} />
-          {topGenre != null && (
-            <Text variant="caption" style={styles.metaText}>
-              {topGenre}
-            </Text>
+        <View style={styles.listMetaStack}>
+          <ListMetadataLine value={`${developerLabel ?? 'Unknown'}`} />
+          <ListMetadataLine value={`${releaseLabel}`} />
+          {metacriticScore != null && (
+            <ListMetadataLine
+              value={`META: ${metacriticScore}`}
+              valueColor={metacriticColor(metacriticScore)}
+            />
           )}
-        </View>
-        {libraryEntry != null && <StatusChip entry={libraryEntry} onPress={onStatusPress} />}
-        {libraryEntry != null && <LibraryPersonalMeta entry={libraryEntry} />}
-        {data.game?.metacritic != null && (
-          <View
-            style={[
-              styles.listMetaBadge,
-              { borderColor: metacriticColor(data.game.metacritic) },
-            ]}
-          >
-            <Text variant="label" color={metacriticColor(data.game.metacritic)}>
-              {data.game.metacritic}
-            </Text>
+          {hasRawgRating && (
+            <ListMetadataLine
+              value={`${rawgRating.toFixed(1)} (${formatRatingCount(resolvedGameDetail?.ratings_count ?? 0)})`}
+              valueColor={Colors.rawg}
+            />
+          )}
+          {libraryEntry?.finished_at != null && (
+            <ListMetadataLine value={`Finished on ${formatFullDate(libraryEntry.finished_at)}`} />
+          )}
+          <View style={styles.listActionRow}>
+            {libraryEntry != null ? (
+              <StatusChip entry={libraryEntry} onPress={onStatusPress} />
+            ) : data.game != null ? (
+              <AddToLibraryButton game={data.game} />
+            ) : null}
           </View>
-        )}
+        </View>
       </View>
-      {data.game != null && <AddToLibraryButton game={data.game} />}
       {libraryEntry != null && onDelete != null && (
         <Pressable
           style={styles.deleteButton}
@@ -486,27 +483,26 @@ export function GameListCard({
   )
 }
 
-function LibraryPersonalMeta({ entry }: { entry: LibraryEntry }) {
-  if (
-    entry.personal_rating == null &&
-    (entry.personal_playtime_minutes == null || entry.personal_playtime_minutes <= 0)
-  ) {
-    return null
-  }
+function getListReleaseLabel(releaseDate: string | null): string {
+  if (releaseDate == null) return 'Date TBA'
+  return formatFullDate(releaseDate)
+}
 
+function ListMetadataLine({
+  value,
+  valueColor,
+}: {
+  value: string
+  valueColor?: string
+}) {
   return (
-    <View style={styles.metaRow}>
-      {entry.personal_rating != null && (
-        <Text variant="caption" style={styles.metaText}>
-          Rating {entry.personal_rating.toFixed(1)}
-        </Text>
-      )}
-      {entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0 && (
-        <Text variant="caption" style={styles.metaText}>
-          {formatPlaytime(entry.personal_playtime_minutes)}
-        </Text>
-      )}
-    </View>
+    <Text
+      variant="caption"
+      numberOfLines={1}
+      style={[styles.listMetadataValue, valueColor != null ? { color: valueColor } : undefined]}
+    >
+      {value}
+    </Text>
   )
 }
 
@@ -540,13 +536,12 @@ const styles = StyleSheet.create({
   },
   listItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.md,
+    alignItems: 'flex-start',
+    padding: Spacing.sm,
+    gap: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderSoft,
-    backgroundColor: Colors.background,
+    backgroundColor: '#0A0B0D',
   },
   pressed: {
     opacity: 0.82,
@@ -565,9 +560,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceRaised,
   },
   listCover: {
-    width: 60,
-    height: 80,
-    borderRadius: Radius.sm,
+    width: 92,
+    height: 124,
+    borderRadius: Radius.md,
     backgroundColor: Colors.surfaceRaised,
     flexShrink: 0,
   },
@@ -589,6 +584,7 @@ const styles = StyleSheet.create({
   listInfo: {
     flex: 1,
     gap: Spacing.xs,
+    minWidth: 0,
   },
   smallTitle: {
     fontFamily: FontFamily.medium,
@@ -662,8 +658,21 @@ const styles = StyleSheet.create({
   },
   listTitle: {
     fontFamily: FontFamily.medium,
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20,
+  },
+  listMetaStack: {
+    gap: 5,
+  },
+  listMetadataValue: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  listActionRow: {
+    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
+    paddingTop: Spacing.xxs,
   },
   releaseMeta: {
     flexDirection: 'row',
@@ -704,13 +713,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 1,
     backgroundColor: Colors.background,
-  },
-  listMetaBadge: {
-    alignSelf: 'flex-start',
-    borderWidth: 1.5,
-    borderRadius: Radius.xs,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
   },
   statusChip: {
     alignSelf: 'flex-start',

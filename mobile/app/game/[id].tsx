@@ -34,6 +34,7 @@ import {
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
 
 import { Colors, FontFamily, Radius, Spacing } from '@/constants'
+import { formatRatingCount } from '@/lib/rating'
 import { isUpcomingRelease } from '@/lib/releaseDates'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame, RawgGameDetail, RawgMovie } from '@/types/rawg'
@@ -76,11 +77,6 @@ function metacriticColor(score: number): string {
   if (score >= 75) return Colors.success
   if (score >= 60) return Colors.warning
   return Colors.error
-}
-
-function formatRatingCount(count: number): string {
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
-  return count.toString()
 }
 
 interface ReleaseDateInfo {
@@ -230,7 +226,7 @@ publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
               )}
               {hasRating && (
                 <View style={styles.heroBadge}>
-                  <Ionicons name="star" size={14} color={Colors.warning} />
+                  <Ionicons name="star" size={14} color={Colors.rawg} />
                   <Text variant="mono" color={Colors.textPrimary} style={styles.heroBadgeNumber}>
                     {game.rating.toFixed(1)}
                   </Text>
@@ -592,7 +588,7 @@ function PersonalTracking({ entry }: TrackingProps) {
       <View style={styles.trackingCard}>
         <View style={styles.ratingPanel}>
           <View style={styles.fieldHeader}>
-            <Ionicons name="star-outline" size={17} color={Colors.warning} />
+            <Ionicons name="star-outline" size={17} color={Colors.personal} />
             <Text variant="label" style={styles.trackingLabel}>Personal Rating</Text>
           </View>
           <RatingInput value={rating} onChange={handleRatingChange} />
