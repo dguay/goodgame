@@ -19,21 +19,6 @@ import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame, RawgGameDetail } from '@/types/rawg'
 
-const PLATFORM_LABELS: Record<string, string> = {
-  pc: 'PC',
-  playstation5: 'PS5',
-  playstation4: 'PS4',
-  playstation3: 'PS3',
-  'xbox-series-x': 'XSX',
-  'xbox-one': 'XB1',
-  xbox360: 'X360',
-  'nintendo-switch': 'NSW',
-  ios: 'iOS',
-  android: 'And',
-  macos: 'Mac',
-  linux: 'Lin',
-}
-
 type GameSource =
   | {
       game: RawgGame
@@ -153,13 +138,6 @@ function getReleaseLabel(
   }
 }
 
-function getPlatformLabels(game: RawgGame): string[] {
-  return (game.platforms ?? [])
-    .map((entry) => PLATFORM_LABELS[entry.platform.slug])
-    .filter((label): label is string => label !== undefined)
-    .slice(0, 3)
-}
-
 function getDeveloperLabel(game: RawgGameDetail): string | null {
   const developers = game.developers
   if (developers.length === 0) return null
@@ -232,7 +210,6 @@ export function SmallGameCard({
   style,
 }: SmallGameCardProps) {
   const data = getDisplayData(entry != null ? { entry } : { game })
-  const platforms = data.game != null ? getPlatformLabels(data.game) : []
 
   return (
     <Pressable
@@ -251,18 +228,6 @@ export function SmallGameCard({
         ) : (
           <CoverPlaceholder style={styles.coverFull} />
         )}
-        {data.game?.metacritic != null && (
-          <View
-            style={[
-              styles.metaBadge,
-              { borderColor: metacriticColor(data.game.metacritic) },
-            ]}
-          >
-            <Text variant="label" color={metacriticColor(data.game.metacritic)}>
-              {data.game.metacritic}
-            </Text>
-          </View>
-        )}
       </View>
       <View style={styles.cardInfo}>
         <Text variant="body" numberOfLines={2} style={styles.smallTitle}>
@@ -274,22 +239,15 @@ export function SmallGameCard({
             Date TBA
           </Text>
         )}
-        {platforms.length > 0 && (
-          <View style={styles.platforms}>
-            {platforms.map((platform) => (
-              <Text key={platform} variant="label" style={styles.platformChip}>
-                {platform}
-              </Text>
-            ))}
-          </View>
-        )}
-        {data.entry != null ? (
-          <StatusChip entry={data.entry} />
-        ) : data.game != null ? (
-          <View style={styles.addButtonContainer}>
-            <AddToLibraryButton game={data.game} />
-          </View>
-        ) : null}
+        <View style={styles.smallFooter}>
+          {data.entry != null ? (
+            <StatusChip entry={data.entry} />
+          ) : data.game != null ? (
+            <View style={styles.addButtonContainer}>
+              <AddToLibraryButton game={data.game} />
+            </View>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   )
@@ -509,7 +467,7 @@ function ListMetadataLine({
 const styles = StyleSheet.create({
   smallCard: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.xs,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
@@ -573,6 +531,10 @@ const styles = StyleSheet.create({
   cardInfo: {
     flex: 1,
     padding: Spacing.xs,
+    gap: Spacing.xxs,
+  },
+  smallFooter: {
+    marginTop: 'auto',
     gap: Spacing.xxs,
   },
   largeInfo: {
@@ -688,31 +650,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.xs,
   },
-  platforms: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 3,
-  },
-  platformChip: {
-    backgroundColor: Colors.surfaceRaised,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: Radius.xs,
-  },
   addButtonContainer: {
     alignSelf: 'flex-start',
-    marginTop: 'auto',
     paddingTop: Spacing.xxs,
-  },
-  metaBadge: {
-    position: 'absolute',
-    top: Spacing.xs,
-    right: Spacing.xs,
-    borderWidth: 1.5,
-    borderRadius: Radius.xs,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    backgroundColor: Colors.background,
   },
   statusChip: {
     alignSelf: 'flex-start',
