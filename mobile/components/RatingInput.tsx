@@ -27,6 +27,8 @@ export function RatingInput({ value, onChange }: Props) {
   const [trackWidth, setTrackWidth] = useState(0)
   const [draftValue, setDraftValue] = useState(value != null ? value.toFixed(1) : '')
   const ratingValue = value ?? 0
+  const canDecrease = ratingValue !== 0
+  const canIncrease = ratingValue !== 10
   const ratingPercent = ratingValue / 10
   const fillFlex = Math.max(0.001, ratingPercent)
   const emptyFlex = Math.max(0.001, 1 - ratingPercent)
@@ -75,6 +77,11 @@ export function RatingInput({ value, onChange }: Props) {
     onChange(next)
   }
 
+  function stepRating(direction: -1 | 1) {
+    const next = normalizeRating((value ?? 0) + direction * 0.5)
+    onChange(next)
+  }
+
   return (
     <View style={styles.ratingRow}>
       <View
@@ -99,26 +106,58 @@ export function RatingInput({ value, onChange }: Props) {
         </View>
       </View>
 
-      <View style={[styles.ratingInputGroup, Platform.OS === 'web' && styles.ratingInputGroupWeb]}>
-        <TextInput
-          value={draftValue}
-          onChangeText={setDraftValue}
-          onBlur={commitDraftValue}
-          onSubmitEditing={commitDraftValue}
-          keyboardType="decimal-pad"
-          placeholder="-"
-          placeholderTextColor={Colors.textMuted}
-          selectTextOnFocus
-          style={[
-            styles.ratingValueInput,
-            Platform.OS !== 'web' && styles.ratingValueInputNative,
+      <View style={styles.ratingInputControls}>
+        <Pressable
+          accessibilityLabel="Decrease rating"
+          accessibilityRole="button"
+          disabled={!canDecrease}
+          hitSlop={8}
+          onPress={() => stepRating(-1)}
+          style={({ pressed }) => [
+            styles.ratingStepBtn,
+            pressed && styles.ratingStepBtnPressed,
+            !canDecrease && styles.ratingStepBtnDisabled,
           ]}
-        />
-        {value != null && (
-          <Pressable onPress={() => onChange(null)} hitSlop={8} style={styles.ratingClearBtn}>
-            <Ionicons name="close" size={14} color={Colors.textMuted} />
-          </Pressable>
-        )}
+        >
+          <Ionicons name="remove" size={16} color={canDecrease ? Colors.textSecondary : Colors.textMutedSoft} />
+        </Pressable>
+
+        <View style={[styles.ratingInputGroup, Platform.OS === 'web' && styles.ratingInputGroupWeb]}>
+          <TextInput
+            value={draftValue}
+            onChangeText={setDraftValue}
+            onBlur={commitDraftValue}
+            onSubmitEditing={commitDraftValue}
+            keyboardType="decimal-pad"
+            placeholder="-"
+            placeholderTextColor={Colors.textMuted}
+            selectTextOnFocus
+            style={[
+              styles.ratingValueInput,
+              Platform.OS !== 'web' && styles.ratingValueInputNative,
+            ]}
+          />
+          {value != null && (
+            <Pressable onPress={() => onChange(null)} hitSlop={8} style={styles.ratingClearBtn}>
+              <Ionicons name="close" size={14} color={Colors.textMuted} />
+            </Pressable>
+          )}
+        </View>
+
+        <Pressable
+          accessibilityLabel="Increase rating"
+          accessibilityRole="button"
+          disabled={!canIncrease}
+          hitSlop={8}
+          onPress={() => stepRating(1)}
+          style={({ pressed }) => [
+            styles.ratingStepBtn,
+            pressed && styles.ratingStepBtnPressed,
+            !canIncrease && styles.ratingStepBtnDisabled,
+          ]}
+        >
+          <Ionicons name="add" size={16} color={canIncrease ? Colors.textSecondary : Colors.textMutedSoft} />
+        </Pressable>
       </View>
     </View>
   )
@@ -162,6 +201,12 @@ const styles = StyleSheet.create({
   ratingTickActive: {
     backgroundColor: Colors.warning,
   },
+  ratingInputControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: Spacing.xs,
+  },
   ratingInputGroup: {
     minHeight: 42,
     flexDirection: 'row',
@@ -181,7 +226,7 @@ const styles = StyleSheet.create({
   },
   ratingValueInput: {
     minWidth: 0,
-    width: 180,
+    width: 112,
     paddingVertical: 4,
     fontFamily: 'JetBrainsMono-Medium',
     fontSize: 19,
@@ -191,9 +236,23 @@ const styles = StyleSheet.create({
   },
   ratingValueInputNative: {
     minWidth: 0,
-    width: 180,
+    width: 96,
     fontSize: 17,
     lineHeight: 22,
+  },
+  ratingStepBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  ratingStepBtnPressed: {
+    opacity: 0.75,
+  },
+  ratingStepBtnDisabled: {
+    opacity: 0.4,
   },
   ratingClearBtn: {
     width: 26,
