@@ -6,7 +6,7 @@ import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { RawgFooter } from '@/components/RawgFooter'
-import { UnreleasedGameCard } from '@/components/UnreleasedGameCard'
+import { SmallGameCard } from '@/components/GameDisplayCards'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
@@ -315,11 +315,15 @@ export default function HomeScreen() {
   }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, redditQuery])
 
   const renderUpcomingLibraryItem = useCallback(
-    ({ item }: { item: LibraryEntry }) => <UnreleasedGameCard entry={item} />,
+    ({ item }: { item: LibraryEntry }) => (
+      <SmallGameCard entry={item} releaseDateFormat="date" style={styles.releaseCard} />
+    ),
     []
   )
   const renderRawgReleaseItem = useCallback(
-    ({ item }: { item: RawgGame }) => <UnreleasedGameCard game={item} />,
+    ({ item }: { item: RawgGame }) => (
+      <SmallGameCard game={item} releaseDateFormat="date" style={styles.releaseCard} />
+    ),
     []
   )
 
@@ -577,6 +581,9 @@ const styles = StyleSheet.create({
   },
   horizontalList: {
     paddingHorizontal: Spacing.md,
+  },
+  releaseCard: {
+    width: CARD_WIDTH,
   },
   skeletonRow: {
     flexDirection: 'row',

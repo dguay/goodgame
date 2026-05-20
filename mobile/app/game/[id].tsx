@@ -20,7 +20,7 @@ import { Text } from '@/components/ui/Text'
 import { LoadingSpinner, EmptyState } from '@/components/ui'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
 import { DateField } from '@/components/DateField'
-import { GameCard } from '@/components/GameCard'
+import { SmallGameCard } from '@/components/GameDisplayCards'
 import { RawgFooter } from '@/components/RawgFooter'
 import { RatingInput } from '@/components/RatingInput'
 
@@ -410,7 +410,7 @@ function GameRail({ title, games, isLoading, isError }: GameRailProps) {
           contentContainerStyle={styles.moreGamesRow}
         >
           {games.map(game => (
-            <GameCard key={game.id} game={game} style={styles.moreGameCard} />
+            <SmallGameCard key={game.id} game={game} style={styles.moreGameCard} />
           ))}
         </ScrollView>
       )}

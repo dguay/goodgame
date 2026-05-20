@@ -253,7 +253,3 @@ The project ref is the subdomain of your Supabase URL:
    ```
 
 ---
-
-## Implementation progress
-
-See [PHASES.md](PHASES.md) for the full feature roadmap and current status.

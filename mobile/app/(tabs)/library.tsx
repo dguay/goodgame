@@ -15,10 +15,10 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
-import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { GameListCard, LargeGameCard } from '@/components/GameDisplayCards'
 import { Text } from '@/components/ui/Text'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
@@ -35,7 +35,6 @@ import { Colors, Radius, Spacing } from '@/constants'
 import { isUpcomingRelease } from '@/lib/releaseDates'
 import {
   LIBRARY_SORT_KEYS,
-  STATUS_COLORS,
   STATUS_LABELS,
   type LibrarySortKey,
   type LibraryStatus,
@@ -92,28 +91,6 @@ function fuzzyMatch(text: string, query: string): boolean {
     if (t[ti] === q[qi]) qi++
   }
   return qi === q.length
-}
-
-function formatPlaytime(minutes: number): string {
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
-}
-
-function getReleaseMeta(releaseDate: string | null): { year: string; isUpcoming: boolean } | null {
-  const yearPart = releaseDate?.split('-')[0]
-  if (yearPart == null || yearPart.length === 0) return null
-
-  const year = Number(yearPart)
-  if (isNaN(year)) return null
-
-  if (releaseDate === yearPart) {
-    return { year: yearPart, isUpcoming: year > new Date().getFullYear() }
-  }
-
-  return { year: yearPart, isUpcoming: isUpcomingRelease(releaseDate) }
 }
 
 function sortEntries(entries: LibraryEntry[], sort: SortKey, direction: SortDirection): LibraryEntry[] {
@@ -188,199 +165,6 @@ function swapItems<T>(items: T[], firstIndex: number, secondIndex: number): T[] 
   next[secondIndex] = firstItem
   return next
 }
-
-function LibraryEntryCard({
-  entry,
-  mode,
-  onStatusPress,
-  onDelete,
-  onLongPress,
-}: {
-  entry: LibraryEntry
-  mode: ViewMode
-  onStatusPress: (entry: LibraryEntry) => void
-  onDelete: (id: string) => void
-  onLongPress?: () => void
-}) {
-  const status = entry.status as LibraryStatus
-  const releaseMeta = getReleaseMeta(entry.release_date)
-
-  if (mode === 'list') {
-    return (
-      <Pressable
-        style={({ pressed }) => [lcStyles.listItem, pressed && lcStyles.pressed]}
-        onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
-        onLongPress={onLongPress}
-        delayLongPress={400}
-      >
-        <Image
-          source={entry.game_cover_url != null ? { uri: entry.game_cover_url } : null}
-          style={lcStyles.thumb}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="disk"
-        />
-        <View style={lcStyles.listInfo}>
-          <Text variant="body" numberOfLines={2} style={lcStyles.listTitle}>
-            {entry.game_title}
-          </Text>
-          <ReleaseMeta meta={releaseMeta} />
-          <Pressable
-            style={[lcStyles.chip, { borderColor: STATUS_COLORS[status] }]}
-            onPress={() => onStatusPress(entry)}
-            hitSlop={4}
-          >
-            <Text variant="label" color={STATUS_COLORS[status]}>
-              {STATUS_LABELS[status]}
-            </Text>
-          </Pressable>
-          {(entry.personal_rating != null ||
-            (entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0)) && (
-            <View style={lcStyles.metaRow}>
-              {entry.personal_rating != null && (
-                <Text variant="caption">Rating {entry.personal_rating.toFixed(1)}</Text>
-              )}
-              {entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0 && (
-                <Text variant="caption">{formatPlaytime(entry.personal_playtime_minutes)}</Text>
-              )}
-            </View>
-          )}
-        </View>
-        <Pressable style={lcStyles.deleteBtn} onPress={() => onDelete(entry.id)} hitSlop={12}>
-          <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
-        </Pressable>
-      </Pressable>
-    )
-  }
-
-  return (
-    <Pressable
-      style={({ pressed }) => [lcStyles.gridCard, pressed && lcStyles.pressed]}
-      onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
-      onLongPress={onLongPress}
-      delayLongPress={400}
-    >
-      <Image
-        source={entry.game_cover_url != null ? { uri: entry.game_cover_url } : null}
-        style={lcStyles.gridCover}
-        contentFit="cover"
-        transition={200}
-        cachePolicy="disk"
-      />
-      <View style={lcStyles.gridInfo}>
-        <Text variant="body" numberOfLines={2} style={lcStyles.gridTitle}>
-          {entry.game_title}
-        </Text>
-        <ReleaseMeta meta={releaseMeta} />
-        <Pressable
-          style={[lcStyles.chip, { borderColor: STATUS_COLORS[status] }]}
-          onPress={() => onStatusPress(entry)}
-          hitSlop={4}
-        >
-          <Text variant="label" color={STATUS_COLORS[status]}>
-            {STATUS_LABELS[status]}
-          </Text>
-        </Pressable>
-        {(entry.personal_rating != null ||
-          (entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0)) && (
-          <View style={lcStyles.metaRow}>
-            {entry.personal_rating != null && (
-              <Text variant="caption">Rating {entry.personal_rating.toFixed(1)}</Text>
-            )}
-            {entry.personal_playtime_minutes != null && entry.personal_playtime_minutes > 0 && (
-              <Text variant="caption">{formatPlaytime(entry.personal_playtime_minutes)}</Text>
-            )}
-          </View>
-        )}
-      </View>
-    </Pressable>
-  )
-}
-
-function ReleaseMeta({ meta }: { meta: { year: string; isUpcoming: boolean } | null }) {
-  if (meta == null) return null
-
-  return (
-    <View style={lcStyles.releaseMeta}>
-      <Text variant="caption">{meta.year}</Text>
-      {meta.isUpcoming && (
-        <Ionicons name="calendar-outline" size={12} color={Colors.success} />
-      )}
-    </View>
-  )
-}
-
-const lcStyles = StyleSheet.create({
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.background,
-  },
-  thumb: {
-    width: 60,
-    height: 80,
-    borderRadius: 6,
-    backgroundColor: Colors.surfaceRaised,
-    flexShrink: 0,
-  },
-  listInfo: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  listTitle: {
-    fontSize: 14,
-  },
-  deleteBtn: {
-    padding: Spacing.xs,
-    flexShrink: 0,
-  },
-  gridCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 10,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  gridCover: {
-    width: '100%',
-    height: 130,
-    backgroundColor: Colors.surfaceRaised,
-  },
-  gridInfo: {
-    padding: Spacing.sm,
-    gap: Spacing.xs,
-  },
-  gridTitle: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  chip: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1.5,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  releaseMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-})
 
 function ReorderableLibraryEntry({
   entry,
@@ -1153,15 +937,21 @@ export default function LibraryScreen() {
       <FlatList
         data={searchFiltered}
         renderItem={({ item, index }) => {
-          const card = (
-            <LibraryEntryCard
-              entry={item}
-              mode={activeViewMode}
-              onStatusPress={setStatusPickerEntry}
-              onDelete={handleDelete}
-              onLongPress={() => setContextMenuEntry(item)}
-            />
-          )
+          const card =
+            activeViewMode === 'grid' ? (
+              <LargeGameCard
+                entry={item}
+                onStatusPress={setStatusPickerEntry}
+                onLongPress={() => setContextMenuEntry(item)}
+              />
+            ) : (
+              <GameListCard
+                entry={item}
+                onStatusPress={setStatusPickerEntry}
+                onDelete={handleDelete}
+                onLongPress={() => setContextMenuEntry(item)}
+              />
+            )
           if (sort === 'custom' && activeViewMode === 'list' && searchQuery.trim().length === 0) {
             return (
               <ReorderableLibraryEntry

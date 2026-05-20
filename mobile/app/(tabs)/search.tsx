@@ -15,8 +15,7 @@ import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { RawgFooter } from '@/components/RawgFooter'
-import { GameCard } from '@/components/GameCard'
-import { GameListItem } from '@/components/GameListItem'
+import { GameListCard, SmallGameCard } from '@/components/GameDisplayCards'
 import { useGameSearchInfinite, useTopRated } from '@/hooks/useRawg'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Colors, Spacing } from '@/constants'
@@ -92,8 +91,8 @@ export default function SearchScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: RawgGame }) => {
-      if (isSearching) return <GameListItem game={item} />
-      return <GameCard game={item} style={styles.gridCard} />
+      if (isSearching) return <GameListCard game={item} />
+      return <SmallGameCard game={item} style={styles.gridCard} />
     },
     [isSearching],
   )
@@ -227,6 +226,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   gridCard: {
+    flex: 1,
     marginHorizontal: CARD_MARGIN,
     marginBottom: COL_GAP,
   },
