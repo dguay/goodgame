@@ -22,7 +22,7 @@ function getNextCustomOrder(entries: LibraryEntry[], requestedOrder?: number | n
   return minCustomOrder == null ? 1 : minCustomOrder - 1
 }
 
-export function useLibraryEntries() {
+export function useLibraryEntries(enabled = true) {
   const user = useAuthStore(s => s.user)
 
   return useQuery({
@@ -37,7 +37,7 @@ export function useLibraryEntries() {
       if (error) throw new Error(error.message)
       return data
     },
-    enabled: user != null,
+    enabled: enabled && user != null,
     staleTime: 5 * 60 * 1000,
   })
 }

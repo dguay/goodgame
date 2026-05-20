@@ -1,16 +1,18 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { FlatList, Pressable, StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { RawgFooter } from '@/components/RawgFooter'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
-import { AddToLibraryButton } from '@/components/AddToLibraryButton'
+import { LibraryReleaseItem } from '@/components/LibraryReleaseItem'
 import { useReleaseCalendar, type ReleaseCalendarMode } from '@/hooks/useRawg'
-import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
+import { useLibraryEntries } from '@/hooks/useLibrary'
+import { Colors, FontSize, Radius, Spacing } from '@/constants'
+import { isKnownUpcomingRelease } from '@/lib/releaseDates'
+import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 
 interface PlatformFilter {
@@ -24,64 +26,11 @@ const PLATFORM_FILTERS: PlatformFilter[] = [
   { id: 4, label: 'PC' },
 ]
 
-function formatReleaseDate(date: string | null): string {
-  if (date == null) return 'Date TBA'
-
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date(`${date}T00:00:00`))
-}
-
-function getPlatformLabels(game: RawgGame): string {
-  return (game.platforms ?? [])
-    .map(entry => entry.platform.name)
-    .slice(0, 3)
-    .join(' / ')
-}
-
-function ReleaseCalendarItem({ game }: { game: RawgGame }) {
-  const platforms = getPlatformLabels(game)
-
-  return (
-    <Pressable
-      style={styles.releaseItem}
-      onPress={() => router.push(`/game/${game.id}`)}
-    >
-      <View style={styles.dateRail}>
-        <Text variant="label" style={styles.dateLabel}>
-          {formatReleaseDate(game.released)}
-        </Text>
-      </View>
-      <Image
-        source={game.background_image != null ? { uri: game.background_image } : null}
-        style={styles.cover}
-        contentFit="cover"
-        transition={200}
-        cachePolicy="disk"
-      />
-      <View style={styles.releaseInfo}>
-        <Text variant="body" numberOfLines={2} style={styles.releaseTitle}>
-          {game.name}
-        </Text>
-        {platforms.length > 0 && (
-          <Text variant="caption" numberOfLines={1} style={styles.platformText}>
-            {platforms}
-          </Text>
-        )}
-        <AddToLibraryButton game={game} />
-      </View>
-    </Pressable>
-  )
-}
-
 function CalendarSkeletons() {
   return (
     <View style={styles.skeletonContainer}>
       {Array.from({ length: 8 }, (_, index) => (
         <View key={index} style={styles.skeletonItem}>
-          <SkeletonLoader width={82} height={14} borderRadius={Radius.xs} />
           <SkeletonLoader width={72} height={96} borderRadius={Radius.sm} />
           <View style={styles.skeletonInfo}>
             <SkeletonLoader height={16} />
@@ -95,27 +44,46 @@ function CalendarSkeletons() {
 }
 
 export default function ReleaseCalendarScreen() {
-  const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>()
+  const { mode: modeParam, source: sourceParam } = useLocalSearchParams<{
+    mode?: string
+    source?: string
+  }>()
   const mode: ReleaseCalendarMode = modeParam === 'new' ? 'new' : 'upcoming'
+  const source = sourceParam === 'library' ? 'library' : 'rawg'
   const [platform, setPlatform] = useState(PLATFORM_FILTERS[0])
-  const calendarQuery = useReleaseCalendar(platform.id, mode)
-  const flatListRef = useRef<FlatList<RawgGame>>(null)
+  const calendarQuery = useReleaseCalendar(platform.id, mode, source === 'rawg')
+  const libraryQuery = useLibraryEntries(source === 'library')
+  const rawgListRef = useRef<FlatList<RawgGame>>(null)
   const calendarQueryRef = useRef(calendarQuery)
   calendarQueryRef.current = calendarQuery
-  const heading = mode === 'new' ? 'New Releases' : 'Release Calendar'
+  const heading =
+    source === 'library'
+      ? 'Your Upcoming Games'
+      : mode === 'new'
+        ? 'New Releases'
+        : 'Release Calendar'
   const subtitle =
-    mode === 'new'
-      ? 'Recent games that just got released'
-      : 'Upcoming games'
+    source === 'library'
+      ? 'Upcoming games from your library'
+      : mode === 'new'
+        ? 'Recent games that just got released'
+        : 'Upcoming games'
 
   const games = useMemo(
-    () => calendarQuery.data?.pages.flatMap(page => page.results) ?? [],
-    [calendarQuery.data],
+    () => calendarQuery.data?.pages.flatMap((page) => page.results) ?? [],
+    [calendarQuery.data]
+  )
+  const libraryUpcomingEntries = useMemo(
+    () =>
+      (libraryQuery.data ?? [])
+        .filter((entry) => isKnownUpcomingRelease(entry.release_date))
+        .sort((a, b) => String(a.release_date).localeCompare(String(b.release_date))),
+    [libraryQuery.data]
   )
 
   const handleSelectPlatform = useCallback((option: PlatformFilter) => {
     setPlatform(option)
-    flatListRef.current?.scrollToOffset({ offset: 0, animated: false })
+    rawgListRef.current?.scrollToOffset({ offset: 0, animated: false })
   }, [])
 
   const handleLoadMore = useCallback(() => {
@@ -126,8 +94,13 @@ export default function ReleaseCalendarScreen() {
   }, [])
 
   const renderItem = useCallback(
-    ({ item }: { item: RawgGame }) => <ReleaseCalendarItem game={item} />,
-    [],
+    ({ item }: { item: RawgGame }) => <LibraryReleaseItem game={item} layout="row" />,
+    []
+  )
+
+  const renderLibraryItem = useCallback(
+    ({ item }: { item: LibraryEntry }) => <LibraryReleaseItem entry={item} layout="row" />,
+    []
   )
 
   return (
@@ -151,29 +124,55 @@ export default function ReleaseCalendarScreen() {
         </View>
       </View>
 
-      <View style={styles.filterRow}>
-        {PLATFORM_FILTERS.map(option => {
-          const isSelected = option.id === platform.id
-          return (
-            <Pressable
-              key={option.label}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              style={[styles.filterChip, isSelected && styles.filterChipSelected]}
-              onPress={() => handleSelectPlatform(option)}
-            >
-              <Text
-                variant="label"
-                style={[styles.filterLabel, isSelected && styles.filterLabelSelected]}
+      {source === 'rawg' && (
+        <View style={styles.filterRow}>
+          {PLATFORM_FILTERS.map((option) => {
+            const isSelected = option.id === platform.id
+            return (
+              <Pressable
+                key={option.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                style={[styles.filterChip, isSelected && styles.filterChipSelected]}
+                onPress={() => handleSelectPlatform(option)}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </View>
+                <Text
+                  variant="label"
+                  style={[styles.filterLabel, isSelected && styles.filterLabelSelected]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      )}
 
-      {calendarQuery.isLoading ? (
+      {source === 'library' ? (
+        libraryQuery.isLoading ? (
+          <View style={styles.loadingContent}>
+            <CalendarSkeletons />
+            <RawgFooter />
+          </View>
+        ) : libraryUpcomingEntries.length === 0 ? (
+          <View style={styles.emptyContent}>
+            <EmptyState
+              icon="calendar-outline"
+              heading="No upcoming releases"
+              subtext="Your library does not have any games with future release dates."
+            />
+            <RawgFooter />
+          </View>
+        ) : (
+          <FlatList
+            data={libraryUpcomingEntries}
+            keyExtractor={(item) => item.id}
+            renderItem={renderLibraryItem}
+            contentContainerStyle={styles.listContent}
+            ListFooterComponent={<RawgFooter />}
+          />
+        )
+      ) : calendarQuery.isLoading ? (
         <View style={styles.loadingContent}>
           <CalendarSkeletons />
           <RawgFooter />
@@ -183,9 +182,7 @@ export default function ReleaseCalendarScreen() {
           <EmptyState
             icon="calendar-outline"
             heading="No releases found"
-            subtext={`RAWG does not have ${
-              mode === 'new' ? 'recent' : 'upcoming'
-            } ${
+            subtext={`RAWG does not have ${mode === 'new' ? 'recent' : 'upcoming'} ${
               platform.id === null ? 'game' : platform.label
             } releases for this range.`}
           />
@@ -193,9 +190,9 @@ export default function ReleaseCalendarScreen() {
         </View>
       ) : (
         <FlatList
-          ref={flatListRef}
+          ref={rawgListRef}
           data={games}
-          keyExtractor={item => String(item.id)}
+          keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           onEndReached={handleLoadMore}
@@ -277,44 +274,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: Spacing.xl,
-  },
-  releaseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderSoft,
-  },
-  dateRail: {
-    width: 82,
-    alignSelf: 'stretch',
-    justifyContent: 'center',
-  },
-  dateLabel: {
-    color: Colors.textMuted,
-  },
-  cover: {
-    width: 72,
-    height: 96,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceRaised,
-    flexShrink: 0,
-  },
-  releaseInfo: {
-    flex: 1,
-    minHeight: 96,
-    justifyContent: 'center',
-    gap: Spacing.xxs,
-  },
-  releaseTitle: {
-    fontFamily: FontFamily.medium,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  platformText: {
-    color: Colors.textMuted,
   },
   loadingContent: {
     flex: 1,

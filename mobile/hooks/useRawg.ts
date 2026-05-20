@@ -92,7 +92,7 @@ export type ReleaseCalendarMode = 'upcoming' | 'new'
 export function useReleasePreview(mode: ReleaseCalendarMode) {
   return useQuery({
     queryKey: ['rawg', 'releasePreview', mode],
-    queryFn: () => mode === 'new' ? getNewReleases() : getReleaseCalendar(),
+    queryFn: () => (mode === 'new' ? getNewReleases() : getReleaseCalendar()),
     staleTime: STALE,
     gcTime: CACHE,
   })
@@ -101,6 +101,7 @@ export function useReleasePreview(mode: ReleaseCalendarMode) {
 export function useReleaseCalendar(
   platformId: number | null,
   mode: ReleaseCalendarMode = 'upcoming',
+  enabled = true
 ) {
   return useInfiniteQuery({
     queryKey: ['rawg', 'releaseCalendar', mode, platformId],
@@ -113,6 +114,7 @@ export function useReleaseCalendar(
     initialPageParam: 1,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.next != null ? lastPageParam + 1 : undefined,
+    enabled,
     staleTime: STALE,
     gcTime: CACHE,
   })

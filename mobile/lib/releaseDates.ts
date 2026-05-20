@@ -29,3 +29,7 @@ export function isUpcomingRelease(released: string | null): boolean {
 
   return releaseKey > todayKey
 }
+
+export function isKnownUpcomingRelease(released: string | null): released is string {
+  return released != null && isUpcomingRelease(released)
+}

@@ -1,19 +1,12 @@
-import { useState, useCallback } from 'react'
-import {
-  ScrollView,
-  RefreshControl,
-  FlatList,
-  View,
-  StyleSheet,
-  Pressable,
-} from 'react-native'
+import { useState, useCallback, useMemo } from 'react'
+import { ScrollView, RefreshControl, FlatList, View, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
-import { GameCard } from '@/components/GameCard'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { RawgFooter } from '@/components/RawgFooter'
+import { LibraryReleaseItem } from '@/components/LibraryReleaseItem'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
@@ -21,10 +14,12 @@ import { useReleasePreview } from '@/hooks/useRawg'
 import { useRedditThreads } from '@/hooks/useRedditThreads'
 import { RedditThreadCard } from '@/components/RedditThreadCard'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
+import { isKnownUpcomingRelease } from '@/lib/releaseDates'
 import { STATUS_COLORS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 const CARD_WIDTH = 160
+const LIBRARY_RELEASE_CARD_HEIGHT = 190
 type HeroStatTone = 'library' | 'wanted' | 'playing' | 'done'
 type HeroStatFilter = LibraryStatus | 'all'
 
@@ -46,7 +41,9 @@ function SectionHeader({
 }) {
   return (
     <View style={styles.sectionHeader}>
-      <Text variant="body" style={styles.sectionTitle} numberOfLines={1}>{title}</Text>
+      <Text variant="body" style={styles.sectionTitle} numberOfLines={1}>
+        {title}
+      </Text>
       {onSeeAll != null && (
         <Pressable onPress={onSeeAll}>
           <Text variant="caption" color={Colors.primary} style={styles.sectionAction}>
@@ -55,7 +52,12 @@ function SectionHeader({
         </Pressable>
       )}
       {onSeeAll == null && meta != null && (
-        <Text variant="caption" color={Colors.textMuted} style={styles.sectionMeta} numberOfLines={1}>
+        <Text
+          variant="caption"
+          color={Colors.textMuted}
+          style={styles.sectionMeta}
+          numberOfLines={1}
+        >
           {meta}
         </Text>
       )}
@@ -77,14 +79,18 @@ function formatUpdatedAt(value: string | null): string | undefined {
   })}`
 }
 
-function HorizontalSkeletons() {
+function HorizontalSkeletons({ height = 220 }: { height?: number }) {
   return (
     <View style={styles.skeletonRow}>
-      {[1, 2, 3].map(i => (
-        <SkeletonLoader key={i} width={CARD_WIDTH} height={220} borderRadius={10} />
+      {[1, 2, 3].map((i) => (
+        <SkeletonLoader key={i} width={CARD_WIDTH} height={height} borderRadius={10} />
       ))}
     </View>
   )
+}
+
+function ItemSeparator() {
+  return <View style={styles.itemSeparator} />
 }
 
 function HeroHeaderSkeleton() {
@@ -99,13 +105,8 @@ function HeroHeaderSkeleton() {
 function HeroStatsSkeleton() {
   return (
     <View style={styles.heroStatsGrid}>
-      {[1, 2, 3, 4].map(i => (
-        <SkeletonLoader
-          key={i}
-          width="48%"
-          height={64}
-          borderRadius={Radius.md}
-        />
+      {[1, 2, 3, 4].map((i) => (
+        <SkeletonLoader key={i} width="48%" height={64} borderRadius={Radius.md} />
       ))}
     </View>
   )
@@ -135,10 +136,12 @@ function HeroStatPill({
         heroStatToneStyles[tone],
         pressed && styles.heroStatPillPressed,
       ]}
-      onPress={() => router.push({
-        pathname: '/(tabs)/library',
-        params: { filter },
-      })}
+      onPress={() =>
+        router.push({
+          pathname: '/(tabs)/library',
+          params: { filter },
+        })
+      }
     >
       <Text variant="mono" style={styles.heroStatValue}>
         {value}
@@ -170,8 +173,7 @@ function HomeHero({
   completedCount: number
 }) {
   const featuredEntry = playingEntries[0] ?? null
-  const heroArtworkLabel =
-    featuredEntry != null ? `Open ${featuredEntry.game_title}` : 'Find games'
+  const heroArtworkLabel = featuredEntry != null ? `Open ${featuredEntry.game_title}` : 'Find games'
   const primaryAction = () => {
     if (featuredEntry != null) {
       router.push(`/game/${featuredEntry.rawg_game_id}`)
@@ -240,12 +242,7 @@ function HomeHero({
         ) : (
           <View style={styles.heroStatsGrid}>
             <HeroStatPill value={totalGames} label="Games" tone="library" filter="all" />
-            <HeroStatPill
-              value={wantedCount}
-              label="TBP"
-              tone="wanted"
-              filter="want_to_play"
-            />
+            <HeroStatPill value={wantedCount} label="TBP" tone="wanted" filter="want_to_play" />
             <HeroStatPill
               value={playingEntries.length}
               label="Playing"
@@ -261,8 +258,8 @@ function HomeHero({
 }
 
 export default function HomeScreen() {
-  const user = useAuthStore(s => s.user)
-  const isAuthLoading = useAuthStore(s => s.isLoading)
+  const user = useAuthStore((s) => s.user)
+  const isAuthLoading = useAuthStore((s) => s.isLoading)
   const [refreshing, setRefreshing] = useState(false)
 
   const profileQuery = useProfile()
@@ -271,21 +268,29 @@ export default function HomeScreen() {
   const comingUpQuery = useReleasePreview('upcoming')
   const redditQuery = useRedditThreads()
 
-  const entries = libraryQuery.data ?? []
-  const totalGames = entries.length
-  const playingEntries = entries.filter(e => e.status === 'playing')
-  const wantedCount = entries.filter(e => e.status === 'want_to_play').length
-  const completedCount = entries.filter(e => e.status === 'done').length
+  const entries = useMemo(() => libraryQuery.data ?? [], [libraryQuery.data])
+  const libraryStats = useMemo(() => {
+    const playing = entries.filter((e) => e.status === 'playing')
+    const upcoming = entries
+      .filter((e) => isKnownUpcomingRelease(e.release_date))
+      .sort((a, b) => String(a.release_date).localeCompare(String(b.release_date)))
+
+    return {
+      totalGames: entries.length,
+      playingEntries: playing,
+      upcomingLibraryEntries: upcoming,
+      wantedCount: entries.filter((e) => e.status === 'want_to_play').length,
+      completedCount: entries.filter((e) => e.status === 'done').length,
+    }
+  }, [entries])
   const resolvedDisplayName =
     profileQuery.data?.display_name ??
     (user?.user_metadata?.['full_name'] as string | undefined) ??
     user?.email?.split('@')[0]
   const isHeaderLoading =
-    isAuthLoading ||
-    (user != null && profileQuery.isLoading && profileQuery.data == null)
+    isAuthLoading || (user != null && profileQuery.isLoading && profileQuery.data == null)
   const isLibraryLoading =
-    isAuthLoading ||
-    (user != null && libraryQuery.isLoading && libraryQuery.data == null)
+    isAuthLoading || (user != null && libraryQuery.isLoading && libraryQuery.data == null)
   const displayName = resolvedDisplayName ?? 'there'
   const redditUpdatedAt = formatUpdatedAt(
     (redditQuery.data ?? []).reduce<string | null>((latest, thread) => {
@@ -309,6 +314,15 @@ export default function HomeScreen() {
     }
   }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, redditQuery])
 
+  const renderUpcomingLibraryItem = useCallback(
+    ({ item }: { item: LibraryEntry }) => <LibraryReleaseItem entry={item} />,
+    []
+  )
+  const renderRawgReleaseItem = useCallback(
+    ({ item }: { item: RawgGame }) => <LibraryReleaseItem game={item} />,
+    []
+  )
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -329,34 +343,64 @@ export default function HomeScreen() {
           isHeaderLoading={isHeaderLoading}
           isCurrentlyPlayingLoading={isLibraryLoading}
           isStatsLoading={isLibraryLoading}
-          totalGames={totalGames}
-          wantedCount={wantedCount}
-          playingEntries={playingEntries}
-          completedCount={completedCount}
+          totalGames={libraryStats.totalGames}
+          wantedCount={libraryStats.wantedCount}
+          playingEntries={libraryStats.playingEntries}
+          completedCount={libraryStats.completedCount}
         />
+
+        {/* Your Upcoming Games */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Your upcoming games"
+            onSeeAll={() =>
+              router.push({
+                pathname: '/release-calendar',
+                params: { mode: 'upcoming', source: 'library' },
+              })
+            }
+          />
+          {isLibraryLoading ? (
+            <HorizontalSkeletons height={LIBRARY_RELEASE_CARD_HEIGHT} />
+          ) : libraryStats.upcomingLibraryEntries.length > 0 ? (
+            <FlatList<LibraryEntry>
+              data={libraryStats.upcomingLibraryEntries.slice(0, 10)}
+              keyExtractor={(item) => item.id}
+              renderItem={renderUpcomingLibraryItem}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+              ItemSeparatorComponent={ItemSeparator}
+            />
+          ) : (
+            <Text variant="caption" style={styles.sectionEmpty}>
+              No upcoming releases in your library.
+            </Text>
+          )}
+        </View>
 
         {/* New Releases */}
         <View style={styles.section}>
           <SectionHeader
             title="New Releases"
-            onSeeAll={() => router.push({
-              pathname: '/release-calendar',
-              params: { mode: 'new' },
-            })}
+            onSeeAll={() =>
+              router.push({
+                pathname: '/release-calendar',
+                params: { mode: 'new' },
+              })
+            }
           />
           {newReleasesQuery.isLoading ? (
             <HorizontalSkeletons />
           ) : (
             <FlatList<RawgGame>
               data={newReleasesQuery.data?.results ?? []}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <GameCard game={item} style={{ width: CARD_WIDTH }} />
-              )}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderRawgReleaseItem}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
-              ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+              ItemSeparatorComponent={ItemSeparator}
             />
           )}
         </View>
@@ -365,24 +409,24 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             title="Coming Up"
-            onSeeAll={() => router.push({
-              pathname: '/release-calendar',
-              params: { mode: 'upcoming' },
-            })}
+            onSeeAll={() =>
+              router.push({
+                pathname: '/release-calendar',
+                params: { mode: 'upcoming' },
+              })
+            }
           />
           {comingUpQuery.isLoading ? (
             <HorizontalSkeletons />
           ) : (
             <FlatList<RawgGame>
               data={comingUpQuery.data?.results ?? []}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <GameCard game={item} style={{ width: CARD_WIDTH }} />
-              )}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderRawgReleaseItem}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
-              ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+              ItemSeparatorComponent={ItemSeparator}
             />
           )}
         </View>
@@ -393,8 +437,14 @@ export default function HomeScreen() {
             <SectionHeader title="Trending on Reddit" meta={redditUpdatedAt} />
             {redditQuery.isLoading ? (
               <View style={styles.redditSkeletons}>
-                {[1, 2, 3].map(i => (
-                  <SkeletonLoader key={i} width="100%" height={90} borderRadius={Radius.lg} style={styles.redditSkeleton} />
+                {[1, 2, 3].map((i) => (
+                  <SkeletonLoader
+                    key={i}
+                    width="100%"
+                    height={90}
+                    borderRadius={Radius.lg}
+                    style={styles.redditSkeleton}
+                  />
                 ))}
               </View>
             ) : (
@@ -535,6 +585,10 @@ const styles = StyleSheet.create({
   },
   itemSeparator: {
     width: Spacing.sm,
+  },
+  sectionEmpty: {
+    color: Colors.textMuted,
+    paddingHorizontal: Spacing.md,
   },
   redditSkeletons: {
     paddingHorizontal: Spacing.md,
