@@ -5,6 +5,50 @@
 
 ---
 
+# Engineering Principles
+
+Follow SOLID, KISS, and DRY as practical design constraints, not as slogans.
+
+## SOLID
+- Keep modules and functions focused on one clear responsibility.
+- Prefer dependency injection or explicit parameters over hidden global coupling.
+- Extend behavior through small composable units before modifying large shared code paths.
+- Avoid inheritance-heavy designs unless the codebase already uses them clearly.
+- Keep interfaces narrow and role-specific.
+
+## KISS
+- Prefer the simplest implementation that satisfies the current requirements.
+- Do not introduce frameworks, abstractions, patterns, or config layers unless they remove real complexity.
+- Optimize for readable, boring code over clever code.
+- If a solution needs explanation, consider whether the design can be simplified.
+
+## DRY
+- Remove meaningful duplication in logic, business rules, validation, and data mapping.
+- Do not abstract purely coincidental duplication.
+- Prefer shared helpers only when the repeated behavior is stable and clearly the same concept.
+- Keep tests readable even if that means some setup duplication.
+
+## Before Editing
+When making changes:
+1. Inspect nearby code and follow existing conventions.
+2. Identify the smallest safe change.
+3. Avoid broad refactors unless requested or necessary.
+4. Preserve public behavior unless the task explicitly changes it.
+5. Add or update tests when behavior changes.
+
+## Review Checklist
+Before finishing, verify:
+- The change has one clear purpose.
+- No unnecessary abstraction was added.
+- Repeated logic was consolidated where appropriate.
+- Names make responsibilities obvious.
+- Error handling is explicit and understandable.
+- Tests or manual verification cover the changed behavior.
+
+When reviewing or modifying code, call out violations of SOLID, KISS, or DRY only when they create concrete maintainability, correctness, or extensibility risk. Explain the risk and suggest a smaller, clearer alternative.
+
+---
+
 ## Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -14,18 +58,6 @@ Before implementing:
 - If multiple interpretations exist, present them - don't pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
-
-## Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
 ## Surgical Changes
 
@@ -171,32 +203,6 @@ Look at `DESIGN.md`
 
 ---
 
-## Library Entry Statuses
-
-```ts
-export type LibraryStatus =
-  | 'want_to_play'
-  | 'playing'
-  | 'done'
-  | 'did_not_finish'
-
-export const STATUS_LABELS: Record<LibraryStatus, string> = {
-  want_to_play:    'Want to Play',
-  playing:         'Playing',
-  done:            'Done',
-  did_not_finish:  'Did Not Finish',
-}
-
-export const STATUS_COLORS: Record<LibraryStatus, string> = {
-  want_to_play:    '#a8acb3',  // textSecondary
-  playing:         '#05b169',  // success / semantic up
-  done:            '#f4b000',  // amber
-  did_not_finish:  '#6b7178',  // textMuted
-}
-```
-
----
-
 ## Database Schema (reference)
 
 ```sql
@@ -225,25 +231,6 @@ library_entries (
   UNIQUE(user_id, rawg_game_id)
 )
 ```
-
----
-
-## RAWG API
-
-Base URL: `https://api.rawg.io/api`  
-All requests: append `?key=${EXPO_PUBLIC_RAWG_API_KEY}`
-
-Key endpoints used:
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/games` | Search + browse games |
-| GET | `/games/{id}` | Full game detail |
-
-RAWG OpenAPI spec lives at:
-
-`docs/external/rawg/openapi.yaml`
-
-Use this as the source of truth for RAWG request/response shapes. Runtime RAWG calls must still go through `mobile/lib/rawg.ts`.
 
 ---
 
@@ -300,6 +287,3 @@ npx expo export --platform web
 ```
 
 ---
-
-## Frontend
-- Always make separate components when we think it could be reused
