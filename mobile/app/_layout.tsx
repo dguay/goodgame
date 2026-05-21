@@ -2,8 +2,9 @@ import 'react-native-gesture-handler'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect } from 'react'
-import { StyleSheet } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { enableScreens } from 'react-native-screens'
 import { useFonts } from 'expo-font'
 import {
   Inter_400Regular,
@@ -15,6 +16,10 @@ import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+
+if (Platform.OS === 'android') {
+  enableScreens(false)
+}
 
 SplashScreen.preventAutoHideAsync()
 
