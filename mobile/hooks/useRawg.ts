@@ -3,7 +3,6 @@ import {
   searchGames,
   getGameAdditions,
   getGameDetail,
-  getGameMovies,
   getGameScreenshots,
   getGameSeries,
   getNewReleases,
@@ -71,16 +70,6 @@ export function useGameScreenshots(id: number | null) {
   return useQuery({
     queryKey: ['rawg', 'game', id, 'screenshots'],
     queryFn: () => getGameScreenshots(id!),
-    enabled: id !== null,
-    staleTime: STALE,
-    gcTime: CACHE,
-  })
-}
-
-export function useGameMovies(id: number | null) {
-  return useQuery({
-    queryKey: ['rawg', 'game', id, 'movies'],
-    queryFn: () => getGameMovies(id!),
     enabled: id !== null,
     staleTime: STALE,
     gcTime: CACHE,

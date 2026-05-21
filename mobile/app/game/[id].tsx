@@ -27,7 +27,6 @@ import { RatingInput } from '@/components/RatingInput'
 import {
   useGameAdditions,
   useGameDetail,
-  useGameMovies,
   useGameScreenshots,
   useGameSeries,
 } from '@/hooks/useRawg'
@@ -39,7 +38,7 @@ import { formatRatingCount } from '@/lib/rating'
 import { isUpcomingRelease } from '@/lib/releaseDates'
 import { getSteamStoreUrl } from '@/lib/steam'
 import type { LibraryEntry } from '@/types/database'
-import type { RawgGame, RawgGameDetail, RawgMovie } from '@/types/rawg'
+import type { RawgGame, RawgGameDetail } from '@/types/rawg'
 
 // helpers
 
@@ -112,10 +111,6 @@ function getReleaseDateInfo(released: string | null): ReleaseDateInfo | null {
     label: `${MONTH_NAMES[monthIndex]} ${dayNumber}, ${year}`,
     isFuture: isUpcomingRelease(released),
   }
-}
-
-function getPlayableMovieUrl(movie: RawgMovie): string | null {
-  return movie.data.max ?? movie.data['480'] ?? Object.values(movie.data)[0] ?? null
 }
 
 function getRedditUrl(rawUrl: string | null): string | null {
@@ -485,71 +480,6 @@ function RelatedGamesSection({ gameId }: RelatedGamesProps) {
   )
 }
 
-// Trailers
-
-interface TrailerCardProps {
-  movie: RawgMovie
-}
-
-function TrailerCard({ movie }: TrailerCardProps) {
-  const movieUrl = getPlayableMovieUrl(movie)
-  const disabled = movieUrl == null
-
-  return (
-    <Pressable
-      style={[styles.trailerCard, disabled && styles.disabledCard]}
-      onPress={() => {
-        if (movieUrl != null) void openExternalUrl(movieUrl)
-      }}
-      disabled={disabled}
-    >
-      <View style={styles.trailerPreview}>
-        <Image
-          source={movie.preview !== '' ? { uri: movie.preview } : null}
-          style={styles.trailerImage}
-          contentFit="cover"
-          cachePolicy="disk"
-          transition={200}
-        />
-        <View style={styles.playBadge}>
-          <Ionicons name="play" size={18} color={Colors.textPrimary} />
-        </View>
-      </View>
-      <Text variant="body" numberOfLines={2} style={styles.trailerTitle}>
-        {movie.name}
-      </Text>
-    </Pressable>
-  )
-}
-
-function TrailersSection({ gameId }: RelatedGamesProps) {
-  const movies = useGameMovies(gameId)
-  const trailers = movies.data?.results ?? []
-
-  return (
-    <View style={styles.section}>
-      <Text variant="subheading" style={styles.sectionTitle}>Trailers</Text>
-      {movies.isLoading ? (
-        <SectionLoading label="Loading trailers..." />
-      ) : movies.isError ? (
-        <SectionMessage label="Could not load trailers." />
-      ) : trailers.length === 0 ? (
-        <SectionMessage label="No trailers found." />
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.trailersRow}
-        >
-          {trailers.map(movie => (
-            <TrailerCard key={movie.id} movie={movie} />
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  )
-}
-
 // PersonalTracking
 
 interface TrackingProps { entry: LibraryEntry }
@@ -786,7 +716,6 @@ export default function GameDetailScreen() {
             steamLoading={steamQuery.isLoading}
           />
           <ScreenshotGallery gameId={game.id} />
-          <TrailersSection gameId={game.id} />
           {entry != null && <PersonalTracking entry={entry} />}
           <RelatedGamesSection gameId={game.id} />
           <RawgFooter />
@@ -1048,49 +977,6 @@ const styles = StyleSheet.create({
   },
   disabledCard: {
     opacity: 0.62,
-  },
-
-  // Trailers
-  trailersRow: {
-    gap: Spacing.sm,
-    paddingRight: Spacing.md,
-  },
-  trailerCard: {
-    width: 260,
-    gap: Spacing.xs,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
-  },
-  trailerPreview: {
-    position: 'relative',
-    backgroundColor: Colors.surfaceRaised,
-  },
-  trailerImage: {
-    width: '100%',
-    height: 146,
-    backgroundColor: Colors.surfaceRaised,
-  },
-  playBadge: {
-    position: 'absolute',
-    left: Spacing.sm,
-    bottom: Spacing.sm,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,82,255,0.88)',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  trailerTitle: {
-    minHeight: 44,
-    paddingHorizontal: Spacing.sm,
-    paddingBottom: Spacing.sm,
-    fontFamily: FontFamily.medium,
   },
 
   // External links

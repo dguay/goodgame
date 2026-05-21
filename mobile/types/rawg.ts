@@ -56,13 +56,6 @@ export interface RawgPaginatedResponse<T> {
   results: T[]
 }
 
-export interface RawgMovie {
-  id: number
-  name: string
-  preview: string
-  data: Record<string, string>
-}
-
 export interface GetGamesParams {
   page?: number
   page_size?: number

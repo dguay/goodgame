@@ -2,7 +2,6 @@ import type {
   GetGamesParams,
   RawgGame,
   RawgGameDetail,
-  RawgMovie,
   RawgPaginatedResponse,
   RawgScreenshot,
 } from '@/types/rawg'
@@ -66,10 +65,6 @@ export async function getGameScreenshots(
   return get<RawgPaginatedResponse<RawgScreenshot>>(`/games/${id}/screenshots`, {
     page_size: 12,
   })
-}
-
-export async function getGameMovies(id: number): Promise<RawgPaginatedResponse<RawgMovie>> {
-  return get<RawgPaginatedResponse<RawgMovie>>(`/games/${id}/movies`)
 }
 
 export async function getGames(
