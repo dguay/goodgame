@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      game_external_ids: {
+        Row: {
+          created_at: string
+          rawg_game_id: number
+          steam_app_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          rawg_game_id: number
+          steam_app_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          rawg_game_id?: number
+          steam_app_id?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       library_entries: {
         Row: {
           created_at: string

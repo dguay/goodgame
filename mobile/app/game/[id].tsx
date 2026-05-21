@@ -32,10 +32,12 @@ import {
   useGameSeries,
 } from '@/hooks/useRawg'
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
+import { useSteamAppId } from '@/hooks/useSteam'
 
 import { Colors, FontFamily, Radius, Spacing } from '@/constants'
 import { formatRatingCount } from '@/lib/rating'
 import { isUpcomingRelease } from '@/lib/releaseDates'
+import { getSteamStoreUrl } from '@/lib/steam'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame, RawgGameDetail, RawgMovie } from '@/types/rawg'
 
@@ -72,11 +74,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 }
 
 const REDDIT_ORANGE = '#ff4500'
+const STEAM_BLUE = '#66c0f4'
 
 function metacriticColor(score: number): string {
   if (score >= 75) return Colors.success
   if (score >= 60) return Colors.warning
   return Colors.error
+}
+
+function getMetacriticBadgeStyle(score: number) {
+  if (score >= 75) return styles.heroBadgeHigh
+  if (score >= 60) return styles.heroBadgeMid
+  return styles.heroBadgeLow
 }
 
 interface ReleaseDateInfo {
@@ -158,10 +167,6 @@ interface HeroProps { game: RawgGameDetail }
 
 function HeroSection({ game }: HeroProps) {
   const releaseDate = getReleaseDateInfo(game.released)
-  const releaseDateLabel =
-    releaseDate?.isFuture === true
-      ? `Coming ${releaseDate.label}`
-      : releaseDate?.label
   const developerLabel = (game.developers ?? []).map(d => d.name).join(', ')
   const publisherLabel = (game.publishers ?? []).map(p => p.name).join(', ')
   const platforms = (game.platforms ?? [])
@@ -183,75 +188,77 @@ function HeroSection({ game }: HeroProps) {
             cachePolicy="disk"
             transition={200}
           />
+          <LinearGradient
+            colors={['rgba(10,11,13,0.02)', 'rgba(10,11,13,0.36)', 'rgba(10,11,13,0.9)']}
+            locations={[0, 0.56, 1]}
+            style={StyleSheet.absoluteFill}
+          />
         </View>
       )}
-      <LinearGradient
-        colors={['rgba(10,11,13,0.02)', 'rgba(10,11,13,0.42)', Colors.background]}
-        locations={[0, 0.5, 1]}
-        style={StyleSheet.absoluteFill}
-      />
       <View style={styles.heroContent}>
-        <View style={styles.heroInfo}>
+        <View style={styles.heroImageCopy}>
           <Text variant="heading" numberOfLines={4} style={styles.heroTitle}>
             {game.name}
           </Text>
           {hasMetaLine && (
             <Text variant="caption" numberOfLines={2} style={styles.heroSubtitle}>
               {[
-releaseDate?.isFuture === true ? `Coming ${releaseDate.label}` : releaseDate?.label,
-developerLabel !== '' ? developerLabel : null,
-publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
-              ].filter(Boolean).join('  /  ')}
+                releaseDate?.isFuture === true ? `Coming ${releaseDate.label}` : releaseDate?.label,
+                developerLabel !== '' ? developerLabel : null,
+                publisherLabel !== '' && developerLabel === '' ? publisherLabel : null,
+              ]
+                .filter(Boolean)
+                .join('  /  ')}
             </Text>
           )}
-          {(releaseDate?.isFuture === true || game.metacritic != null || hasRating || platforms.length > 0) && (
-            <View style={styles.heroBadgeRow}>
-              {releaseDate?.isFuture === true && (
-                <View style={[styles.heroBadge, styles.heroBadgeSuccess]}>
-                  <Ionicons name="calendar-outline" size={14} color={Colors.success} />
-                  <Text variant="label" color={Colors.success}>
-                    Upcoming
-                  </Text>
-                </View>
-              )}
-              {game.metacritic != null && (
-                <View style={[styles.heroBadge, { borderColor: metacriticColor(game.metacritic) }]}>
-                  <Text variant="mono" color={metacriticColor(game.metacritic)} style={styles.heroBadgeNumber}>
-                    {game.metacritic}
-                  </Text>
-                  <Text variant="label" color={metacriticColor(game.metacritic)}>
-                    Meta
-                  </Text>
-                </View>
-              )}
-              {hasRating && (
-                <View style={styles.heroBadge}>
-                  <Ionicons name="star" size={14} color={Colors.rawg} />
-                  <Text variant="mono" color={Colors.textPrimary} style={styles.heroBadgeNumber}>
-                    {game.rating.toFixed(1)}
-                  </Text>
-                  <Text variant="label">
-                    {game.ratings_count > 0 ? formatRatingCount(game.ratings_count) : 'RAWG'}
-                  </Text>
-                </View>
-              )}
-              {platforms.length > 0 && (
-                <View style={styles.platformRow}>
-                  {platforms.map(p => (
-                    <View key={p} style={styles.platformChip}>
-                      <Text variant="label">{p}</Text>
-                    </View>
-                  ))}
-                  {hiddenPlatformCount > 0 && (
-                    <View style={styles.platformChip}>
-                      <Text variant="label">+{hiddenPlatformCount}</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
         </View>
+        {(game.metacritic != null || hasRating || platforms.length > 0) && (
+          <View style={styles.heroMetaRows}>
+            {(game.metacritic != null || hasRating) && (
+              <View style={styles.heroBadgeRow}>
+                {game.metacritic != null && (
+                  <View style={[styles.heroBadge, getMetacriticBadgeStyle(game.metacritic)]}>
+                    <Text
+                      variant="mono"
+                      color={metacriticColor(game.metacritic)}
+                      style={styles.heroBadgeNumber}
+                    >
+                      {game.metacritic}
+                    </Text>
+                    <Text variant="label" color={metacriticColor(game.metacritic)}>
+                      Meta
+                    </Text>
+                  </View>
+                )}
+                {hasRating && (
+                  <View style={styles.heroBadge}>
+                    <Ionicons name="star" size={14} color={Colors.rawg} />
+                    <Text variant="mono" color={Colors.textPrimary} style={styles.heroBadgeNumber}>
+                      {game.rating.toFixed(1)}
+                    </Text>
+                    <Text variant="label">
+                      {game.ratings_count > 0 ? formatRatingCount(game.ratings_count) : 'RAWG'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+            {platforms.length > 0 && (
+              <View style={styles.platformRow}>
+                {platforms.map(p => (
+                  <View key={p} style={styles.platformChip}>
+                    <Text variant="label">{p}</Text>
+                  </View>
+                ))}
+                {hiddenPlatformCount > 0 && (
+                  <View style={styles.platformChip}>
+                    <Text variant="label">+{hiddenPlatformCount}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </View>
   )
@@ -263,51 +270,88 @@ interface InfoProps {
   description: string
   genres: { id: number; name: string; slug: string }[]
   redditUrl: string | null
+  steamAppId: number | null
+  steamLoading: boolean
 }
 
-function InfoSection({ description, genres, redditUrl }: InfoProps) {
+function InfoSection({ description, genres, redditUrl, steamAppId, steamLoading }: InfoProps) {
   const [expanded, setExpanded] = useState(false)
   const trimmed = description.trim()
   const subredditUrl = getRedditUrl(redditUrl)
   const subredditLabel = getRedditLabel(redditUrl)
+  const steamUrl = steamAppId != null ? getSteamStoreUrl(steamAppId) : null
+  const hasExternalLinks = subredditUrl != null || steamUrl != null || steamLoading
+  const hasInfoMeta = genres.length > 0 || hasExternalLinks
+  const shouldClamp = trimmed.length > 280
 
   return (
-    <View style={styles.section}>
-      {(genres.length > 0 || subredditUrl != null) && (
-        <View style={styles.genreHeader}>
-          <View style={styles.genreRow}>
-            {genres.map(g => (
-              <View key={g.id} style={styles.genreChip}>
-                <Text variant="label" color={Colors.primary}>{g.name}</Text>
-              </View>
-            ))}
-          </View>
-          {subredditUrl != null && subredditLabel != null && (
+    <View style={[styles.section, styles.infoSection]}>
+      {trimmed.length > 0 && (
+        <View style={styles.descriptionBlock}>
+          <Text variant="body" numberOfLines={expanded ? undefined : 3} style={styles.description}>
+            {trimmed}
+          </Text>
+          {shouldClamp && (
             <Pressable
-              style={styles.subredditButton}
-              onPress={() => void openExternalUrl(subredditUrl)}
+              onPress={() => setExpanded(e => !e)}
+              hitSlop={8}
+              style={styles.readMoreBtn}
             >
-              <Ionicons name="logo-reddit" size={14} color={REDDIT_ORANGE} />
-              <Text variant="label" color={REDDIT_ORANGE}>{subredditLabel}</Text>
+              <Text variant="label" color={Colors.primary}>
+                {expanded ? 'Show less' : 'Read more'}
+              </Text>
             </Pressable>
           )}
         </View>
       )}
-      {trimmed.length > 0 && (
-        <>
-          <Text
-            variant="body"
-            numberOfLines={expanded ? undefined : 3}
-            style={styles.description}
-          >
-            {trimmed}
-          </Text>
-          <Pressable onPress={() => setExpanded(e => !e)} hitSlop={8} style={styles.readMoreBtn}>
-            <Text variant="label" color={Colors.primary}>
-              {expanded ? 'Show less' : 'Read more'}
-            </Text>
-          </Pressable>
-        </>
+
+      {hasInfoMeta && (
+        <View style={styles.infoMeta}>
+          {genres.length > 0 && (
+            <View style={styles.genreRow}>
+              {genres.map(g => (
+                <View key={g.id} style={styles.genreChip}>
+                  <Text variant="label" color={Colors.primary}>
+                    {g.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {hasExternalLinks && (
+            <View style={styles.externalLinkRow}>
+              {subredditUrl != null && subredditLabel != null && (
+                <Pressable
+                  style={[styles.linkButton, styles.subredditButton]}
+                  onPress={() => void openExternalUrl(subredditUrl)}
+                >
+                  <Ionicons name="logo-reddit" size={14} color={REDDIT_ORANGE} />
+                  <Text variant="label" color={REDDIT_ORANGE}>
+                    {subredditLabel}
+                  </Text>
+                </Pressable>
+              )}
+              {steamUrl != null ? (
+                <Pressable
+                  style={[styles.linkButton, styles.steamButton]}
+                  onPress={() => void openExternalUrl(steamUrl)}
+                >
+                  <Ionicons name="logo-steam" size={14} color={STEAM_BLUE} />
+                  <Text variant="label" color={STEAM_BLUE}>
+                    Steam
+                  </Text>
+                </Pressable>
+              ) : steamLoading ? (
+                <View style={[styles.linkButton, styles.steamButton]}>
+                  <ActivityIndicator size="small" color={STEAM_BLUE} />
+                  <Text variant="label" color={STEAM_BLUE}>
+                    Steam
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
       )}
     </View>
   )
@@ -672,6 +716,8 @@ export default function GameDetailScreen() {
 
   const { data: game, isLoading, isError } = useGameDetail(safeGameId)
   const entry = useLibraryEntry(safeGameId)
+  const steamQuery = useSteamAppId(game?.id ?? null, game?.name ?? null)
+  const steamAppId = steamQuery.data ?? null
   const actionBarBottomPadding =
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.xl) + Spacing.xs
@@ -736,6 +782,8 @@ export default function GameDetailScreen() {
             description={game.description_raw}
             genres={game.genres ?? []}
             redditUrl={game.reddit_url}
+            steamAppId={steamAppId}
+            steamLoading={steamQuery.isLoading}
           />
           <ScreenshotGallery gameId={game.id} />
           <TrailersSection gameId={game.id} />
@@ -784,7 +832,7 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: {
-    minHeight: Platform.OS === 'web' ? 430 : 390,
+    minHeight: Platform.OS === 'web' ? 540 : 500,
     justifyContent: 'flex-end',
     overflow: 'hidden',
     backgroundColor: Colors.background,
@@ -793,7 +841,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    bottom: Platform.OS === 'web' ? 60 : 92,
+    bottom: Platform.OS === 'web' ? 120 : 132,
     left: 0,
     backgroundColor: Colors.surface,
   },
@@ -802,13 +850,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   heroContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     width: '100%',
     maxWidth: 980,
     alignSelf: 'center',
     paddingHorizontal: Spacing.md,
-    paddingTop: Platform.OS === 'web' ? 148 : 132,
     paddingBottom: Spacing.lg,
     gap: Spacing.md,
   },
@@ -839,6 +885,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
     gap: Spacing.sm,
   },
+  heroImageCopy: {
+    minWidth: 0,
+    gap: Spacing.sm,
+    maxWidth: 760,
+  },
   heroTitle: {
     fontSize: Platform.OS === 'web' ? 36 : 29,
     lineHeight: Platform.OS === 'web' ? 40 : 32,
@@ -846,6 +897,11 @@ const styles = StyleSheet.create({
   },
   heroSubtitle: {
     maxWidth: 620,
+  },
+  heroMetaRows: {
+    minHeight: Platform.OS === 'web' ? 84 : 84,
+    gap: Spacing.xs,
+    justifyContent: 'flex-start',
   },
   heroBadgeRow: {
     flexDirection: 'row',
@@ -864,8 +920,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     backgroundColor: Colors.background,
   },
-  heroBadgeSuccess: {
+  heroBadgeHigh: {
     borderColor: 'rgba(5,177,105,0.38)',
+  },
+  heroBadgeMid: {
+    borderColor: 'rgba(244,176,0,0.4)',
+  },
+  heroBadgeLow: {
+    borderColor: 'rgba(207,32,47,0.42)',
   },
   heroBadgeNumber: {
     fontSize: 13,
@@ -910,17 +972,25 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     backgroundColor: Colors.surface,
   },
-  genreHeader: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  infoSection: {
+    gap: Spacing.sm,
+    paddingTop: 0,
+    paddingBottom: Spacing.lg,
+  },
+  descriptionBlock: {
     gap: Spacing.xs,
-    marginBottom: Spacing.sm,
+    maxWidth: 760,
+  },
+  infoMeta: {
+    gap: Spacing.xs,
+    paddingTop: Spacing.xs,
   },
   genreRow: {
-    flex: 1,
-    minWidth: 0,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  externalLinkRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.xs,
@@ -934,10 +1004,11 @@ const styles = StyleSheet.create({
   },
   description: {
     lineHeight: 22,
-    marginBottom: Spacing.xs,
   },
   readMoreBtn: {
-    marginTop: 2,
+    alignSelf: 'flex-start',
+    minHeight: 28,
+    justifyContent: 'center',
   },
 
   // Screenshots
@@ -1022,18 +1093,23 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
 
-  // Reddit
-  subredditButton: {
+  // External links
+  linkButton: {
     minHeight: 32,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
     borderWidth: 1,
-    borderColor: 'rgba(255,69,0,0.42)',
     borderRadius: Radius.pill,
     backgroundColor: 'transparent',
     paddingHorizontal: Spacing.sm,
+  },
+  subredditButton: {
+    borderColor: 'rgba(255,69,0,0.42)',
+  },
+  steamButton: {
+    borderColor: 'rgba(102,192,244,0.42)',
   },
 
   // Personal Tracking

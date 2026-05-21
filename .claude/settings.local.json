@@ -10,7 +10,8 @@
       "Bash(Select-Object -First 5)",
       "Skill(update-config)",
       "Bash(afplay /System/Library/Sounds/Glass.aiff)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(git diff *)"
     ]
   }
 }
