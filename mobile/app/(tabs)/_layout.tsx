@@ -36,7 +36,7 @@ function TabIcon({ tab, focused, size }: { tab: TabItem; focused: boolean; size:
   const color = focused ? Colors.primary : Colors.textSecondary
 
   if (tab.useGoodgameIcon) {
-    return <GoodgameLibraryIcon size={size + 12} color={color} focused={focused} />
+    return <GoodgameLibraryIcon size={size + 5} color={color} focused={focused} />
   }
 
   return <Ionicons name={focused ? tab.iconActive : tab.icon} size={size} color={color} />
@@ -71,9 +71,11 @@ function SideNavBar() {
 
 function BottomTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets()
+  const bottomPadding =
+    Platform.OS === 'android' ? Math.max(insets.bottom, Spacing.sm) : Math.max(insets.bottom, Spacing.xxxs)
 
   return (
-    <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.sm) }]}>
+    <View style={[styles.bottomBar, { paddingBottom: bottomPadding }]}>
       {state.routes.map((route, index) => {
         const tab = TABS[index]
         const isFocused = state.index === index
@@ -88,7 +90,7 @@ function BottomTabBar({ state, navigation }: TabBarProps) {
             }}
             style={styles.bottomTabItem}
           >
-            <TabIcon tab={tab} focused={isFocused} size={24} />
+            <TabIcon tab={tab} focused={isFocused} size={17} />
             <Text style={[styles.bottomTabLabel, isFocused && styles.bottomTabLabelActive]}>
               {tab.label}
             </Text>
@@ -189,18 +191,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    paddingTop: Spacing.xs,
+    paddingTop: Spacing.xxxs,
   },
   bottomTabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.xs,
-    gap: 2,
+    paddingVertical: 0,
+    gap: 0,
   },
   bottomTabLabel: {
     fontFamily: 'Inter-Regular',
-    fontSize: FontSize.xs,
+    fontSize: FontSize.xxs,
     color: Colors.textSecondary,
   },
   bottomTabLabelActive: {

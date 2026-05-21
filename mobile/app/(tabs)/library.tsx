@@ -48,12 +48,14 @@ type SortKey = LibrarySortKey
 type ViewMode = 'grid' | 'list'
 type SortDirection = 'asc' | 'desc'
 
+const HEADER_SEARCH_MAX_WIDTH = 360
+
 const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }[] = [
   { key: 'all', label: 'All', compactLabel: 'All' },
   { key: 'want_to_play', label: 'TBP', compactLabel: 'TBP' },
   { key: 'done', label: 'Done', compactLabel: 'Done' },
   { key: 'did_not_finish', label: 'DNF', compactLabel: 'DNF' },
-  { key: 'next', label: 'Next', compactLabel: 'Next' },
+  { key: 'next', label: 'Upcoming', compactLabel: 'Next' },
 ]
 
 const FILTER_KEYS: FilterStatus[] = FILTER_OPTIONS.map(option => option.key)
@@ -611,12 +613,10 @@ function LibraryFilters({
   currentSortLabel,
   isCustomSort,
   isWide,
-  searchQuery,
   sortDirection,
   onFilterChange,
   onSortPress,
   onViewModeChange,
-  onSearchChange,
   onDirectionToggle,
 }: {
   activeFilter: FilterStatus
@@ -624,28 +624,14 @@ function LibraryFilters({
   currentSortLabel: string
   isCustomSort: boolean
   isWide: boolean
-  searchQuery: string
   sortDirection: SortDirection
   onFilterChange: (filter: FilterStatus) => void
   onSortPress: () => void
   onViewModeChange: (viewMode: ViewMode) => void
-  onSearchChange: (q: string) => void
   onDirectionToggle: () => void
 }) {
   return (
     <View style={[styles.filterPanel, isWide && styles.filterPanelWide]}>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search games..."
-        placeholderTextColor={Colors.textMuted}
-        value={searchQuery}
-        onChangeText={onSearchChange}
-        clearButtonMode="while-editing"
-        returnKeyType="search"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-
       <View style={styles.controls}>
         <View style={styles.viewToggle}>
           <Pressable
@@ -658,7 +644,7 @@ function LibraryFilters({
           >
             <Ionicons
               name="grid-outline"
-              size={18}
+              size={16}
               color={activeViewMode === 'grid' ? Colors.textPrimary : Colors.textSecondary}
             />
           </Pressable>
@@ -672,7 +658,7 @@ function LibraryFilters({
           >
             <Ionicons
               name="list-outline"
-              size={18}
+              size={16}
               color={activeViewMode === 'list' ? Colors.textPrimary : Colors.textSecondary}
             />
           </Pressable>
@@ -684,11 +670,11 @@ function LibraryFilters({
           style={({ pressed }) => [styles.sortBtn, pressed && styles.sortBtnPressed]}
           onPress={onSortPress}
         >
-          <Ionicons name="swap-vertical-outline" size={16} color={Colors.textSecondary} />
+          <Ionicons name="swap-vertical-outline" size={15} color={Colors.textSecondary} />
           <Text variant="caption" numberOfLines={1} style={styles.sortLabel}>
             {currentSortLabel}
           </Text>
-          <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
+          <Ionicons name="chevron-down" size={13} color={Colors.textMuted} />
         </Pressable>
 
         {!isCustomSort && (
@@ -701,7 +687,7 @@ function LibraryFilters({
           >
             <Ionicons
               name={sortDirection === 'asc' ? 'arrow-up-outline' : 'arrow-down-outline'}
-              size={16}
+              size={15}
               color={Colors.textSecondary}
             />
           </Pressable>
@@ -914,7 +900,20 @@ export default function LibraryScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text variant="heading">Library</Text>
+        <View style={styles.headerTop}>
+          <Text variant="heading" style={styles.headerTitle}>Library</Text>
+          <TextInput
+            style={styles.headerSearchInput}
+            placeholder="Search"
+            placeholderTextColor={Colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            clearButtonMode="while-editing"
+            returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
         <Text variant="caption" style={styles.resultLabel}>
           {searchFiltered.length === 1 ? '1 game' : `${searchFiltered.length} games`}
         </Text>
@@ -926,12 +925,10 @@ export default function LibraryScreen() {
         currentSortLabel={currentSortLabel}
         isCustomSort={sort === 'custom'}
         isWide={isWide}
-        searchQuery={searchQuery}
         sortDirection={sortDirection}
         onFilterChange={setFilter}
         onSortPress={() => setSortPickerVisible(true)}
         onViewModeChange={setViewMode}
-        onSearchChange={setSearchQuery}
         onDirectionToggle={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
       />
 
@@ -1057,18 +1054,38 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
     gap: Spacing.xxs,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  headerTitle: {
+    flexShrink: 0,
+  },
+  headerSearchInput: {
+    flex: 1,
+    maxWidth: HEADER_SEARCH_MAX_WIDTH,
+    height: 34,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.sm,
+    color: Colors.textPrimary,
+    fontSize: 13,
+  },
   filterPanel: {
     flexShrink: 0,
-    gap: Spacing.xs,
+    gap: Spacing.xxs,
     paddingHorizontal: Spacing.md,
-    marginTop: -Spacing.xs,
-    paddingBottom: Spacing.md,
+    paddingTop: Spacing.xxs,
+    paddingBottom: Spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderSoft,
     backgroundColor: Colors.background,
@@ -1082,34 +1099,34 @@ const styles = StyleSheet.create({
   filterContent: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    gap: Spacing.xs,
+    gap: Spacing.xxs,
+    alignSelf: 'stretch',
   },
   filterContentWide: {
     flexWrap: 'wrap',
-    gap: Spacing.xs,
+    gap: Spacing.xxs,
   },
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 34,
-    width: 92,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    minHeight: 28,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: Spacing.xxxs,
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
   },
   filterTabCompact: {
-    width: 60,
-    minHeight: 40,
+    flex: 1,
+    minHeight: 30,
     paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xxs,
+    paddingVertical: Spacing.xxxs,
   },
   filterTabWide: {
-    width: 108,
-    paddingHorizontal: Spacing.md,
+    width: 96,
+    paddingHorizontal: Spacing.sm,
   },
   filterTabActive: {
     backgroundColor: Colors.primary,
@@ -1130,8 +1147,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    gap: Spacing.sm,
-    padding: Spacing.xs,
+    gap: Spacing.xs,
+    padding: Spacing.xxs,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.borderSoft,
@@ -1147,8 +1164,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   toggleBtn: {
-    width: 34,
-    height: 32,
+    width: 30,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.pill,
@@ -1166,9 +1183,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: Spacing.xs,
     marginLeft: 'auto',
-    minHeight: 36,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
+    minHeight: 30,
+    paddingVertical: Spacing.xxxs,
+    paddingHorizontal: Spacing.sm,
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -1214,19 +1231,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 72,
   },
-  searchInput: {
-    height: 38,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.md,
-    color: Colors.textPrimary,
-    fontSize: 14,
-  },
   directionBtn: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.pill,
