@@ -259,10 +259,13 @@ export function LargeGameCard({
   onStatusPress,
   onLongPress,
 }: LargeGameCardProps) {
-  const developerLabel = gameDetail != null ? getDeveloperLabel(gameDetail) : null
-  const coverUrl = gameDetail?.background_image ?? entry.game_cover_url
-  const releaseDate = gameDetail?.released ?? entry.release_date
-  const hasRawgRating = gameDetail?.rating != null && gameDetail.rating > 0
+  const detailId = gameDetail == null ? entry.rawg_game_id : null
+  const { data: fetchedGameDetail } = useGameDetail(detailId)
+  const resolvedGameDetail = gameDetail ?? fetchedGameDetail
+  const developerLabel = resolvedGameDetail != null ? getDeveloperLabel(resolvedGameDetail) : null
+  const coverUrl = resolvedGameDetail?.background_image ?? entry.game_cover_url
+  const releaseDate = resolvedGameDetail?.released ?? entry.release_date
+  const hasRawgRating = resolvedGameDetail?.rating != null && resolvedGameDetail.rating > 0
 
   return (
     <View style={styles.largeCardShadow}>
@@ -299,12 +302,12 @@ export function LargeGameCard({
           </View>
           <View style={styles.largeDetails}>
             <View style={styles.largeBadgeRow}>
-              {gameDetail?.metacritic != null && (
-                <View style={[styles.largeScoreBadge, { borderColor: metacriticColor(gameDetail.metacritic) }]}>
-                  <Text variant="mono" color={metacriticColor(gameDetail.metacritic)} style={styles.largeScoreNumber}>
-                    {gameDetail.metacritic}
+              {resolvedGameDetail?.metacritic != null && (
+                <View style={[styles.largeScoreBadge, { borderColor: metacriticColor(resolvedGameDetail.metacritic) }]}>
+                  <Text variant="mono" color={metacriticColor(resolvedGameDetail.metacritic)} style={styles.largeScoreNumber}>
+                    {resolvedGameDetail.metacritic}
                   </Text>
-                  <Text variant="label" color={metacriticColor(gameDetail.metacritic)}>
+                  <Text variant="label" color={metacriticColor(resolvedGameDetail.metacritic)}>
                     Meta
                   </Text>
                 </View>
@@ -313,10 +316,10 @@ export function LargeGameCard({
                 <View style={styles.largeScoreBadge}>
                   <Ionicons name="star" size={14} color={Colors.rawg} />
                   <Text variant="mono" style={styles.largeScoreNumber}>
-                    {gameDetail.rating.toFixed(1)}
+                    {resolvedGameDetail!.rating.toFixed(1)}
                   </Text>
                   <Text variant="label">
-                    {gameDetail.ratings_count > 0 ? formatRatingCount(gameDetail.ratings_count) : 'RAWG'}
+                    {resolvedGameDetail!.ratings_count > 0 ? formatRatingCount(resolvedGameDetail!.ratings_count) : 'RAWG'}
                   </Text>
                 </View>
               )}
