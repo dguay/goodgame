@@ -121,6 +121,27 @@ export type Database = {
         }
         Relationships: []
       }
+      reddit_fetch_errors: {
+        Row: {
+          created_at: string
+          details: Json
+          id: string
+          message: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          id?: string
+          message: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          id?: string
+          message?: string
+        }
+        Relationships: []
+      }
       reddit_threads: {
         Row: {
           created_utc: string
