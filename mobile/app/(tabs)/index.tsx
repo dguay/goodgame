@@ -11,8 +11,6 @@ import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
 import { useReleasePreview } from '@/hooks/useRawg'
-import { useRedditThreads } from '@/hooks/useRedditThreads'
-import { RedditThreadCard } from '@/components/RedditThreadCard'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 import { isKnownUpcomingRelease } from '@/lib/releaseDates'
 import { STATUS_COLORS, type LibraryStatus } from '@/types'
@@ -63,20 +61,6 @@ function SectionHeader({
       )}
     </View>
   )
-}
-
-function formatUpdatedAt(value: string | null): string | undefined {
-  if (value == null) return undefined
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return undefined
-
-  return `Updated ${date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })}`
 }
 
 function HorizontalSkeletons({ height = 220 }: { height?: number }) {
@@ -266,7 +250,6 @@ export default function HomeScreen() {
   const libraryQuery = useLibraryEntries()
   const newReleasesQuery = useReleasePreview('new')
   const comingUpQuery = useReleasePreview('upcoming')
-  const redditQuery = useRedditThreads()
 
   const entries = useMemo(() => libraryQuery.data ?? [], [libraryQuery.data])
   const libraryStats = useMemo(() => {
@@ -292,12 +275,6 @@ export default function HomeScreen() {
   const isLibraryLoading =
     isAuthLoading || (user != null && libraryQuery.isLoading && libraryQuery.data == null)
   const displayName = resolvedDisplayName ?? 'there'
-  const redditUpdatedAt = formatUpdatedAt(
-    (redditQuery.data ?? []).reduce<string | null>((latest, thread) => {
-      if (latest == null) return thread.fetched_at
-      return thread.fetched_at > latest ? thread.fetched_at : latest
-    }, null)
-  )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -307,12 +284,11 @@ export default function HomeScreen() {
         libraryQuery.refetch(),
         newReleasesQuery.refetch(),
         comingUpQuery.refetch(),
-        redditQuery.refetch(),
       ])
     } finally {
       setRefreshing(false)
     }
-  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, redditQuery])
+  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery])
 
   const renderUpcomingLibraryItem = useCallback(
     ({ item }: { item: LibraryEntry }) => (
@@ -434,35 +410,6 @@ export default function HomeScreen() {
             />
           )}
         </View>
-
-        {/* Trending on Reddit */}
-        {(redditQuery.isLoading || (redditQuery.data != null && redditQuery.data.length > 0)) && (
-          <View style={styles.section}>
-            <SectionHeader title="Trending on Reddit" meta={redditUpdatedAt} />
-            {redditQuery.isLoading ? (
-              <View style={styles.redditSkeletons}>
-                {[1, 2, 3].map((i) => (
-                  <SkeletonLoader
-                    key={i}
-                    width="100%"
-                    height={90}
-                    borderRadius={Radius.lg}
-                    style={styles.redditSkeleton}
-                  />
-                ))}
-              </View>
-            ) : (
-              <View>
-                {(redditQuery.data ?? []).map((thread, i) => (
-                  <View key={thread.id}>
-                    {i > 0 && <View style={styles.redditSeparator} />}
-                    <RedditThreadCard thread={thread} />
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
 
         <RawgFooter />
       </ScrollView>
@@ -596,16 +543,6 @@ const styles = StyleSheet.create({
   sectionEmpty: {
     color: Colors.textMuted,
     paddingHorizontal: Spacing.md,
-  },
-  redditSkeletons: {
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.xs,
-  },
-  redditSkeleton: {
-    marginBottom: 0,
-  },
-  redditSeparator: {
-    height: Spacing.xs,
   },
 })
 
