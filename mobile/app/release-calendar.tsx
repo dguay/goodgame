@@ -94,7 +94,9 @@ export default function ReleaseCalendarScreen() {
   }, [])
 
   const renderItem = useCallback(
-    ({ item }: { item: RawgGame }) => <GameListCard game={item} releaseDateFormat="date" />,
+    ({ item }: { item: RawgGame }) => (
+      <GameListCard game={item} fetchGameDetail releaseDateFormat="date" />
+    ),
     []
   )
 

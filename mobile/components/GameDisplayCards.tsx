@@ -44,6 +44,7 @@ interface LargeGameCardProps {
 }
 
 type GameListCardProps = GameSource & {
+  fetchGameDetail?: boolean
   gameDetail?: RawgGameDetail
   onDelete?: (id: string) => void
   onLongPress?: () => void
@@ -364,6 +365,7 @@ function LargeDateStack({
 
 export function GameListCard({
   entry,
+  fetchGameDetail = false,
   game,
   gameDetail,
   onDelete,
@@ -372,7 +374,7 @@ export function GameListCard({
 }: GameListCardProps) {
   const data = getDisplayData(entry != null ? { entry } : { game })
   const libraryEntry = data.entry
-  const detailId = libraryEntry != null && gameDetail == null ? data.id : null
+  const detailId = (libraryEntry != null || fetchGameDetail) && gameDetail == null ? data.id : null
   const { data: fetchedGameDetail } = useGameDetail(detailId)
   const resolvedGameDetail = gameDetail ?? fetchedGameDetail
   const developerLabel = resolvedGameDetail != null ? getDeveloperLabel(resolvedGameDetail) : null
