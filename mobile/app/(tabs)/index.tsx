@@ -7,12 +7,13 @@ import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { RawgFooter } from '@/components/RawgFooter'
 import { SmallGameCard } from '@/components/GameDisplayCards'
+import { NextGameChooser } from '@/components/NextGameChooser'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
 import { useReleasePreview } from '@/hooks/useRawg'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-import { isKnownUpcomingRelease } from '@/lib/releaseDates'
+import { isKnownReleased, isKnownUpcomingRelease } from '@/lib/releaseDates'
 import { STATUS_COLORS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
@@ -262,6 +263,9 @@ export default function HomeScreen() {
       totalGames: entries.length,
       playingEntries: playing,
       upcomingLibraryEntries: upcoming,
+      releasedTbpEntries: entries.filter(
+        (entry) => entry.status === 'want_to_play' && isKnownReleased(entry.release_date)
+      ),
       wantedCount: entries.filter((e) => e.status === 'want_to_play').length,
       completedCount: entries.filter((e) => e.status === 'done').length,
     }
@@ -327,6 +331,11 @@ export default function HomeScreen() {
           wantedCount={libraryStats.wantedCount}
           playingEntries={libraryStats.playingEntries}
           completedCount={libraryStats.completedCount}
+        />
+
+        <NextGameChooser
+          candidates={libraryStats.releasedTbpEntries}
+          isLoading={isLibraryLoading}
         />
 
         {/* Your Upcoming Games */}

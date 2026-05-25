@@ -1,14 +1,17 @@
-import { addLocalDays, formatLocalDate, isUpcomingRelease } from './releaseDates'
+import {
+  addLocalDays,
+  formatDate,
+  formatLocalDate,
+  isKnownReleased,
+  isUpcomingRelease,
+} from './releaseDates'
 
 declare const require: (module: string) => unknown
 
 const assert = require('node:assert/strict') as {
   equal: (actual: unknown, expected: unknown) => void
 }
-const test = require('node:test') as (
-  name: string,
-  fn: () => void,
-) => void
+const test = require('node:test') as (name: string, fn: () => void) => void
 
 test('treats null release dates as upcoming', () => {
   assert.equal(isUpcomingRelease(null), true)
@@ -20,6 +23,11 @@ test('returns true for future release dates', () => {
 
 test('formats local dates without UTC conversion', () => {
   assert.equal(formatLocalDate(new Date(2026, 4, 9)), '2026-05-09')
+})
+
+test('formats release date strings for display', () => {
+  assert.equal(formatDate('2026-05-09'), 'May 9, 2026')
+  assert.equal(formatDate('not-a-date'), 'not-a-date')
 })
 
 test('adds local calendar days', () => {
@@ -44,4 +52,18 @@ test('returns false for invalid release dates', () => {
   assert.equal(isUpcomingRelease('not-a-date'), false)
   assert.equal(isUpcomingRelease('2026-13-01'), false)
   assert.equal(isUpcomingRelease('2026-01'), false)
+})
+
+test('returns true for known released dates', () => {
+  assert.equal(isKnownReleased('2000-01-01'), true)
+})
+
+test('returns true for known release dates today', () => {
+  assert.equal(isKnownReleased(formatLocalDate(new Date())), true)
+})
+
+test('returns false for unknown, future, and invalid released dates', () => {
+  assert.equal(isKnownReleased(null), false)
+  assert.equal(isKnownReleased('2999-01-01'), false)
+  assert.equal(isKnownReleased('not-a-date'), false)
 })

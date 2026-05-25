@@ -14,7 +14,7 @@ import { AddToLibraryButton } from '@/components/AddToLibraryButton'
 import { Colors, FontFamily, Radius, Spacing } from '@/constants'
 import { formatRatingCount } from '@/lib/rating'
 import { useGameDetail } from '@/hooks/useRawg'
-import { isUpcomingRelease } from '@/lib/releaseDates'
+import { formatDate, isUpcomingRelease } from '@/lib/releaseDates'
 import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame, RawgGameDetail } from '@/types/rawg'
@@ -87,22 +87,6 @@ function metacriticColor(score: number): string {
   if (score >= 75) return Colors.success
   if (score >= 60) return Colors.warning
   return Colors.error
-}
-
-function formatDate(
-  date: string,
-  options: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  },
-): string {
-  if (date.length < 10) return date
-
-  const parsedDate = new Date(`${date}T00:00:00`)
-  if (Number.isNaN(parsedDate.getTime())) return date
-
-  return new Intl.DateTimeFormat('en', options).format(parsedDate)
 }
 
 function formatFullDate(date: string): string {
