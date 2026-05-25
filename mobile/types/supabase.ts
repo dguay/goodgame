@@ -121,51 +121,6 @@ export type Database = {
         }
         Relationships: []
       }
-      reddit_threads: {
-        Row: {
-          created_utc: string
-          fetched_at: string
-          id: string
-          num_comments: number
-          permalink: string
-          rank_score: number
-          reddit_id: string
-          score: number
-          subreddit: string
-          thumbnail_url: string | null
-          title: string
-          url: string
-        }
-        Insert: {
-          created_utc: string
-          fetched_at?: string
-          id?: string
-          num_comments: number
-          permalink: string
-          rank_score: number
-          reddit_id: string
-          score: number
-          subreddit: string
-          thumbnail_url?: string | null
-          title: string
-          url: string
-        }
-        Update: {
-          created_utc?: string
-          fetched_at?: string
-          id?: string
-          num_comments?: number
-          permalink?: string
-          rank_score?: number
-          reddit_id?: string
-          score?: number
-          subreddit?: string
-          thumbnail_url?: string | null
-          title?: string
-          url?: string
-        }
-        Relationships: []
-      }
       user_preferences: {
         Row: {
           created_at: string
@@ -200,10 +155,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      replace_reddit_threads: {
-        Args: { p_rows: Json }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
