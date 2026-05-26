@@ -8,11 +8,11 @@ import { formatDate } from '@/lib/releaseDates'
 import { STATUS_COLORS } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 
-const SELECTOR_ROLL_DURATION_MS = 1100
-const SELECTOR_PREVIEW_INTERVAL_MS = 74
-const SELECTOR_REVEAL_LIFT_MS = 260
-const SELECTOR_REVEAL_SETTLE_MS = 620
-const SELECTOR_FINAL_SETTLE_MS = 180
+const SELECTOR_ROLL_DURATION_MS = 1800
+const SELECTOR_PREVIEW_INTERVAL_MS = 120
+const SELECTOR_REVEAL_LIFT_MS = 420
+const SELECTOR_REVEAL_SETTLE_MS = 1000
+const SELECTOR_FINAL_SETTLE_MS = 300
 const SELECTOR_REVEAL_PEAK = 0.42
 const SELECTOR_OPACITY_REVEAL_START = 0.18
 const SELECTOR_IDLE_OPACITY = 0.68
@@ -194,7 +194,7 @@ export function NextGameChooser({ candidates, isLoading }: Props) {
               />
             ) : (
               <View style={styles.placeholder}>
-                <Text variant="label" color={Colors.textMuted}>
+                <Text variant="label" color={Colors.textMuted} numberOfLines={1}>
                   No pick yet
                 </Text>
               </View>
@@ -216,7 +216,7 @@ export function NextGameChooser({ candidates, isLoading }: Props) {
         <View style={styles.result}>
           <Text variant="body" style={styles.resultTitle} numberOfLines={2}>
             {isChoosing
-              ? (displayEntry?.game_title ?? 'Choosing...')
+              ? (displayEntry?.game_title ?? 'Rolling...')
               : (selectedEntry?.game_title ?? 'No game selected')}
           </Text>
           <Text variant="caption" style={styles.resultMeta} numberOfLines={1}>
@@ -236,7 +236,7 @@ export function NextGameChooser({ candidates, isLoading }: Props) {
           ]}
         >
           <Text variant="label" style={styles.buttonText}>
-            {isChoosing ? 'Choosing...' : buttonLabel}
+            {isChoosing ? 'Rolling...' : buttonLabel}
           </Text>
         </Pressable>
       </View>

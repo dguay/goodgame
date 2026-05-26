@@ -1079,6 +1079,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     color: Colors.textPrimary,
     fontSize: 13,
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   filterPanel: {
     flexShrink: 0,

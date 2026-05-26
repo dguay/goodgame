@@ -72,7 +72,7 @@ function SideNavBar() {
 function BottomTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets()
   const bottomPadding =
-    Platform.OS === 'android' ? Math.max(insets.bottom, Spacing.sm) : Math.max(insets.bottom, Spacing.xxxs)
+    Platform.OS === 'android' ? Math.max(insets.bottom, Spacing.md) : Math.max(insets.bottom, Spacing.xxxs)
 
   return (
     <View style={[styles.bottomBar, { paddingBottom: bottomPadding }]}>
@@ -90,7 +90,7 @@ function BottomTabBar({ state, navigation }: TabBarProps) {
             }}
             style={styles.bottomTabItem}
           >
-            <TabIcon tab={tab} focused={isFocused} size={17} />
+            <TabIcon tab={tab} focused={isFocused} size={20} />
             <Text style={[styles.bottomTabLabel, isFocused && styles.bottomTabLabelActive]}>
               {tab.label}
             </Text>

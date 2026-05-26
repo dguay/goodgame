@@ -150,6 +150,8 @@ pnpm run db:stop
 
 ## Android production release
 
+Check [LOCAL_ANDROID_APK_BUILD.md](LOCAL_ANDROID_APK_BUILD.md) for building production build locally without Expo
+
 Use this checklist every time you want to publish a new Android production build through EAS and Play Console.
 
 First-time EAS, Firebase, keystore, and OAuth setup is documented in [docs/android-internal-sharing.md](docs/android-internal-sharing.md). You only need to redo that setup if credentials, package name, Firebase project, or Google OAuth clients change.
