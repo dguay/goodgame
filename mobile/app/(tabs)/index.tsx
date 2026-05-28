@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { ScrollView, RefreshControl, FlatList, View, StyleSheet, Pressable } from 'react-native'
+import { ScrollView, RefreshControl, FlatList, View, StyleSheet, Pressable, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
@@ -12,10 +12,11 @@ import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
 import { useReleasePreview } from '@/hooks/useRawg'
+import { useRedditThreads } from '@/hooks/useRedditThreads'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 import { isKnownReleased, isKnownUpcomingRelease } from '@/lib/releaseDates'
 import { STATUS_COLORS, type LibraryStatus } from '@/types'
-import type { LibraryEntry } from '@/types/database'
+import type { LibraryEntry, RedditThread } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 const CARD_WIDTH = 160
 const LIBRARY_RELEASE_CARD_HEIGHT = 190
@@ -242,6 +243,50 @@ function HomeHero({
   )
 }
 
+function formatPubDateEST(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+function RedditThreadCard({ thread }: { thread: RedditThread }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.redditCard, pressed && styles.redditCardPressed]}
+      onPress={() => Linking.openURL(thread.url)}
+      accessibilityRole="link"
+      accessibilityLabel={thread.title}
+    >
+      <View style={styles.redditCardBody}>
+        <Text variant="label" color={Colors.primary} style={styles.redditSubreddit}>
+          r/{thread.subreddit}
+        </Text>
+        <Text variant="body" style={styles.redditTitle} numberOfLines={3}>
+          {thread.title}
+        </Text>
+        <Text variant="caption" color={Colors.textMuted} style={styles.redditDate}>
+          {formatPubDateEST(thread.pub_date)}
+        </Text>
+      </View>
+    </Pressable>
+  )
+}
+
+function RedditThreadSkeletons() {
+  return (
+    <View style={styles.redditSkeletons}>
+      {[1, 2, 3].map((i) => (
+        <SkeletonLoader key={i} width="100%" height={80} borderRadius={Radius.md} />
+      ))}
+    </View>
+  )
+}
+
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user)
   const isAuthLoading = useAuthStore((s) => s.isLoading)
@@ -251,6 +296,7 @@ export default function HomeScreen() {
   const libraryQuery = useLibraryEntries()
   const newReleasesQuery = useReleasePreview('new')
   const comingUpQuery = useReleasePreview('upcoming')
+  const redditThreadsQuery = useRedditThreads()
 
   const entries = useMemo(() => libraryQuery.data ?? [], [libraryQuery.data])
   const libraryStats = useMemo(() => {
@@ -288,11 +334,12 @@ export default function HomeScreen() {
         libraryQuery.refetch(),
         newReleasesQuery.refetch(),
         comingUpQuery.refetch(),
+        redditThreadsQuery.refetch(),
       ])
     } finally {
       setRefreshing(false)
     }
-  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery])
+  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, redditThreadsQuery])
 
   const renderUpcomingLibraryItem = useCallback(
     ({ item }: { item: LibraryEntry }) => (
@@ -417,6 +464,24 @@ export default function HomeScreen() {
               contentContainerStyle={styles.horizontalList}
               ItemSeparatorComponent={ItemSeparator}
             />
+          )}
+        </View>
+
+        {/* Gaming Hot Topics */}
+        <View style={styles.section}>
+          <SectionHeader title="Gaming Hot Topics" />
+          {redditThreadsQuery.isLoading ? (
+            <RedditThreadSkeletons />
+          ) : (redditThreadsQuery.data ?? []).length > 0 ? (
+            <View style={styles.redditList}>
+              {(redditThreadsQuery.data ?? []).map((thread) => (
+                <RedditThreadCard key={thread.id} thread={thread} />
+              ))}
+            </View>
+          ) : (
+            <Text variant="caption" style={styles.sectionEmpty}>
+              No threads available.
+            </Text>
           )}
         </View>
 
@@ -552,6 +617,47 @@ const styles = StyleSheet.create({
   sectionEmpty: {
     color: Colors.textMuted,
     paddingHorizontal: Spacing.md,
+  },
+  redditList: {
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
+  },
+  redditCard: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    minHeight: 80,
+  },
+  redditCardPressed: {
+    backgroundColor: Colors.surfaceRaised,
+  },
+  redditCardBody: {
+    flex: 1,
+    padding: Spacing.sm,
+    gap: Spacing.xxs,
+    justifyContent: 'center',
+  },
+  redditSubreddit: {
+    fontFamily: FontFamily.semibold,
+    fontSize: FontSize.xs,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  redditTitle: {
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.sm,
+    lineHeight: FontSize.sm * 1.4,
+    color: Colors.textPrimary,
+  },
+  redditDate: {
+    fontSize: FontSize.xxs,
+  },
+  redditSkeletons: {
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
   },
 })
 

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       game_external_ids: {
@@ -121,6 +146,42 @@ export type Database = {
         }
         Relationships: []
       }
+      reddit_threads: {
+        Row: {
+          author: string
+          fetched_at: string
+          id: string
+          pub_date: string
+          rank: number
+          subreddit: string
+          thumbnail_url: string | null
+          title: string
+          url: string
+        }
+        Insert: {
+          author: string
+          fetched_at?: string
+          id?: string
+          pub_date: string
+          rank: number
+          subreddit: string
+          thumbnail_url?: string | null
+          title: string
+          url: string
+        }
+        Update: {
+          author?: string
+          fetched_at?: string
+          id?: string
+          pub_date?: string
+          rank?: number
+          subreddit?: string
+          thumbnail_url?: string | null
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
@@ -155,7 +216,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      replace_reddit_threads: { Args: { p_rows: Json }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
@@ -284,6 +345,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
