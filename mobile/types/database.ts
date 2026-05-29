@@ -6,5 +6,3 @@ export type LibraryEntryInsert = Database['public']['Tables']['library_entries']
 export type LibraryEntryUpdate = Database['public']['Tables']['library_entries']['Update']
 export type UserPreferences = Database['public']['Tables']['user_preferences']['Row']
 export type UserPreferencesUpdate = Database['public']['Tables']['user_preferences']['Update']
-
-export type RedditThread = Database['public']['Tables']['reddit_threads']['Row']

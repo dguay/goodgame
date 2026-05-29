@@ -72,7 +72,6 @@ const PLATFORM_LABELS: Record<string, string> = {
   linux: 'Lin',
 }
 
-const REDDIT_ORANGE = '#ff4500'
 const STEAM_BLUE = '#66c0f4'
 
 function metacriticColor(score: number): string {
@@ -111,20 +110,6 @@ function getReleaseDateInfo(released: string | null): ReleaseDateInfo | null {
     label: `${MONTH_NAMES[monthIndex]} ${dayNumber}, ${year}`,
     isFuture: isUpcomingRelease(released),
   }
-}
-
-function getRedditUrl(rawUrl: string | null): string | null {
-  if (rawUrl == null || rawUrl.trim() === '') return null
-  const trimmed = rawUrl.trim()
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed
-  return `https://www.reddit.com/r/${trimmed.replace(/^\/?r\//, '').replace(/\/$/, '')}/`
-}
-
-function getRedditLabel(rawUrl: string | null): string | null {
-  const url = getRedditUrl(rawUrl)
-  if (url == null) return null
-  const match = url.match(/reddit\.com\/r\/([^/]+)/i)
-  return match != null ? `r/${match[1]}` : 'Subreddit'
 }
 
 async function openExternalUrl(url: string): Promise<void> {
@@ -264,18 +249,15 @@ function HeroSection({ game }: HeroProps) {
 interface InfoProps {
   description: string
   genres: { id: number; name: string; slug: string }[]
-  redditUrl: string | null
   steamAppId: number | null
   steamLoading: boolean
 }
 
-function InfoSection({ description, genres, redditUrl, steamAppId, steamLoading }: InfoProps) {
+function InfoSection({ description, genres, steamAppId, steamLoading }: InfoProps) {
   const [expanded, setExpanded] = useState(false)
   const trimmed = description.trim()
-  const subredditUrl = getRedditUrl(redditUrl)
-  const subredditLabel = getRedditLabel(redditUrl)
   const steamUrl = steamAppId != null ? getSteamStoreUrl(steamAppId) : null
-  const hasExternalLinks = subredditUrl != null || steamUrl != null || steamLoading
+  const hasExternalLinks = steamUrl != null || steamLoading
   const hasInfoMeta = genres.length > 0 || hasExternalLinks
   const shouldClamp = trimmed.length > 280
 
@@ -315,17 +297,6 @@ function InfoSection({ description, genres, redditUrl, steamAppId, steamLoading 
           )}
           {hasExternalLinks && (
             <View style={styles.externalLinkRow}>
-              {subredditUrl != null && subredditLabel != null && (
-                <Pressable
-                  style={[styles.linkButton, styles.subredditButton]}
-                  onPress={() => void openExternalUrl(subredditUrl)}
-                >
-                  <Ionicons name="logo-reddit" size={14} color={REDDIT_ORANGE} />
-                  <Text variant="label" color={REDDIT_ORANGE}>
-                    {subredditLabel}
-                  </Text>
-                </Pressable>
-              )}
               {steamUrl != null ? (
                 <Pressable
                   style={[styles.linkButton, styles.steamButton]}
@@ -711,7 +682,6 @@ export default function GameDetailScreen() {
           <InfoSection
             description={game.description_raw}
             genres={game.genres ?? []}
-            redditUrl={game.reddit_url}
             steamAppId={steamAppId}
             steamLoading={steamQuery.isLoading}
           />
@@ -990,9 +960,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     backgroundColor: 'transparent',
     paddingHorizontal: Spacing.sm,
-  },
-  subredditButton: {
-    borderColor: 'rgba(255,69,0,0.42)',
   },
   steamButton: {
     borderColor: 'rgba(102,192,244,0.42)',
