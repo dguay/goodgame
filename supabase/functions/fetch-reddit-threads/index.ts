@@ -8,6 +8,7 @@ const CORS_HEADERS = {
 
 const RSS2JSON_BASE = 'https://api.rss2json.com/v1/api.json'
 const FEED_RSS_URL = 'https://www.reddit.com/user/dggg/m/goodgame/hot.rss?limit=20'
+const ALERT_EMAIL = 'davidguay01@gmail.com'
 
 interface Rss2JsonItem {
   title: string
@@ -57,6 +58,29 @@ function extractSubreddit(link: string): string {
   return match?.[1] ?? 'unknown'
 }
 
+async function sendAlert(subject: string, message: string): Promise<void> {
+  const apiKey = Deno.env.get('RESEND_API_KEY')
+  if (!apiKey) {
+    console.error('RESEND_API_KEY not set, skipping alert')
+    return
+  }
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'onboarding@resend.dev',
+        to: ALERT_EMAIL,
+        subject: `[fetch-reddit-threads] ${subject}`,
+        text: message,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    })
+  } catch (err) {
+    console.error('Failed to send alert email:', getErrorMessage(err))
+  }
+}
+
 async function handleRequest(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: CORS_HEADERS })
@@ -74,18 +98,22 @@ async function handleRequest(req: Request): Promise<Response> {
   const supabase = createClient(supabaseUrl, serviceKey)
 
   const apiUrl = `${RSS2JSON_BASE}?rss_url=${encodeURIComponent(FEED_RSS_URL)}`
-  const res = await fetch(apiUrl)
+  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(25_000) })
   if (!res.ok) {
+    const msg = `rss2json fetch failed: ${res.status}`
+    await sendAlert('rss2json fetch failed', msg)
     return new Response(
-      JSON.stringify({ error: `rss2json fetch failed: ${res.status}` }),
+      JSON.stringify({ error: msg }),
       { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   }
 
   const data = await res.json() as Rss2JsonResponse
   if (data.status !== 'ok' || data.items == null) {
+    const msg = `rss2json bad response: ${data.status}`
+    await sendAlert('rss2json bad response', msg)
     return new Response(
-      JSON.stringify({ error: `rss2json bad response: ${data.status}` }),
+      JSON.stringify({ error: msg }),
       { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   }
@@ -108,6 +136,7 @@ async function handleRequest(req: Request): Promise<Response> {
     const { error } = await supabase.rpc('replace_reddit_threads', { p_rows: rows })
     if (error) {
       console.error('replace_reddit_threads failed:', error.message)
+      await sendAlert('DB upsert failed', `replace_reddit_threads error: ${error.message}`)
       return new Response(
         JSON.stringify({ error: error.message }),
         { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
@@ -125,7 +154,9 @@ Deno.serve(async (req) => {
   try {
     return await handleRequest(req)
   } catch (error) {
-    console.error('Unexpected error:', getErrorMessage(error))
+    const msg = getErrorMessage(error)
+    console.error('Unexpected error:', msg)
+    await sendAlert('Unexpected error', msg)
     return new Response(
       JSON.stringify({ error: 'Unexpected error' }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
