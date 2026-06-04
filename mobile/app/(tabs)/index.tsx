@@ -8,6 +8,9 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { RawgFooter } from '@/components/RawgFooter'
 import { SmallGameCard } from '@/components/GameDisplayCards'
 import { NextGameChooser } from '@/components/NextGameChooser'
+import { GamingNews } from '@/components/GamingNews'
+import { ArpgEvents } from '@/components/ArpgEvents'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
@@ -19,6 +22,7 @@ import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 const CARD_WIDTH = 160
 const LIBRARY_RELEASE_CARD_HEIGHT = 190
+
 type HeroStatTone = 'library' | 'wanted' | 'playing' | 'done'
 type HeroStatFilter = LibraryStatus | 'all'
 
@@ -246,6 +250,7 @@ export default function HomeScreen() {
   const user = useAuthStore((s) => s.user)
   const isAuthLoading = useAuthStore((s) => s.isLoading)
   const [refreshing, setRefreshing] = useState(false)
+  const queryClient = useQueryClient()
 
   const profileQuery = useProfile()
   const libraryQuery = useLibraryEntries()
@@ -288,11 +293,12 @@ export default function HomeScreen() {
         libraryQuery.refetch(),
         newReleasesQuery.refetch(),
         comingUpQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ['news'] }),
       ])
     } finally {
       setRefreshing(false)
     }
-  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery])
+  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, queryClient])
 
   const renderUpcomingLibraryItem = useCallback(
     ({ item }: { item: LibraryEntry }) => (
@@ -306,7 +312,6 @@ export default function HomeScreen() {
     ),
     []
   )
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -419,6 +424,10 @@ export default function HomeScreen() {
             />
           )}
         </View>
+
+        <ArpgEvents />
+
+        <GamingNews />
 
         <RawgFooter />
       </ScrollView>
