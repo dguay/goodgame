@@ -5,13 +5,14 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { useNews, type NewsItem } from '@/hooks/useNews'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 
-function formatPubDate(pubDate: string): string {
-  const date = new Date(pubDate.replace(' ', 'T'))
-  if (isNaN(date.getTime())) return pubDate
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(date)
+function formatPubDate(pubDate: string | null): string {
+  if (!pubDate) return ''
+  const date = new Date(pubDate)
+  if (isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(date)
 }
 
-function NewsCard({ item, source }: { item: NewsItem; source: string }) {
+function NewsCard({ item }: { item: NewsItem }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
@@ -25,14 +26,16 @@ function NewsCard({ item, source }: { item: NewsItem; source: string }) {
         </Text>
         <View style={styles.meta}>
           <Text variant="caption" color={Colors.primary}>
-            {source}
+            {item.sourceName}
           </Text>
-          <Text variant="caption" color={Colors.textMuted}>
-            ·
-          </Text>
-          <Text variant="caption" color={Colors.textMuted}>
-            {formatPubDate(item.pubDate)}
-          </Text>
+          {item.pubDate != null && item.pubDate !== '' && (
+            <>
+              <Text variant="caption" color={Colors.textMuted}>·</Text>
+              <Text variant="caption" color={Colors.textMuted}>
+                {formatPubDate(item.pubDate)}
+              </Text>
+            </>
+          )}
         </View>
       </View>
     </Pressable>
@@ -66,15 +69,15 @@ export function GamingNews() {
       </View>
       {newsQuery.isLoading ? (
         <NewsSkeletons />
-      ) : newsQuery.data != null && newsQuery.data.items.length > 0 ? (
+      ) : newsQuery.data != null && newsQuery.data.length > 0 ? (
         <View style={styles.list}>
-          {newsQuery.data.items.map((item) => (
-            <NewsCard key={item.link} item={item} source={newsQuery.data!.feedTitle} />
+          {newsQuery.data.map((item) => (
+            <NewsCard key={item.id} item={item} />
           ))}
         </View>
       ) : (
         <Text variant="caption" color={Colors.textMuted} style={styles.empty}>
-          Could not load news.
+          No news yet — check back soon.
         </Text>
       )}
     </View>

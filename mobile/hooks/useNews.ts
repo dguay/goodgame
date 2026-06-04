@@ -1,61 +1,39 @@
 import { useQuery } from '@tanstack/react-query'
-
-const RSS2JSON_URL =
-  'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ffeeds.feedburner.com%2Fign%2Fgames-all'
-
-const ALLOWED_HOSTS = new Set(['www.ign.com', 'ign.com'])
-
-const MAX_ITEMS = 10
+import { supabase } from '@/lib/supabase'
 
 export interface NewsItem {
+  id: string
   title: string
   link: string
-  pubDate: string
-  description: string
-  author: string
+  pubDate: string | null
+  description: string | null
+  author: string | null
+  sourceName: string
+  sourceId: string
 }
 
-export interface NewsFeed {
-  feedTitle: string
-  items: NewsItem[]
-}
+const MAX_ITEMS = 20
 
-async function fetchNews(): Promise<NewsFeed> {
-  const res = await fetch(RSS2JSON_URL)
-  if (!res.ok) throw new Error(`News fetch failed: ${res.status}`)
-  const json = (await res.json()) as {
-    status: string
-    feed: { title: string; link: string }
-    items: Array<{
-      title: string
-      link: string
-      pubDate: string
-      description: string
-      author: string
-    }>
-  }
-  if (json.status !== 'ok') throw new Error('RSS parse failed')
+async function fetchNews(): Promise<NewsItem[]> {
+  const { data, error } = await supabase
+    .from('news_articles')
+    .select('id, title, url, excerpt, author, published_at, source_id, news_sources(name)')
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('fetched_at', { ascending: false })
+    .limit(MAX_ITEMS)
 
-  return {
-    feedTitle: json.feed.title,
-    items: json.items
-      .filter((item) => {
-        try {
-          const url = new URL(item.link)
-          return url.protocol === 'https:' && ALLOWED_HOSTS.has(url.hostname)
-        } catch {
-          return false
-        }
-      })
-      .slice(0, MAX_ITEMS)
-      .map((item) => ({
-        title: item.title,
-        link: item.link,
-        pubDate: item.pubDate,
-        description: item.description,
-        author: item.author,
-      })),
-  }
+  if (error) throw error
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    link: row.url,
+    pubDate: row.published_at,
+    description: row.excerpt ?? null,
+    author: row.author ?? null,
+    sourceName: (row.news_sources as { name: string } | null)?.name ?? row.source_id,
+    sourceId: row.source_id,
+  }))
 }
 
 export function useNews() {

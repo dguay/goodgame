@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       game_external_ids: {
@@ -118,6 +93,336 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_article_games: {
+        Row: {
+          article_id: string
+          confidence: number
+          created_at: string
+          game_id: string
+          match_method: string
+        }
+        Insert: {
+          article_id: string
+          confidence?: number
+          created_at?: string
+          game_id: string
+          match_method: string
+        }
+        Update: {
+          article_id?: string
+          confidence?: number
+          created_at?: string
+          game_id?: string
+          match_method?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_article_games_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "news_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_article_games_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "news_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_articles: {
+        Row: {
+          author: string | null
+          canonical_url: string | null
+          cluster_id: string | null
+          content_hash: string | null
+          created_at: string
+          excerpt: string | null
+          fetched_at: string
+          id: string
+          image_url: string | null
+          normalized_title: string
+          published_at: string | null
+          raw: Json | null
+          source_id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          author?: string | null
+          canonical_url?: string | null
+          cluster_id?: string | null
+          content_hash?: string | null
+          created_at?: string
+          excerpt?: string | null
+          fetched_at?: string
+          id?: string
+          image_url?: string | null
+          normalized_title: string
+          published_at?: string | null
+          raw?: Json | null
+          source_id: string
+          title: string
+          url: string
+        }
+        Update: {
+          author?: string | null
+          canonical_url?: string | null
+          cluster_id?: string | null
+          content_hash?: string | null
+          created_at?: string
+          excerpt?: string | null
+          fetched_at?: string
+          id?: string
+          image_url?: string | null
+          normalized_title?: string
+          published_at?: string | null
+          raw?: Json | null
+          source_id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_articles_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "news_story_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_articles_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_game_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          game_id: string
+          id: string
+          normalized_alias: string
+          source: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          game_id: string
+          id?: string
+          normalized_alias: string
+          source?: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          game_id?: string
+          id?: string
+          normalized_alias?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_game_aliases_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "news_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_game_trends: {
+        Row: {
+          calculated_at: string
+          game_id: string
+          mentions_24h: number
+          mentions_72h: number
+          mentions_7d: number
+          official_mentions_72h: number
+          trending_score: number
+          unique_sources_72h: number
+        }
+        Insert: {
+          calculated_at?: string
+          game_id: string
+          mentions_24h?: number
+          mentions_72h?: number
+          mentions_7d?: number
+          official_mentions_72h?: number
+          trending_score?: number
+          unique_sources_72h?: number
+        }
+        Update: {
+          calculated_at?: string
+          game_id?: string
+          mentions_24h?: number
+          mentions_72h?: number
+          mentions_7d?: number
+          official_mentions_72h?: number
+          trending_score?: number
+          unique_sources_72h?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_game_trends_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: true
+            referencedRelation: "news_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_games: {
+        Row: {
+          created_at: string
+          genres: string[]
+          id: string
+          image_url: string | null
+          name: string
+          platforms: string[]
+          rawg_id: string | null
+          released: string | null
+          slug: string
+          steam_app_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          genres?: string[]
+          id?: string
+          image_url?: string | null
+          name: string
+          platforms?: string[]
+          rawg_id?: string | null
+          released?: string | null
+          slug: string
+          steam_app_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          genres?: string[]
+          id?: string
+          image_url?: string | null
+          name?: string
+          platforms?: string[]
+          rawg_id?: string | null
+          released?: string | null
+          slug?: string
+          steam_app_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_sources: {
+        Row: {
+          category: string
+          consecutive_failures: number
+          created_at: string
+          etag: string | null
+          feed_url: string
+          homepage_url: string | null
+          id: string
+          is_enabled: boolean
+          last_fetched_at: string | null
+          last_modified: string | null
+          name: string
+          next_fetch_at: string | null
+          refresh_interval_minutes: number
+          source_weight: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          consecutive_failures?: number
+          created_at?: string
+          etag?: string | null
+          feed_url: string
+          homepage_url?: string | null
+          id: string
+          is_enabled?: boolean
+          last_fetched_at?: string | null
+          last_modified?: string | null
+          name: string
+          next_fetch_at?: string | null
+          refresh_interval_minutes?: number
+          source_weight?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          consecutive_failures?: number
+          created_at?: string
+          etag?: string | null
+          feed_url?: string
+          homepage_url?: string | null
+          id?: string
+          is_enabled?: boolean
+          last_fetched_at?: string | null
+          last_modified?: string | null
+          name?: string
+          next_fetch_at?: string | null
+          refresh_interval_minutes?: number
+          source_weight?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_story_clusters: {
+        Row: {
+          article_count: number
+          created_at: string
+          first_published_at: string | null
+          id: string
+          latest_published_at: string | null
+          normalized_title: string
+          primary_article_id: string | null
+          representative_title: string
+          story_score: number
+          unique_source_count: number
+          updated_at: string
+        }
+        Insert: {
+          article_count?: number
+          created_at?: string
+          first_published_at?: string | null
+          id?: string
+          latest_published_at?: string | null
+          normalized_title: string
+          primary_article_id?: string | null
+          representative_title: string
+          story_score?: number
+          unique_source_count?: number
+          updated_at?: string
+        }
+        Update: {
+          article_count?: number
+          created_at?: string
+          first_published_at?: string | null
+          id?: string
+          latest_published_at?: string | null
+          normalized_title?: string
+          primary_article_id?: string | null
+          representative_title?: string
+          story_score?: number
+          unique_source_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_story_clusters_primary_article_id_fkey"
+            columns: ["primary_article_id"]
+            isOneToOne: false
+            referencedRelation: "news_articles"
             referencedColumns: ["id"]
           },
         ]
@@ -309,9 +614,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

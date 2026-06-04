@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { useFocusEffect } from 'expo-router'
 import {
   View,
   StyleSheet,
@@ -95,6 +96,12 @@ export default function SearchScreen() {
       return <SmallGameCard game={item} style={styles.gridCard} />
     },
     [isSearching],
+  )
+
+  useFocusEffect(
+    useCallback(() => {
+      inputRef.current?.focus()
+    }, []),
   )
 
   const clearQuery = useCallback(() => {

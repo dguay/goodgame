@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Goodgame — News Pipeline</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c8aff;
+      --accent2: #a78bfa;
+      --green: #4ade80;
+      --yellow: #facc15;
+      --red: #f87171;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892aa;
+      --code-bg: #131720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 6px; }
+    h2 { font-size: 1.25rem; font-weight: 600; color: var(--accent); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 600; color: var(--accent2); margin: 24px 0 8px; }
+    p { margin-bottom: 12px; color: var(--text); }
+    .subtitle { color: var(--muted); margin-bottom: 32px; font-size: 0.95rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      padding: 24px 0;
+      margin: 16px 0 8px;
+    }
+    .flow-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+      text-align: center;
+      min-width: 100px;
+    }
+    .flow-box .label { color: var(--muted); font-size: 0.7rem; display: block; margin-top: 2px; }
+    .flow-box.cron { border-color: var(--yellow); color: var(--yellow); }
+    .flow-box.fn { border-color: var(--accent); color: var(--accent); }
+    .flow-box.db { border-color: var(--green); color: var(--green); }
+    .flow-box.api { border-color: var(--orange); color: var(--orange); }
+    .flow-box.mobile { border-color: var(--accent2); color: var(--accent2); }
+    .arrow {
+      color: var(--muted);
+      font-size: 1.1rem;
+      padding: 0 6px;
+      flex-shrink: 0;
+    }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.875rem; }
+    th { background: var(--surface2); color: var(--muted); font-weight: 600; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td code, th code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 0.82rem; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      margin: 12px 0;
+      line-height: 1.55;
+    }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; }
+    .comment { color: #4a5568; }
+    .kw { color: #a78bfa; }
+    .str { color: #86efac; }
+    .fn-name { color: #60a5fa; }
+    .num { color: #fdba74; }
+
+    /* Callout boxes */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: var(--surface);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-size: 0.9rem;
+    }
+    .callout.warn { border-color: var(--yellow); }
+    .callout.danger { border-color: var(--red); }
+    .callout.success { border-color: var(--green); }
+    .callout .tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .callout.warn .tag { color: var(--yellow); }
+    .callout.danger .tag { color: var(--red); }
+    .callout.success .tag { color: var(--green); }
+    .callout .tag + p { margin-bottom: 0; }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 99px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .badge.high { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+    .badge.med { background: rgba(250,204,21,0.12); color: var(--yellow); border: 1px solid rgba(250,204,21,0.3); }
+    .badge.low { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+
+    /* Section grid */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .card h3 { margin-top: 0; }
+    .card p { font-size: 0.875rem; color: var(--muted); margin-bottom: 0; }
+
+    /* TOC */
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 32px 0; display: inline-block; min-width: 260px; }
+    .toc ul { list-style: none; margin-top: 8px; }
+    .toc li { margin: 4px 0; }
+    .toc a { color: var(--muted); font-size: 0.875rem; }
+    .toc a:hover { color: var(--accent); }
+    .toc .toc-title { font-weight: 600; color: var(--text); margin-bottom: 8px; }
+
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; font-size: 0.9rem; }
+
+    .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <h1>News Pipeline</h1>
+  <p class="subtitle">Goodgame gaming news aggregator — architecture, data flow, and operations reference</p>
+
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <ul>
+      <li><a href="#overview">1. Overview</a></li>
+      <li><a href="#flow">2. Full Data Flow</a></li>
+      <li><a href="#ingestion">3. Ingestion Function</a></li>
+      <li><a href="#parsing">4. RSS Parsing &amp; Validation</a></li>
+      <li><a href="#clustering">5. Story Clustering</a></li>
+      <li><a href="#game-matching">6. Game Matching (RAWG)</a></li>
+      <li><a href="#trending">7. Trending Scores</a></li>
+      <li><a href="#schema">8. Database Schema</a></li>
+      <li><a href="#cron">9. Cron &amp; Vault Setup</a></li>
+      <li><a href="#mobile">10. Mobile Hook</a></li>
+      <li><a href="#monitoring">11. Monitoring Queries</a></li>
+    </ul>
+  </div>
+
+  <!-- 1. OVERVIEW -->
+  <h2 id="overview">1. Overview</h2>
+  <p>
+    The news pipeline ingests RSS feeds from 7 gaming publications every 10 minutes, normalizes and deduplicates articles,
+    clusters related stories, links articles to game entities via RAWG, and computes per-game trending scores every 30 minutes.
+    The mobile app reads directly from Supabase.
+  </p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Sources (7)</h3>
+      <p>IGN, GameSpot, Eurogamer, PC Gamer, Gematsu, PlayStation Blog, Xbox Wire — all RSS 2.0 / Atom feeds</p>
+    </div>
+    <div class="card">
+      <h3>Schedules</h3>
+      <p><code>ingest-news</code> every 10 min · <code>calculate-news-trends</code> every 30 min · pg_cron + net.http_post</p>
+    </div>
+    <div class="card">
+      <h3>Game matching</h3>
+      <p>Local alias cache first → local name lookup → RAWG API fallback with confidence scoring</p>
+    </div>
+    <div class="card">
+      <h3>Security</h3>
+      <p><code>X-Cron-Secret</code> header on all cron calls · all credentials in Supabase Vault · fail-closed auth guard</p>
+    </div>
+  </div>
+
+  <!-- 2. FULL DATA FLOW -->
+  <h2 id="flow">2. Full Data Flow</h2>
+  <p>End-to-end path from cron tick to mobile screen:</p>
+
+  <div class="flow">
+    <div class="flow-box cron">pg_cron<span class="label">*/10 * * * *</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box fn">ingest-news<span class="label">Edge Function</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box api">RSS Feeds<span class="label">7 sources</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box fn">parser.ts<span class="label">normalize + hash</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box db">news_articles<span class="label">Supabase DB</span></div>
+  </div>
+  <div class="flow">
+    <div class="flow-box db">news_articles<span class="label">recent unmatched</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box fn">gameMatcher.ts<span class="label">alias → name → RAWG</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box api">RAWG API<span class="label">api.rawg.io</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box db">news_article_games<span class="label">+ news_games</span></div>
+  </div>
+  <div class="flow">
+    <div class="flow-box db">news_articles<span class="label">72h window</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box fn">clusterer.ts<span class="label">Levenshtein ≥ 0.72</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box db">news_story_clusters<span class="label">grouped stories</span></div>
+  </div>
+  <div class="flow">
+    <div class="flow-box cron">pg_cron<span class="label">*/30 * * * *</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box fn">calculate-news-trends<span class="label">Edge Function</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box db">news_game_trends<span class="label">trending scores</span></div>
+    <div class="arrow">→</div>
+    <div class="flow-box mobile">Mobile App<span class="label">useNews hook</span></div>
+  </div>
+
+  <!-- 3. INGESTION -->
+  <h2 id="ingestion">3. Ingestion Function</h2>
+  <p>File: <code>supabase/functions/ingest-news/index.ts</code></p>
+
+  <h3>Atomic source claiming</h3>
+  <p>
+    Prevents two concurrent workers from fetching the same source. Uses <code>UPDATE ... RETURNING *</code>
+    to advance <code>next_fetch_at</code> to a 30-minute lease before fetching:
+  </p>
+  <pre><span class="comment">-- Equivalent SQL (done via Supabase client)</span>
+<span class="kw">UPDATE</span> news_sources
+<span class="kw">SET</span>    next_fetch_at = now() + interval <span class="str">'30 minutes'</span>   <span class="comment">-- lease</span>
+<span class="kw">WHERE</span>  is_enabled = <span class="kw">true</span>
+  <span class="kw">AND</span>  next_fetch_at &lt;= now()
+<span class="kw">RETURNING</span> *;</pre>
+  <p>After a successful fetch, <code>updateSourceState()</code> overwrites <code>next_fetch_at</code> with the real next schedule plus up to 10 min of random jitter.</p>
+
+  <h3>Per-source error handling</h3>
+  <table>
+    <thead><tr><th>HTTP status</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><code>304 Not Modified</code></td><td>Skip parse, update ETag/Last-Modified, reset failures</td></tr>
+      <tr><td><code>429 Rate Limited</code></td><td>Back off 6 hours, increment <code>consecutive_failures</code></td></tr>
+      <tr><td>5xx / network error</td><td>≥3 failures → disable source + 12h pause; otherwise 1h pause</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Retry-safe game matching</h3>
+  <p>
+    Matching is decoupled from insertion. After each source fetch, <code>matchUnmatchedArticles()</code>
+    queries <em>all</em> articles from the last 72 hours that have no <code>news_article_games</code> row
+    and runs the RAWG matcher on them. This retries articles that were stored during a RAWG outage or missing API key.
+  </p>
+  <pre><span class="comment">-- Finds unmatched articles regardless of current run</span>
+<span class="kw">SELECT</span> id, title, excerpt
+<span class="kw">FROM</span>   news_articles
+<span class="kw">WHERE</span>  source_id = $1
+  <span class="kw">AND</span>  fetched_at &gt;= now() - interval <span class="str">'72 hours'</span>
+  <span class="kw">AND</span>  id <span class="kw">NOT IN</span> (<span class="kw">SELECT</span> article_id <span class="kw">FROM</span> news_article_games);</pre>
+
+  <!-- 4. PARSING -->
+  <h2 id="parsing">4. RSS Parsing &amp; Validation</h2>
+  <p>File: <code>supabase/functions/ingest-news/parser.ts</code></p>
+  <p>Uses <code>npm:fast-xml-parser@4.3.6</code> in Deno. Handles both RSS 2.0 and Atom.</p>
+
+  <h3>URL trust check</h3>
+  <p>
+    Every article URL from a feed is validated before storage. Rejects <code>http://</code> and URLs whose
+    root domain doesn't match the source's <code>homepage_url</code> — prevents malicious feed entries
+    from storing arbitrary URLs.
+  </p>
+  <pre><span class="comment">// isUrlTrusted(): HTTPS required + root domain must match source homepage</span>
+<span class="fn-name">rootDomain</span>(<span class="str">'https://www.ign.com/articles/...'</span>)  <span class="comment">// → "ign.com"</span>
+<span class="fn-name">rootDomain</span>(<span class="str">'https://ign.com'</span>)                  <span class="comment">// → "ign.com"  ✓ trusted</span>
+<span class="fn-name">rootDomain</span>(<span class="str">'https://evil.com'</span>)                 <span class="comment">// → "evil.com" ✗ rejected</span></pre>
+
+  <h3>Content hash</h3>
+  <p>
+    Each article gets a SHA-256 hash of its normalized title for deduplication.
+    <code>upsertArticles()</code> uses <code>ON CONFLICT (url) DO NOTHING</code> — existing articles
+    are never overwritten.
+  </p>
+
+  <!-- 5. CLUSTERING -->
+  <h2 id="clustering">5. Story Clustering</h2>
+  <p>File: <code>supabase/functions/ingest-news/clusterer.ts</code></p>
+  <p>
+    Groups articles about the same story across sources. Runs at the end of every ingest cycle over a 72-hour window.
+  </p>
+  <h3>Algorithm</h3>
+  <ol>
+    <li>Fetch all articles from last 72 hours</li>
+    <li>Normalize each title (strip stop words, punctuation, lowercase)</li>
+    <li>Compute pairwise Levenshtein similarity</li>
+    <li>If similarity ≥ <strong>0.72</strong>: assign both to same cluster</li>
+    <li>New clusters created for unmatched articles; existing clusters updated</li>
+  </ol>
+  <div class="callout">
+    <div class="tag">Note</div>
+    <p>Levenshtein is O(n²) over the window. At current source volume (&lt;500 articles/72h) this is fine. If sources scale significantly, switch to MinHash LSH.</p>
+  </div>
+
+  <!-- 6. GAME MATCHING -->
+  <h2 id="game-matching">6. Game Matching (RAWG)</h2>
+  <p>File: <code>supabase/functions/ingest-news/gameMatcher.ts</code></p>
+  <p>Three-tier cascade, fastest first:</p>
+
+  <table>
+    <thead><tr><th>Tier</th><th>Source</th><th>Condition</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Local alias table (<code>news_game_aliases</code>)</td><td>Exact normalized title match</td></tr>
+      <tr><td>2</td><td>Local game name (<code>news_games.name</code>)</td><td>Exact normalized match</td></tr>
+      <tr><td>3</td><td>RAWG API</td><td>No local hit; <code>RAWG_API_KEY</code> must be set</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Candidate extraction</h3>
+  <p>Before searching, <code>extractCandidates()</code> pulls game name candidates from title + excerpt:</p>
+  <ul>
+    <li>Text before keywords: <em>review, preview, trailer, hands-on, announced…</em></li>
+    <li>Capitalized multi-word phrases (≥2 words)</li>
+  </ul>
+
+  <h3>RAWG confidence scoring</h3>
+  <table>
+    <thead><tr><th>Score threshold</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>≥ 0.85</td><td><span class="badge high">high</span> Confident match — upsert game + save alias</td></tr>
+      <tr><td>0.65 – 0.84</td><td><span class="badge med">medium</span> Probable match — store but flag lower confidence</td></tr>
+      <tr><td>&lt; 0.65</td><td>Discard — too ambiguous</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="tag">RAWG key missing</div>
+    <p>If <code>RAWG_API_KEY</code> is unset, <code>searchRawg()</code> returns empty silently. Articles remain unmatched and will be retried on the next ingest cycle via <code>matchUnmatchedArticles()</code>.</p>
+  </div>
+
+  <!-- 7. TRENDING -->
+  <h2 id="trending">7. Trending Scores</h2>
+  <p>File: <code>supabase/functions/calculate-news-trends/index.ts</code></p>
+  <p>Runs every 30 minutes. Writes one row per game to <code>news_game_trends</code>.</p>
+
+  <h3>Formula</h3>
+  <pre>trending_score =
+  mentions_24h      × 4
+  + mentions_72h    × 2
+  + unique_sources_72h × 8
+  + official_mentions_72h × 10   <span class="comment">-- PlayStation Blog / Xbox Wire only</span>
+  + spike_bonus                  <span class="comment">-- +15 if mentions_24h ≥ 3 AND 7d prior avg ≤ 1</span></pre>
+
+  <h3>Official sources</h3>
+  <p>
+    <code>OFFICIAL_SOURCE_IDS = { 'playstation-blog', 'xbox-wire' }</code> — first-party announcements
+    carry 10× weight because they signal real news (release dates, exclusives) vs. editorial coverage.
+  </p>
+
+  <!-- 8. SCHEMA -->
+  <h2 id="schema">8. Database Schema</h2>
+  <p>All tables have RLS enabled with public read policies. Writes only via service role (Edge Functions).</p>
+
+  <table>
+    <thead><tr><th>Table</th><th>Purpose</th><th>Key columns</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>news_sources</code></td>
+        <td>RSS feed registry</td>
+        <td><code>id</code>, <code>feed_url</code>, <code>homepage_url</code>, <code>next_fetch_at</code>, <code>consecutive_failures</code>, <code>is_enabled</code></td>
+      </tr>
+      <tr>
+        <td><code>news_articles</code></td>
+        <td>Normalized article store</td>
+        <td><code>id</code>, <code>url</code> (unique), <code>title</code>, <code>excerpt</code>, <code>published_at</code>, <code>fetched_at</code>, <code>source_id</code>, <code>content_hash</code></td>
+      </tr>
+      <tr>
+        <td><code>news_story_clusters</code></td>
+        <td>Cross-source story groups</td>
+        <td><code>id</code>, <code>canonical_title</code>, <code>article_count</code>, <code>first_seen_at</code></td>
+      </tr>
+      <tr>
+        <td><code>news_games</code></td>
+        <td>Resolved game entities</td>
+        <td><code>id</code>, <code>rawg_id</code> (unique), <code>name</code>, <code>slug</code>, <code>cover_url</code></td>
+      </tr>
+      <tr>
+        <td><code>news_game_aliases</code></td>
+        <td>Alternate names / RAWG hits cache</td>
+        <td><code>game_id</code>, <code>alias</code>, <code>source</code> (<code>rawg_match</code>)</td>
+      </tr>
+      <tr>
+        <td><code>news_article_games</code></td>
+        <td>Article ↔ game join</td>
+        <td><code>article_id</code>, <code>game_id</code>, <code>confidence</code></td>
+      </tr>
+      <tr>
+        <td><code>news_game_trends</code></td>
+        <td>Per-game trending scores</td>
+        <td><code>game_id</code>, <code>trending_score</code>, <code>mentions_24h</code>, <code>mentions_72h</code>, <code>official_mentions_72h</code>, <code>calculated_at</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 9. CRON & VAULT -->
+  <h2 id="cron">9. Cron &amp; Vault Setup</h2>
+
+  <h3>Required Vault secrets</h3>
+  <p>Migration <code>20260604000005</code> raises an exception if any of these are missing:</p>
+  <table>
+    <thead><tr><th>Secret name</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><code>cron_secret</code></td><td>Random hex string — shared between Vault and <code>supabase secrets set CRON_SECRET=…</code></td></tr>
+      <tr><td><code>supabase_functions_url</code></td><td><code>https://&lt;project-ref&gt;.supabase.co/functions/v1</code></td></tr>
+      <tr><td><code>supabase_anon_key</code></td><td>Project anon JWT</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Creating secrets</h3>
+  <pre><span class="comment">-- Run once in SQL editor BEFORE db:push</span>
+<span class="kw">SELECT</span> vault.<span class="fn-name">create_secret</span>(
+  <span class="str">'&lt;openssl rand -hex 32 output&gt;'</span>,
+  <span class="str">'cron_secret'</span>,
+  <span class="str">'Shared secret for scheduled news functions'</span>
+);
+
+<span class="kw">SELECT</span> vault.<span class="fn-name">create_secret</span>(
+  <span class="str">'https://&lt;ref&gt;.supabase.co/functions/v1'</span>,
+  <span class="str">'supabase_functions_url'</span>,
+  <span class="str">'Supabase Edge Functions base URL'</span>
+);
+
+<span class="kw">SELECT</span> vault.<span class="fn-name">create_secret</span>(
+  <span class="str">'&lt;anon-key-jwt&gt;'</span>,
+  <span class="str">'supabase_anon_key'</span>,
+  <span class="str">'Supabase anon key'</span>
+);</pre>
+
+  <h3>How cron auth works</h3>
+  <p>
+    pg_cron fires a <code>net.http_post</code> that reads all three secrets from Vault <em>at execution time</em> —
+    no credentials are baked into the scheduled job string. The Edge Function checks
+    <code>X-Cron-Secret</code> against <code>CRON_SECRET</code> env var and fails closed (returns 401) if missing or wrong.
+  </p>
+  <pre><span class="comment">-- Cron command (simplified)</span>
+<span class="kw">SELECT</span> net.<span class="fn-name">http_post</span>(
+  url     := (<span class="kw">SELECT</span> decrypted_secret <span class="kw">FROM</span> vault.decrypted_secrets <span class="kw">WHERE</span> name = <span class="str">'supabase_functions_url'</span>) || <span class="str">'/ingest-news'</span>,
+  headers := jsonb_build_object(
+    <span class="str">'Authorization'</span>, <span class="str">'Bearer '</span> || (<span class="kw">SELECT</span> decrypted_secret <span class="kw">FROM</span> vault.decrypted_secrets <span class="kw">WHERE</span> name = <span class="str">'supabase_anon_key'</span>),
+    <span class="str">'X-Cron-Secret'</span>, (<span class="kw">SELECT</span> decrypted_secret <span class="kw">FROM</span> vault.decrypted_secrets <span class="kw">WHERE</span> name = <span class="str">'cron_secret'</span>)
+  ),
+  body := <span class="str">'{}'</span>::jsonb
+);</pre>
+
+  <div class="callout warn">
+    <div class="tag">New environment</div>
+    <p>Applying migrations to a new project (local, staging, restored DB) requires creating all three Vault secrets first. Migration 005 will fail loudly with a named exception rather than silently scheduling broken jobs.</p>
+  </div>
+
+  <!-- 10. MOBILE -->
+  <h2 id="mobile">10. Mobile Hook</h2>
+  <p>File: <code>mobile/hooks/useNews.ts</code></p>
+  <pre><span class="comment">// Fetches latest 20 articles, most recent first</span>
+<span class="kw">const</span> { data, error } = <span class="kw">await</span> supabase
+  .<span class="fn-name">from</span>(<span class="str">'news_articles'</span>)
+  .<span class="fn-name">select</span>(<span class="str">'id, title, url, excerpt, author, published_at, source_id, news_sources(name)'</span>)
+  .<span class="fn-name">order</span>(<span class="str">'published_at'</span>, { ascending: <span class="kw">false</span>, nullsFirst: <span class="kw">false</span> })  <span class="comment">// nulls go last</span>
+  .<span class="fn-name">order</span>(<span class="str">'fetched_at'</span>, { ascending: <span class="kw">false</span> })                       <span class="comment">// fallback for undated</span>
+  .<span class="fn-name">limit</span>(<span class="num">20</span>)</pre>
+
+  <p>React Query config: <code>staleTime: 10min</code>, <code>gcTime: 30min</code>. Query key <code>['news']</code> is invalidated on pull-to-refresh in the feed tab.</p>
+
+  <!-- 11. MONITORING -->
+  <h2 id="monitoring">11. Monitoring Queries</h2>
+  <p>Run these in the Supabase SQL editor to check pipeline health.</p>
+
+  <h3>Cron job history</h3>
+  <pre><span class="kw">SELECT</span>
+  j.jobname,
+  d.status,
+  d.return_message,
+  d.start_time,
+  d.end_time - d.start_time <span class="kw">AS</span> duration
+<span class="kw">FROM</span> cron.job_run_details d
+<span class="kw">JOIN</span> cron.job j <span class="kw">ON</span> j.jobid = d.jobid
+<span class="kw">WHERE</span> j.jobname <span class="kw">IN</span> (<span class="str">'ingest-news'</span>, <span class="str">'calculate-news-trends'</span>)
+<span class="kw">ORDER BY</span> d.start_time <span class="kw">DESC</span>
+<span class="kw">LIMIT</span> <span class="num">10</span>;</pre>
+
+  <h3>Article ingestion rate</h3>
+  <pre><span class="kw">SELECT</span>
+  s.name,
+  <span class="fn-name">COUNT</span>(a.id)             <span class="kw">AS</span> total_articles,
+  <span class="fn-name">MAX</span>(a.fetched_at)       <span class="kw">AS</span> last_fetched,
+  s.consecutive_failures,
+  s.is_enabled
+<span class="kw">FROM</span> news_sources s
+<span class="kw">LEFT JOIN</span> news_articles a <span class="kw">ON</span> a.source_id = s.id
+<span class="kw">GROUP BY</span> s.id
+<span class="kw">ORDER BY</span> last_fetched <span class="kw">DESC NULLS LAST</span>;</pre>
+
+  <h3>Unmatched articles (RAWG gaps)</h3>
+  <pre><span class="kw">SELECT</span>
+  a.title,
+  a.source_id,
+  a.fetched_at
+<span class="kw">FROM</span> news_articles a
+<span class="kw">WHERE</span> a.fetched_at &gt;= now() - interval <span class="str">'72 hours'</span>
+  <span class="kw">AND NOT EXISTS</span> (
+    <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> news_article_games g <span class="kw">WHERE</span> g.article_id = a.id
+  )
+<span class="kw">ORDER BY</span> a.fetched_at <span class="kw">DESC</span>;</pre>
+
+  <h3>Top trending games right now</h3>
+  <pre><span class="kw">SELECT</span>
+  ng.name,
+  t.trending_score,
+  t.mentions_24h,
+  t.mentions_72h,
+  t.official_mentions_72h,
+  t.calculated_at
+<span class="kw">FROM</span> news_game_trends t
+<span class="kw">JOIN</span> news_games ng <span class="kw">ON</span> ng.id = t.game_id
+<span class="kw">ORDER BY</span> t.trending_score <span class="kw">DESC</span>
+<span class="kw">LIMIT</span> <span class="num">20</span>;</pre>
+
+  <h3>Vault secrets present</h3>
+  <pre><span class="kw">SELECT</span> name, created_at
+<span class="kw">FROM</span> vault.decrypted_secrets
+<span class="kw">WHERE</span> name <span class="kw">IN</span> (<span class="str">'cron_secret'</span>, <span class="str">'supabase_functions_url'</span>, <span class="str">'supabase_anon_key'</span>)
+<span class="kw">ORDER BY</span> name;</pre>
+
+  <footer style="margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem;">
+    Goodgame news pipeline · last updated 2026-06-04
+  </footer>
+</div>
+</body>
+</html>
