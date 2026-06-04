@@ -1,9 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { fetchFeed } from './fetcher.ts';
 import { parseRSS } from './parser.ts';
 import { upsertArticles, updateSourceState } from './articles.ts';
 import { clusterRecentArticles } from './clusterer.ts';
 import { matchArticleToGames, saveArticleGameMatches } from './gameMatcher.ts';
+import { sendFeedAlertEmail } from './emailAlerts.ts';
 import type { NewsSource } from './types.ts';
 
 const CORS_HEADERS = {
@@ -30,7 +32,7 @@ const MATCH_WINDOW_HOURS = 72;
 type ArticleRow = { id: string; title: string; excerpt: string | null };
 
 async function matchUnmatchedArticles(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   sourceId: string,
   now: Date
 ): Promise<void> {
@@ -113,10 +115,19 @@ async function ingest(): Promise<IngestResult> {
       if (result.status === 'rate_limited') {
         // Back off for 6 hours on 429.
         const backoff = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+        const consecutiveFailures = source.consecutive_failures + 1;
         await updateSourceState(supabase, source.id, {
           lastFetchedAt: now.toISOString(),
           nextFetchAt: backoff.toISOString(),
-          consecutiveFailures: source.consecutive_failures + 1,
+          consecutiveFailures,
+        });
+        await sendFeedAlertEmail({
+          source,
+          reason: 'rate_limited',
+          statusCode: result.statusCode,
+          consecutiveFailures,
+          occurredAt: now.toISOString(),
+          nextFetchAt: backoff.toISOString(),
         });
         errors.push(`${source.id}: rate limited (429)`);
         console.error(`Source ${source.id} rate limited — backing off 6h`);
@@ -127,12 +138,24 @@ async function ingest(): Promise<IngestResult> {
         const failures = source.consecutive_failures + 1;
         // 3 consecutive failures → 12h pause; otherwise 60 min.
         const backoffMs = failures >= 3 ? 12 * 60 * 60 * 1000 : 60 * 60 * 1000;
+        const backoff = new Date(now.getTime() + backoffMs);
         await updateSourceState(supabase, source.id, {
           lastFetchedAt: now.toISOString(),
-          nextFetchAt: new Date(now.getTime() + backoffMs).toISOString(),
+          nextFetchAt: backoff.toISOString(),
           consecutiveFailures: failures,
           isEnabled: failures < 3,
         });
+        if (failures === 3) {
+          await sendFeedAlertEmail({
+            source,
+            reason: 'paused_after_failures',
+            statusCode: result.statusCode,
+            error: result.error,
+            consecutiveFailures: failures,
+            occurredAt: now.toISOString(),
+            nextFetchAt: backoff.toISOString(),
+          });
+        }
         errors.push(`${source.id}: ${result.error ?? `HTTP ${result.statusCode}`}`);
         continue;
       }

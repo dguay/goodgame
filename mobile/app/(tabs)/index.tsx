@@ -9,6 +9,7 @@ import { RawgFooter } from '@/components/RawgFooter'
 import { SmallGameCard } from '@/components/GameDisplayCards'
 import { NextGameChooser } from '@/components/NextGameChooser'
 import { GamingNews } from '@/components/GamingNews'
+import { TrendingGamesNews } from '@/components/TrendingGamesNews'
 import { ArpgEvents } from '@/components/ArpgEvents'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
@@ -294,6 +295,8 @@ export default function HomeScreen() {
         newReleasesQuery.refetch(),
         comingUpQuery.refetch(),
         queryClient.invalidateQueries({ queryKey: ['news'] }),
+        queryClient.invalidateQueries({ queryKey: ['news-clusters'] }),
+        queryClient.invalidateQueries({ queryKey: ['trending-games'] }),
       ])
     } finally {
       setRefreshing(false)
@@ -426,6 +429,8 @@ export default function HomeScreen() {
         </View>
 
         <ArpgEvents />
+
+        <TrendingGamesNews />
 
         <GamingNews />
 

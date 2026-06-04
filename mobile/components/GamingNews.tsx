@@ -1,8 +1,9 @@
 import { View, StyleSheet, Pressable } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
+import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
-import { useNews, type NewsItem } from '@/hooks/useNews'
+import { useStoryClusters, type StoryCluster } from '@/hooks/useStoryClusters'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 
 function formatPubDate(pubDate: string | null): string {
@@ -12,27 +13,46 @@ function formatPubDate(pubDate: string | null): string {
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(date)
 }
 
-function NewsCard({ item }: { item: NewsItem }) {
+function ClusterCard({ cluster }: { cluster: StoryCluster }) {
+  const primarySource = cluster.sources[0] ?? null
+  const extraSources = cluster.sources.length - 1
+
+  function handlePress() {
+    if (primarySource != null) {
+      void WebBrowser.openBrowserAsync(primarySource.articleUrl).catch(() => {})
+    }
+  }
+
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-      onPress={() => { void WebBrowser.openBrowserAsync(item.link).catch(() => {}) }}
+      onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={item.title}
+      accessibilityLabel={cluster.title}
     >
       <View style={styles.content}>
         <Text variant="label" style={styles.title} numberOfLines={2}>
-          {item.title}
+          {cluster.title}
         </Text>
         <View style={styles.meta}>
-          <Text variant="caption" color={Colors.primary}>
-            {item.sourceName}
-          </Text>
-          {item.pubDate != null && item.pubDate !== '' && (
+          {primarySource != null && (
+            <Text variant="caption" color={Colors.primary}>
+              {primarySource.name}
+            </Text>
+          )}
+          {extraSources > 0 && (
             <>
               <Text variant="caption" color={Colors.textMuted}>·</Text>
               <Text variant="caption" color={Colors.textMuted}>
-                {formatPubDate(item.pubDate)}
+                +{extraSources} more
+              </Text>
+            </>
+          )}
+          {cluster.latestPublishedAt != null && (
+            <>
+              <Text variant="caption" color={Colors.textMuted}>·</Text>
+              <Text variant="caption" color={Colors.textMuted}>
+                {formatPubDate(cluster.latestPublishedAt)}
               </Text>
             </>
           )}
@@ -58,26 +78,31 @@ function NewsSkeletons() {
 }
 
 export function GamingNews() {
-  const newsQuery = useNews()
+  const clustersQuery = useStoryClusters(5)
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text variant="body" style={styles.sectionTitle}>
-          Gaming News
+          Top Stories
         </Text>
+        <Pressable onPress={() => router.push('/news/latest')}>
+          <Text variant="caption" color={Colors.primary} style={styles.seeAll}>
+            See all
+          </Text>
+        </Pressable>
       </View>
-      {newsQuery.isLoading ? (
+      {clustersQuery.isLoading ? (
         <NewsSkeletons />
-      ) : newsQuery.data != null && newsQuery.data.length > 0 ? (
+      ) : clustersQuery.data != null && clustersQuery.data.length > 0 ? (
         <View style={styles.list}>
-          {newsQuery.data.map((item) => (
-            <NewsCard key={item.id} item={item} />
+          {clustersQuery.data.map((cluster) => (
+            <ClusterCard key={cluster.id} cluster={cluster} />
           ))}
         </View>
       ) : (
         <Text variant="caption" color={Colors.textMuted} style={styles.empty}>
-          No news yet — check back soon.
+          No stories yet — check back soon.
         </Text>
       )}
     </View>
@@ -98,6 +123,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: FontFamily.semibold,
     lineHeight: FontSize.md * 1.3,
+  },
+  seeAll: {
+    fontFamily: FontFamily.medium,
   },
   list: {
     paddingHorizontal: Spacing.md,
