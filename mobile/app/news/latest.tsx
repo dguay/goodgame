@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { FlatList, View, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { router, Stack } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
@@ -85,6 +85,7 @@ export default function LatestNewsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
