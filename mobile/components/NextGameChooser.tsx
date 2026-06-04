@@ -194,9 +194,6 @@ export function NextGameChooser({ candidates, isLoading }: Props) {
               />
             ) : (
               <View style={styles.placeholder}>
-                <Text variant="label" color={Colors.textMuted} numberOfLines={1}>
-                  No pick yet
-                </Text>
               </View>
             )}
           </Animated.View>

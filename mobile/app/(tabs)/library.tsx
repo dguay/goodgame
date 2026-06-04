@@ -1067,6 +1067,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flexShrink: 0,
+    paddingBottom: 3,
   },
   headerSearchInput: {
     flex: 1,
@@ -1077,9 +1078,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.sm,
+    paddingVertical: 0,
     color: Colors.textPrimary,
     fontSize: 13,
-    textAlign: 'center',
     textAlignVertical: 'center',
   },
   filterPanel: {
