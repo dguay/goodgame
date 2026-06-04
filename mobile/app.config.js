@@ -5,6 +5,10 @@ const requiredProductionEnvVars = [
   'GOOGLE_SERVICES_JSON',
 ]
 
+function appVariant() {
+  return process.env.GOODGAME_APP_VARIANT === 'development' ? 'development' : 'production'
+}
+
 function assertProductionEnv() {
   if (process.env.EAS_BUILD !== 'true' || process.env.EAS_BUILD_PROFILE !== 'production') {
     return
@@ -18,12 +22,19 @@ function assertProductionEnv() {
 
 module.exports = ({ config }) => {
   assertProductionEnv()
+  const variant = appVariant()
+  const isDevelopment = variant === 'development'
 
   return {
     ...config,
+    name: isDevelopment ? `${config.name} Dev` : config.name,
+    scheme: isDevelopment ? 'goodgame-dev' : config.scheme,
     android: {
       ...config.android,
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
+      package: isDevelopment ? `${config.android.package}.dev` : config.android.package,
+      googleServicesFile: isDevelopment
+        ? undefined
+        : process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     },
   }
 }

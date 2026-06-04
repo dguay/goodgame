@@ -63,7 +63,39 @@ pnpm run web        # Open in browser at http://localhost:8081
 pnpm run android    # Launch on Android emulator or device
 ```
 
-For Android, Scan QR code from Expo Go app 
+## Android dev build using production Supabase
+
+Use this when you want to run local code on a physical Android phone while the app talks to the hosted production database and Google auth returns to the local dev app.
+
+The dev build installs as a separate app:
+
+```bash
+name: Goodgame Dev
+android package: com.davidguay.goodgame.dev
+auth redirect: goodgame-dev://auth/callback
+```
+
+It can coexist with the production Goodgame app.
+
+### Setup
+
+From the repo root:
+
+```bash
+pnpm run setup:phone
+pnpm run dev:android:build:local
+pnpm run start:dev:tunnel
+```
+
+Install the generated APK on your phone, open **Goodgame Dev**, and connect it to the tunnel Metro server. The local build requires Android Studio and uses Android Studio's bundled JDK automatically when `JAVA_HOME` is not already set.
+
+For Google auth, add this redirect URL in Supabase Auth URL Configuration for the hosted production project:
+
+```bash
+goodgame-dev://auth/callback
+```
+
+Production database warning: changes made in the dev build are real production writes.
 
 ---
 
@@ -212,8 +244,11 @@ When EAS finishes, download the `.aab` from the EAS dashboard or the build link 
 
 | Script | Description |
 |---|---|
+| `pnpm run setup:phone` | Prepare Android dev build phone development using production Supabase |
 | `pnpm run web` | Start dev server for web |
+| `pnpm run start:dev:tunnel` | Start Metro for a development build through a tunnel |
 | `pnpm run android` | Start dev server for Android |
+| `pnpm run dev:android:build:local` | Build the Android development APK locally |
 | `pnpm run build:web` | Export web build for Vercel |
 | `pnpm run typecheck` | Run TypeScript type check |
 | `pnpm run lint` | Run ESLint |

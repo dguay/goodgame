@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "start": "pnpm --dir mobile run start",
+    "setup:phone": "bash scripts/setup-android-phone.sh",
+    "start:dev:tunnel": "pnpm --dir mobile exec expo start --dev-client --tunnel",
     "web": "pnpm --dir mobile run web",
     "android": "pnpm --dir mobile run android",
     "ios": "pnpm --dir mobile run ios",
@@ -12,6 +14,7 @@
     "eas:login": "pnpm --dir mobile run eas:login",
     "eas:configure": "pnpm --dir mobile run eas:configure",
     "android:credentials": "pnpm --dir mobile run android:credentials",
+    "dev:android:build:local": "bash scripts/build-android-dev-local.sh",
     "build:android": "pnpm --dir mobile run build:android",
     "typecheck": "pnpm --dir mobile exec tsc --noEmit",
     "lint": "pnpm --dir mobile exec eslint . --ext .ts,.tsx",

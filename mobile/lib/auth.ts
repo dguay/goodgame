@@ -4,7 +4,8 @@ import { supabase } from './supabase'
 
 WebBrowser.maybeCompleteAuthSession()
 
-const NativeRedirectUrl = 'goodgame://auth/callback'
+const NativeRedirectScheme = process.env.EXPO_PUBLIC_AUTH_REDIRECT_SCHEME ?? 'goodgame'
+const NativeRedirectUrl = `${NativeRedirectScheme}://auth/callback`
 
 function authParamsFromUrl(url: string): URLSearchParams {
   const parsedUrl = new URL(url)
