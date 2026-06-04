@@ -240,6 +240,62 @@ export type Database = {
           },
         ]
       }
+      news_game_match_candidates: {
+        Row: {
+          article_id: string
+          best_rawg_id: string | null
+          best_rawg_name: string | null
+          best_rawg_slug: string | null
+          candidate: string
+          confidence: number | null
+          created_at: string
+          id: string
+          normalized_candidate: string
+          rawg_results: Json
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          article_id: string
+          best_rawg_id?: string | null
+          best_rawg_name?: string | null
+          best_rawg_slug?: string | null
+          candidate: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          normalized_candidate: string
+          rawg_results?: Json
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          article_id?: string
+          best_rawg_id?: string | null
+          best_rawg_name?: string | null
+          best_rawg_slug?: string | null
+          candidate?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          normalized_candidate?: string
+          rawg_results?: Json
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_game_match_candidates_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "news_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_game_trends: {
         Row: {
           calculated_at: string

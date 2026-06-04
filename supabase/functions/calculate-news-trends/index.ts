@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { effectiveArticleTime, type ArticleTimeFields } from '../_shared/articleTime.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,8 +17,25 @@ function json(body: unknown, status = 200): Response {
 }
 
 interface ArticleMatchRow {
-  created_at: string;
-  news_articles: { source_id: string };
+  game_id: string;
+  news_articles: ArticleTimeFields & { source_id: string };
+}
+
+function isInWindow(row: ArticleMatchRow, start: string, end?: string): boolean {
+  const articleTime = effectiveArticleTime(row.news_articles);
+  return articleTime >= start && (end == null || articleTime < end);
+}
+
+function groupByGame(rows: ArticleMatchRow[]): Map<string, ArticleMatchRow[]> {
+  const rowsByGame = new Map<string, ArticleMatchRow[]>();
+
+  for (const row of rows) {
+    const existing = rowsByGame.get(row.game_id) ?? [];
+    existing.push(row);
+    rowsByGame.set(row.game_id, existing);
+  }
+
+  return rowsByGame;
 }
 
 async function calculateTrends(): Promise<{ gamesUpdated: number }> {
@@ -33,48 +51,38 @@ async function calculateTrends(): Promise<{ gamesUpdated: number }> {
   const t7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const t14d = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: mentioned } = await supabase
+  // DB-bound by audit creation time to avoid unbounded scans, then refine by
+  // article freshness: published_at -> fetched_at -> created_at.
+  const { data: matches, error } = await supabase
     .from('news_article_games')
-    .select('game_id')
-    .gte('created_at', t7d);
+    .select('game_id, news_articles!inner(source_id, published_at, fetched_at, created_at)')
+    .gte('created_at', t14d);
 
-  if (!mentioned?.length) return { gamesUpdated: 0 };
+  if (error) throw new Error(`Failed to load article-game matches: ${error.message}`);
 
-  const gameIds = [...new Set(mentioned.map((r: { game_id: string }) => r.game_id))];
+  const rows = ((matches ?? []) as unknown as ArticleMatchRow[])
+    .filter((row) => isInWindow(row, t14d));
+  const rowsByGame = groupByGame(rows);
   let gamesUpdated = 0;
 
-  for (const gameId of gameIds) {
-    const { data: matches } = await supabase
-      .from('news_article_games')
-      .select('created_at, news_articles!inner(source_id)')
-      .eq('game_id', gameId)
-      .gte('created_at', t7d);
+  for (const [gameId, gameRows] of rowsByGame) {
+    const currentRows = gameRows.filter((row) => isInWindow(row, t7d));
+    if (!currentRows.length) continue;
 
-    if (!matches?.length) continue;
+    const mentions24h = currentRows.filter((row) => isInWindow(row, t24h)).length;
+    const mentions72h = currentRows.filter((row) => isInWindow(row, t72h)).length;
+    const mentions7d = currentRows.length;
 
-    const rows = matches as ArticleMatchRow[];
-
-    const mentions24h = rows.filter((r) => r.created_at >= t24h).length;
-    const mentions72h = rows.filter((r) => r.created_at >= t72h).length;
-    const mentions7d = rows.length;
-
-    const sources72h = new Set(
-      rows.filter((r) => r.created_at >= t72h).map((r) => r.news_articles.source_id)
-    );
-    const uniqueSources72h = sources72h.size;
-
-    const officialMentions72h = rows.filter(
-      (r) => r.created_at >= t72h && OFFICIAL_SOURCE_IDS.has(r.news_articles.source_id)
+    const rows72h = currentRows.filter((row) => isInWindow(row, t72h));
+    const uniqueSources72h = new Set(
+      rows72h.map((row) => row.news_articles.source_id)
+    ).size;
+    const officialMentions72h = rows72h.filter(
+      (row) => OFFICIAL_SOURCE_IDS.has(row.news_articles.source_id)
     ).length;
 
-    const { data: prevMatches } = await supabase
-      .from('news_article_games')
-      .select('created_at')
-      .eq('game_id', gameId)
-      .gte('created_at', t14d)
-      .lt('created_at', t7d);
-
-    const mentions7dPrevAvg = (prevMatches?.length ?? 0) / 7;
+    const previousRows = gameRows.filter((row) => isInWindow(row, t14d, t7d));
+    const mentions7dPrevAvg = previousRows.length / 7;
     const spikeBonus = mentions24h >= 3 && mentions7dPrevAvg <= 1 ? 15 : 0;
 
     const trendingScore =
@@ -84,7 +92,7 @@ async function calculateTrends(): Promise<{ gamesUpdated: number }> {
       officialMentions72h * 10 +
       spikeBonus;
 
-    const { error } = await supabase.from('news_game_trends').upsert({
+    const { error: upsertError } = await supabase.from('news_game_trends').upsert({
       game_id: gameId,
       mentions_24h: mentions24h,
       mentions_72h: mentions72h,
@@ -95,7 +103,7 @@ async function calculateTrends(): Promise<{ gamesUpdated: number }> {
       calculated_at: now.toISOString(),
     });
 
-    if (!error) gamesUpdated++;
+    if (!upsertError) gamesUpdated++;
   }
 
   return { gamesUpdated };

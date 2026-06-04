@@ -191,6 +191,35 @@ async function saveAlias(
   if (error) console.error('Error saving alias:', error.message);
 }
 
+async function queueGameMatchCandidate(
+  supabase: SupabaseClient,
+  articleId: string,
+  candidate: string,
+  rawgResults: RawgSearchResult[],
+  best: { result: RawgSearchResult; confidence: number },
+  reason: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('news_game_match_candidates')
+    .upsert(
+      {
+        article_id: articleId,
+        candidate,
+        normalized_candidate: normalizeGameName(candidate),
+        best_rawg_id: String(best.result.id),
+        best_rawg_name: best.result.name,
+        best_rawg_slug: best.result.slug,
+        confidence: best.confidence,
+        rawg_results: rawgResults,
+        reason,
+        status: 'pending',
+      },
+      { onConflict: 'article_id,normalized_candidate' }
+    );
+
+  if (error) console.error('Error queueing game match candidate:', error.message);
+}
+
 // ─── Main matcher ──────────────────────────────────────────────────────────────
 
 interface GameMatch {
@@ -249,6 +278,14 @@ export async function matchArticleToGames(
         matches.push({ game_id: gameId, confidence: best.confidence, match_method: 'rawg' });
       }
     } else if (best.confidence >= RAWG_REVIEW_THRESHOLD) {
+      await queueGameMatchCandidate(
+        supabase,
+        article.id,
+        candidate,
+        rawgResults,
+        best,
+        'low_confidence'
+      );
       console.warn(
         `Low-confidence RAWG match (${best.confidence.toFixed(2)}): ` +
         `"${candidate}" → "${best.result.name}" | article: "${article.title}"`
