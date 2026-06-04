@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import {
@@ -10,6 +15,9 @@ import type { LibraryEntry, LibraryEntryInsert, LibraryEntryUpdate } from '@/typ
 function libraryKey(userId: string) {
   return ['library', userId] as const
 }
+
+const releaseDateSyncAttempts = new Set<string>()
+const releaseDateSyncInFlight = new Set<string>()
 
 function getNextCustomOrder(entries: LibraryEntry[], requestedOrder?: number | null): number {
   if (requestedOrder != null) return requestedOrder
@@ -185,10 +193,11 @@ export function useUpdateLibraryEntry() {
       return { prev }
     },
     onSuccess: async (entry, variables) => {
-      if (variables.status != null) {
+      const didUpdateReleaseDate = 'release_date' in variables
+      if (variables.status != null || didUpdateReleaseDate) {
         if (entry.status === 'want_to_play' && entry.release_date != null) {
           await scheduleReleaseNotifications(entry.rawg_game_id, entry.game_title, entry.release_date)
-        } else {
+        } else if (variables.status != null) {
           await cancelReleaseNotifications(entry.rawg_game_id)
         }
       }
@@ -204,6 +213,63 @@ export function useUpdateLibraryEntry() {
       }
     },
   })
+}
+
+export async function syncLibraryReleaseDateFromRawg(
+  queryClient: QueryClient,
+  userId: string,
+  rawgGameId: number,
+  releaseDate: string | null,
+): Promise<void> {
+  if (releaseDate == null) return
+
+  const key = libraryKey(userId)
+  const entries = queryClient.getQueryData<LibraryEntry[]>(key)
+  const entry = entries?.find(
+    currentEntry =>
+      currentEntry.rawg_game_id === rawgGameId && currentEntry.release_date !== releaseDate
+  )
+  if (entry == null) return
+
+  const syncKey = `${userId}:${entry.id}:${releaseDate}`
+  if (releaseDateSyncAttempts.has(syncKey) || releaseDateSyncInFlight.has(syncKey)) return
+
+  releaseDateSyncAttempts.add(syncKey)
+  releaseDateSyncInFlight.add(syncKey)
+
+  const previousEntries = entries ?? []
+  queryClient.setQueryData<LibraryEntry[]>(key, old =>
+    (old ?? []).map(currentEntry =>
+      currentEntry.id === entry.id
+        ? { ...currentEntry, release_date: releaseDate, updated_at: new Date().toISOString() }
+        : currentEntry
+    )
+  )
+
+  try {
+    const { data, error } = await supabase
+      .from('library_entries')
+      .update({ release_date: releaseDate })
+      .eq('id', entry.id)
+      .eq('user_id', userId)
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+
+    queryClient.setQueryData<LibraryEntry[]>(key, old =>
+      (old ?? []).map(currentEntry => (currentEntry.id === data.id ? data : currentEntry))
+    )
+
+    if (data.status === 'want_to_play' && data.release_date != null) {
+      await scheduleReleaseNotifications(data.rawg_game_id, data.game_title, data.release_date)
+    }
+  } catch (error) {
+    console.warn('Could not sync RAWG release date to library', error)
+    queryClient.setQueryData<LibraryEntry[]>(key, previousEntries)
+  } finally {
+    releaseDateSyncInFlight.delete(syncKey)
+  }
 }
 
 export function useRemoveFromLibrary() {

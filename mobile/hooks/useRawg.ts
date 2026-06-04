@@ -1,4 +1,6 @@
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { syncLibraryReleaseDateFromRawg } from '@/hooks/useLibrary'
 import {
   searchGames,
   getGameAdditions,
@@ -9,6 +11,7 @@ import {
   getReleaseCalendar,
   getTopRated,
 } from '@/lib/rawg'
+import { useAuthStore } from '@/stores/authStore'
 
 const STALE = 5 * 60 * 1000
 const CACHE = 30 * 60 * 1000
@@ -37,13 +40,28 @@ export function useGameSearchInfinite(query: string) {
 }
 
 export function useGameDetail(id: number | null) {
-  return useQuery({
+  const queryClient = useQueryClient()
+  const userId = useAuthStore(s => s.user?.id)
+  const query = useQuery({
     queryKey: ['rawg', 'game', id],
     queryFn: () => getGameDetail(id!),
     enabled: id !== null,
     staleTime: STALE,
     gcTime: CACHE,
   })
+
+  useEffect(() => {
+    if (userId == null || query.data?.released == null) return
+
+    void syncLibraryReleaseDateFromRawg(
+      queryClient,
+      userId,
+      query.data.id,
+      query.data.released,
+    )
+  }, [query.data?.id, query.data?.released, queryClient, userId])
+
+  return query
 }
 
 export function useGameAdditions(id: number | null) {

@@ -189,7 +189,7 @@ function HomeHero({
           <Text variant="body" style={styles.heroSubtitle} numberOfLines={2}>
             {featuredEntry != null
               ? `Currently playing ${featuredEntry.game_title}`
-              : 'Choose what belongs in your backlog next.'}
+              : 'What are we playing next?'}
           </Text>
         )}
       </View>

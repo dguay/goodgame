@@ -48,3 +48,6 @@ mobile/expo-env.d.ts
 #graphify
 graphify-out/
 .graphify_python
+
+# APK
+*.apk
