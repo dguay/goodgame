@@ -3,47 +3,12 @@ import { FlatList, View, StyleSheet, Pressable, ActivityIndicator } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, Stack } from 'expo-router'
-import * as WebBrowser from 'expo-web-browser'
 import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
+import { NewsArticleRow } from '@/components/NewsArticleRow'
 import { useLatestNews, type NewsItem } from '@/hooks/useNews'
-import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-import { formatPubDate } from '@/lib/dates'
+import { Colors, FontSize, Radius, Spacing } from '@/constants'
 
-function ArticleRow({ item }: { item: NewsItem }) {
-  function handlePress() {
-    void WebBrowser.openBrowserAsync(item.link).catch(() => {})
-  }
-
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-      onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel={item.title}
-    >
-      <View style={styles.rowContent}>
-        <Text variant="body" style={styles.articleTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <View style={styles.articleMeta}>
-          <Text variant="caption" color={Colors.primary}>
-            {item.sourceName}
-          </Text>
-          {item.pubDate != null && item.pubDate !== '' && (
-            <>
-              <Text variant="caption" color={Colors.textMuted}>·</Text>
-              <Text variant="caption" color={Colors.textMuted}>
-                {formatPubDate(item.pubDate, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-              </Text>
-            </>
-          )}
-        </View>
-      </View>
-      <Ionicons name="open-outline" size={14} color={Colors.textMuted} />
-    </Pressable>
-  )
-}
 
 function ArticleSkeletons() {
   return (
@@ -69,7 +34,7 @@ export default function LatestNewsScreen() {
     [query.data]
   )
 
-  const renderItem = useCallback(({ item }: { item: NewsItem }) => <ArticleRow item={item} />, [])
+  const renderItem = useCallback(({ item }: { item: NewsItem }) => <NewsArticleRow item={item} />, [])
 
   const onEndReached = useCallback(() => {
     if (query.hasNextPage && !query.isFetchingNextPage) {
@@ -167,33 +132,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     gap: Spacing.xs,
     paddingBottom: Spacing.xl,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.sm,
-  },
-  rowPressed: {
-    backgroundColor: Colors.surfaceRaised,
-  },
-  rowContent: {
-    flex: 1,
-    gap: 4,
-  },
-  articleTitle: {
-    fontFamily: FontFamily.medium,
-    color: Colors.textPrimary,
-    lineHeight: FontSize.md * 1.3,
-  },
-  articleMeta: {
-    flexDirection: 'row',
-    gap: 4,
-    alignItems: 'center',
   },
   loadingMore: {
     paddingVertical: Spacing.lg,

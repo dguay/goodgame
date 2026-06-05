@@ -25,7 +25,7 @@ function ClusterCard({ cluster }: { cluster: StoryCluster }) {
       accessibilityLabel={cluster.title}
     >
       <View style={styles.content}>
-        <Text variant="label" style={styles.title} numberOfLines={2}>
+        <Text variant="label" style={styles.title} numberOfLines={5}>
           {cluster.title}
         </Text>
         <View style={styles.meta}>
@@ -46,7 +46,7 @@ function ClusterCard({ cluster }: { cluster: StoryCluster }) {
             <>
               <Text variant="caption" color={Colors.textMuted}>·</Text>
               <Text variant="caption" color={Colors.textMuted}>
-                {formatPubDate(cluster.latestPublishedAt)}
+                {formatPubDate(cluster.latestPublishedAt, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               </Text>
             </>
           )}

@@ -406,7 +406,7 @@ function NewsArticleRow({ item }: { item: NewsItem }) {
       accessibilityLabel={item.title}
     >
       <View style={styles.newsRowContent}>
-        <Text variant="body" style={styles.newsTitle} numberOfLines={2}>
+        <Text variant="body" style={styles.newsTitle} numberOfLines={5}>
           {item.title}
         </Text>
         <View style={styles.newsMeta}>
@@ -414,7 +414,7 @@ function NewsArticleRow({ item }: { item: NewsItem }) {
           {item.pubDate != null && item.pubDate !== '' && (
             <>
               <Text variant="caption" color={Colors.textMuted}>·</Text>
-              <Text variant="caption" color={Colors.textMuted}>{formatPubDate(item.pubDate)}</Text>
+              <Text variant="caption" color={Colors.textMuted}>{formatPubDate(item.pubDate, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</Text>
             </>
           )}
         </View>

@@ -4,50 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams, Stack } from 'expo-router'
-import * as WebBrowser from 'expo-web-browser'
 import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingSpinner } from '@/components/ui'
+import { NewsArticleRow } from '@/components/NewsArticleRow'
 import { useNewsGame, useNewsGameArticles } from '@/hooks/useNewsForGame'
 import type { NewsItem } from '@/hooks/useNews'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-import { formatPubDate } from '@/lib/dates'
-
-function ArticleRow({ item }: { item: NewsItem }) {
-  function handlePress() {
-    void WebBrowser.openBrowserAsync(item.link).catch(() => {})
-  }
-
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-      onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel={item.title}
-    >
-      <View style={styles.rowContent}>
-        <Text variant="body" style={styles.articleTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <View style={styles.articleMeta}>
-          <Text variant="caption" color={Colors.primary}>
-            {item.sourceName}
-          </Text>
-          {item.pubDate != null && item.pubDate !== '' && (
-            <>
-              <Text variant="caption" color={Colors.textMuted}>·</Text>
-              <Text variant="caption" color={Colors.textMuted}>
-                {formatPubDate(item.pubDate)}
-              </Text>
-            </>
-          )}
-        </View>
-      </View>
-      <Ionicons name="open-outline" size={14} color={Colors.textMuted} />
-    </Pressable>
-  )
-}
 
 function GameHeader({ slug }: { slug: string }) {
   const gameQuery = useNewsGame(slug)
@@ -99,7 +63,7 @@ export default function NewsGameScreen() {
   const gameQuery = useNewsGame(slug)
   const articlesQuery = useNewsGameArticles(gameQuery.data?.id)
 
-  const renderItem = useCallback(({ item }: { item: NewsItem }) => <ArticleRow item={item} />, [])
+  const renderItem = useCallback(({ item }: { item: NewsItem }) => <NewsArticleRow item={item} />, [])
 
   const articles = articlesQuery.data ?? []
 
@@ -211,33 +175,6 @@ const styles = StyleSheet.create({
   articlesLabel: {
     color: Colors.textMuted,
     fontFamily: FontFamily.medium,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.sm,
-  },
-  rowPressed: {
-    backgroundColor: Colors.surfaceRaised,
-  },
-  rowContent: {
-    flex: 1,
-    gap: 4,
-  },
-  articleTitle: {
-    fontFamily: FontFamily.medium,
-    color: Colors.textPrimary,
-    lineHeight: FontSize.md * 1.3,
-  },
-  articleMeta: {
-    flexDirection: 'row',
-    gap: 4,
-    alignItems: 'center',
   },
   empty: {
     textAlign: 'center',
