@@ -48,6 +48,13 @@ function GameHeader({ slug }: { slug: string }) {
         <Text variant="heading" style={styles.gameName} numberOfLines={2}>
           {game.name}
         </Text>
+        {game.rawgId != null && (
+          <Pressable onPress={() => router.push(`/game/${game.rawgId}` as never)}>
+            <Text variant="caption" color={Colors.primary}>
+              View game
+            </Text>
+          </Pressable>
+        )}
         {game.genres.length > 0 && (
           <Text variant="caption" color={Colors.textMuted} numberOfLines={1}>
             {game.genres.join(', ')}
@@ -170,7 +177,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xxs,
   },
   gameName: {
-    lineHeight: FontSize.xxl * 1.1,
+    lineHeight: FontSize.xxl * 1.2,
   },
   articlesLabel: {
     color: Colors.textMuted,

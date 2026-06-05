@@ -22,7 +22,8 @@
       "Bash(npx skills *)",
       "Bash(node .agents/skills/impeccable/scripts/context.mjs)",
       "Bash(ngrok version *)",
-      "Bash(node --test lib/dates.test.ts)"
+      "Bash(node --test lib/dates.test.ts)",
+      "mcp__supabase__execute_sql"
     ]
   }
 }

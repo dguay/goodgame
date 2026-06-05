@@ -4,6 +4,7 @@ import type { NewsItem } from './useNews'
 
 export interface NewsGame {
   id: string
+  rawgId: string | null
   name: string
   slug: string
   imageUrl: string | null
@@ -15,7 +16,7 @@ export interface NewsGame {
 async function fetchNewsGame(slug: string): Promise<NewsGame | null> {
   const { data, error } = await supabase
     .from('news_games')
-    .select('id, name, slug, image_url, released, platforms, genres')
+    .select('id, rawg_id, name, slug, image_url, released, platforms, genres')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -24,6 +25,7 @@ async function fetchNewsGame(slug: string): Promise<NewsGame | null> {
 
   return {
     id: data.id,
+    rawgId: data.rawg_id ?? null,
     name: data.name,
     slug: data.slug,
     imageUrl: data.image_url,
