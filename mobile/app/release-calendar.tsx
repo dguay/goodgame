@@ -11,7 +11,7 @@ import { GameListCard } from '@/components/GameDisplayCards'
 import { useReleaseCalendar, type ReleaseCalendarMode } from '@/hooks/useRawg'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { Colors, FontSize, Radius, Spacing } from '@/constants'
-import { isKnownUpcomingRelease } from '@/lib/releaseDates'
+import { isKnownUpcomingRelease } from '@/lib/dates'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame } from '@/types/rawg'
 

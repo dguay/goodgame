@@ -103,7 +103,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
           <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-          <Stack.Screen name="game/[id]" options={{ headerShown: true }} />
+          <Stack.Screen name="game/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="release-calendar" options={{ headerShown: false }} />
           <Stack.Screen name="arpg-events" options={{ headerShown: false }} />
         </Stack>

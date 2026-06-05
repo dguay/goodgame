@@ -2,9 +2,10 @@ import {
   addLocalDays,
   formatDate,
   formatLocalDate,
+  formatPubDate,
   isKnownReleased,
   isUpcomingRelease,
-} from './releaseDates'
+} from './dates'
 
 declare const require: (module: string) => unknown
 
@@ -66,4 +67,20 @@ test('returns false for unknown, future, and invalid released dates', () => {
   assert.equal(isKnownReleased(null), false)
   assert.equal(isKnownReleased('2999-01-01'), false)
   assert.equal(isKnownReleased('not-a-date'), false)
+})
+
+test('formatPubDate returns empty for null and invalid input', () => {
+  assert.equal(formatPubDate(null), '')
+  assert.equal(formatPubDate('not-a-date'), '')
+})
+
+test('formatPubDate formats pub date with default options', () => {
+  assert.equal(formatPubDate('2026-05-09T12:00:00'), 'May 9')
+})
+
+test('formatPubDate accepts custom format options', () => {
+  assert.equal(
+    formatPubDate('2026-05-09T12:00:00', { month: 'long', day: 'numeric', year: 'numeric' }),
+    'May 9, 2026',
+  )
 })

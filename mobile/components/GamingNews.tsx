@@ -5,13 +5,7 @@ import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { useStoryClusters, type StoryCluster } from '@/hooks/useStoryClusters'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-
-function formatPubDate(pubDate: string | null): string {
-  if (!pubDate) return ''
-  const date = new Date(pubDate)
-  if (isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(date)
-}
+import { formatPubDate } from '@/lib/dates'
 
 function ClusterCard({ cluster }: { cluster: StoryCluster }) {
   const primarySource = cluster.sources[0] ?? null
@@ -78,7 +72,7 @@ function NewsSkeletons() {
 }
 
 export function GamingNews() {
-  const clustersQuery = useStoryClusters(5)
+  const clustersQuery = useStoryClusters(25)
 
   return (
     <View style={styles.container}>

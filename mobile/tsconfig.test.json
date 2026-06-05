@@ -10,7 +10,7 @@
     "types": []
   },
   "include": [
-    "lib/releaseDates.ts",
-    "lib/releaseDates.test.ts"
+    "lib/dates.ts",
+    "lib/dates.test.ts"
   ]
 }

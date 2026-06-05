@@ -21,7 +21,8 @@
       "mcp__supabase__deploy_edge_function",
       "Bash(npx skills *)",
       "Bash(node .agents/skills/impeccable/scripts/context.mjs)",
-      "Bash(ngrok version *)"
+      "Bash(ngrok version *)",
+      "Bash(node --test lib/dates.test.ts)"
     ]
   }
 }

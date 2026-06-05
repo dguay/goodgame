@@ -8,13 +8,7 @@ import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { useLatestNews, type NewsItem } from '@/hooks/useNews'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-
-function formatPubDate(pubDate: string | null): string {
-  if (!pubDate) return ''
-  const date = new Date(pubDate)
-  if (isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date)
-}
+import { formatPubDate } from '@/lib/dates'
 
 function ArticleRow({ item }: { item: NewsItem }) {
   function handlePress() {
@@ -40,7 +34,7 @@ function ArticleRow({ item }: { item: NewsItem }) {
             <>
               <Text variant="caption" color={Colors.textMuted}>·</Text>
               <Text variant="caption" color={Colors.textMuted}>
-                {formatPubDate(item.pubDate)}
+                {formatPubDate(item.pubDate, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               </Text>
             </>
           )}

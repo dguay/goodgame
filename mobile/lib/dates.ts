@@ -63,3 +63,13 @@ export function isKnownReleased(released: string | null): released is string {
 
   return releaseKey <= formatLocalDate(new Date())
 }
+
+export function formatPubDate(
+  pubDate: string | null,
+  options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' },
+): string {
+  if (!pubDate) return ''
+  const date = new Date(pubDate)
+  if (isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('en', options).format(date)
+}

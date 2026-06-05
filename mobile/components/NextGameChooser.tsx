@@ -4,7 +4,7 @@ import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { Colors, FontFamily, Radius, Spacing } from '@/constants'
-import { formatDate } from '@/lib/releaseDates'
+import { formatDate } from '@/lib/dates'
 import { STATUS_COLORS } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 

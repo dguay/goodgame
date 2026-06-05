@@ -3,7 +3,7 @@ import { FlatList, View, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams, Stack } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
@@ -12,13 +12,7 @@ import { LoadingSpinner } from '@/components/ui'
 import { useNewsGame, useNewsGameArticles } from '@/hooks/useNewsForGame'
 import type { NewsItem } from '@/hooks/useNews'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-
-function formatPubDate(pubDate: string | null): string {
-  if (!pubDate) return ''
-  const date = new Date(pubDate)
-  if (isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(date)
-}
+import { formatPubDate } from '@/lib/dates'
 
 function ArticleRow({ item }: { item: NewsItem }) {
   function handlePress() {
@@ -111,6 +105,7 @@ export default function NewsGameScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"

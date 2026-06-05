@@ -5,7 +5,7 @@ import type {
   RawgPaginatedResponse,
   RawgScreenshot,
 } from '@/types/rawg'
-import { addLocalDays, formatLocalDate } from '@/lib/releaseDates'
+import { addLocalDays, formatLocalDate } from '@/lib/dates'
 
 const BASE = 'https://api.rawg.io/api'
 

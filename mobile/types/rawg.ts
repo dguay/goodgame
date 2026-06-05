@@ -20,6 +20,7 @@ export interface RawgScreenshot {
 export interface RawgGame {
   id: number
   name: string
+  slug: string
   background_image: string | null
   released: string | null
   metacritic: number | null

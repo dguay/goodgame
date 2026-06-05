@@ -6,7 +6,7 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { useArpgTimeline, type ArpgEvent, type ArpgEventType } from '@/hooks/useArpgTimeline'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 
-const PREVIEW_COUNT = 3
+const PREVIEW_COUNT = 10
 
 const EVENT_TYPE_COLORS: Record<ArpgEventType, string> = {
   Demo: Colors.primary,

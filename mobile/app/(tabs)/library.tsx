@@ -32,7 +32,7 @@ import {
 } from '@/hooks/useLibrary'
 import { useUpdateUserPreferences, useUserPreferences } from '@/hooks/useUserPreferences'
 import { Colors, Radius, Spacing } from '@/constants'
-import { isUpcomingRelease } from '@/lib/releaseDates'
+import { isUpcomingRelease } from '@/lib/dates'
 import {
   LIBRARY_SORT_KEYS,
   STATUS_LABELS,

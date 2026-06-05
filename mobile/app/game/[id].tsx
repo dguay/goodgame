@@ -32,10 +32,12 @@ import {
 } from '@/hooks/useRawg'
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
 import { useSteamAppId } from '@/hooks/useSteam'
+import { useNewsGame, useNewsGameArticles } from '@/hooks/useNewsForGame'
+import type { NewsItem } from '@/hooks/useNews'
 
 import { Colors, FontFamily, Radius, Spacing } from '@/constants'
 import { formatRatingCount } from '@/lib/rating'
-import { isUpcomingRelease } from '@/lib/releaseDates'
+import { formatPubDate, isUpcomingRelease } from '@/lib/dates'
 import { getSteamStoreUrl } from '@/lib/steam'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGame, RawgGameDetail } from '@/types/rawg'
@@ -390,6 +392,69 @@ function ScreenshotGallery({ gameId }: GalleryProps) {
   )
 }
 
+// GameNewsSection
+function NewsArticleRow({ item }: { item: NewsItem }) {
+  async function handlePress() {
+    await openExternalUrl(item.link)
+  }
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.newsRow, pressed && styles.newsRowPressed]}
+      onPress={() => void handlePress()}
+      accessibilityRole="button"
+      accessibilityLabel={item.title}
+    >
+      <View style={styles.newsRowContent}>
+        <Text variant="body" style={styles.newsTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <View style={styles.newsMeta}>
+          <Text variant="caption" color={Colors.primary}>{item.sourceName}</Text>
+          {item.pubDate != null && item.pubDate !== '' && (
+            <>
+              <Text variant="caption" color={Colors.textMuted}>·</Text>
+              <Text variant="caption" color={Colors.textMuted}>{formatPubDate(item.pubDate)}</Text>
+            </>
+          )}
+        </View>
+      </View>
+      <Ionicons name="open-outline" size={14} color={Colors.textMuted} />
+    </Pressable>
+  )
+}
+
+interface GameNewsSectionProps { slug: string }
+
+function GameNewsSection({ slug }: GameNewsSectionProps) {
+  const newsGameQuery = useNewsGame(slug)
+  const gameId = newsGameQuery.data?.id
+  const articlesQuery = useNewsGameArticles(gameId)
+  const articles = (articlesQuery.data ?? []).slice(0, 5)
+
+  if (newsGameQuery.isLoading || articlesQuery.isLoading) return null
+  if (articles.length === 0) return null
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.newsSectionHeader}>
+        <Text variant="subheading" style={styles.sectionTitle}>Trending News</Text>
+        <Pressable
+          onPress={() => router.push(`/news/game/${slug}` as never)}
+          hitSlop={8}
+        >
+          <Text variant="label" color={Colors.primary}>See all</Text>
+        </Pressable>
+      </View>
+      <View style={styles.newsList}>
+        {articles.map(item => (
+          <NewsArticleRow key={item.id} item={item} />
+        ))}
+      </View>
+    </View>
+  )
+}
+
 // RelatedContent
 
 interface GameRailProps {
@@ -688,6 +753,7 @@ export default function GameDetailScreen() {
           />
           <ScreenshotGallery gameId={game.id} />
           {entry != null && <PersonalTracking entry={entry} />}
+          <GameNewsSection slug={game.slug} />
           <RelatedGamesSection gameId={game.id} />
           <RawgFooter />
         </View>
@@ -1089,6 +1155,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     lineHeight: 21,
+  },
+
+  // News section
+  newsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  newsList: {
+    gap: 2,
+  },
+  newsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderSoft,
+  },
+  newsRowPressed: {
+    opacity: 0.7,
+  },
+  newsRowContent: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
+  newsTitle: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  newsMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 
   // More Like This
