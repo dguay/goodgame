@@ -43,7 +43,7 @@ export default function LatestNewsScreen() {
   }, [query])
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Pressable

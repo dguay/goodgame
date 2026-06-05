@@ -75,7 +75,7 @@ export default function NewsGameScreen() {
   const articles = articlesQuery.data ?? []
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Pressable
