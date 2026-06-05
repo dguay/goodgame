@@ -653,6 +653,7 @@ export default function GameDetailScreen() {
     name: game.name,
     background_image: game.background_image,
     released: game.released,
+    platforms: game.platforms,
   }
 
   return (

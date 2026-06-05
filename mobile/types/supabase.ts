@@ -46,6 +46,7 @@ export type Database = {
           personal_notes: string | null
           personal_playtime_minutes: number | null
           personal_rating: number | null
+          platforms: string[] | null
           rawg_game_id: number
           release_date: string | null
           started_at: string | null
@@ -63,6 +64,7 @@ export type Database = {
           personal_notes?: string | null
           personal_playtime_minutes?: number | null
           personal_rating?: number | null
+          platforms?: string[] | null
           rawg_game_id: number
           release_date?: string | null
           started_at?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           personal_notes?: string | null
           personal_playtime_minutes?: number | null
           personal_rating?: number | null
+          platforms?: string[] | null
           rawg_game_id?: number
           release_date?: string | null
           started_at?: string | null

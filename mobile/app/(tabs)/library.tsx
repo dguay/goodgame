@@ -44,11 +44,23 @@ import type { LibraryEntry } from '@/types/database'
 import type { RawgGameDetail } from '@/types/rawg'
 
 type FilterStatus = Exclude<LibraryStatus, 'playing'> | 'all' | 'next'
+type PlatformFilter = 'all' | 'ps5' | 'pc'
 type SortKey = LibrarySortKey
 type ViewMode = 'grid' | 'list'
 type SortDirection = 'asc' | 'desc'
 
 const HEADER_SEARCH_MAX_WIDTH = 360
+
+const PLATFORM_OPTIONS: { key: PlatformFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'ps5', label: 'PS5' },
+  { key: 'pc', label: 'PC' },
+]
+
+const PLATFORM_SLUGS: Record<Exclude<PlatformFilter, 'all'>, string[]> = {
+  ps5: ['playstation5'],
+  pc: ['pc'],
+}
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }[] = [
   { key: 'all', label: 'All', compactLabel: 'All' },
@@ -609,23 +621,27 @@ const cmStyles = StyleSheet.create({
 
 function LibraryFilters({
   activeFilter,
+  activePlatform,
   activeViewMode,
   currentSortLabel,
   isCustomSort,
   isWide,
   sortDirection,
   onFilterChange,
+  onPlatformChange,
   onSortPress,
   onViewModeChange,
   onDirectionToggle,
 }: {
   activeFilter: FilterStatus
+  activePlatform: PlatformFilter
   activeViewMode: ViewMode
   currentSortLabel: string
   isCustomSort: boolean
   isWide: boolean
   sortDirection: SortDirection
   onFilterChange: (filter: FilterStatus) => void
+  onPlatformChange: (platform: PlatformFilter) => void
   onSortPress: () => void
   onViewModeChange: (viewMode: ViewMode) => void
   onDirectionToggle: () => void
@@ -724,6 +740,33 @@ function LibraryFilters({
           )
         })}
       </View>
+
+      <View style={styles.platformRow}>
+        {PLATFORM_OPTIONS.map(({ key, label }) => {
+          const isActive = activePlatform === key
+          return (
+            <Pressable
+              key={key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+              style={({ pressed }) => [
+                styles.platformTab,
+                isActive && styles.platformTabActive,
+                pressed && !isActive && styles.filterTabPressed,
+              ]}
+              onPress={() => onPlatformChange(key)}
+            >
+              <Text
+                variant="label"
+                numberOfLines={1}
+                style={[styles.platformLabel, isActive && styles.platformLabelActive]}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
     </View>
   )
 }
@@ -733,6 +776,7 @@ export default function LibraryScreen() {
   const queryClient = useQueryClient()
   const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>()
   const [filter, setFilter] = useState<FilterStatus>('want_to_play')
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all')
   const [sort, setSort] = useState<SortKey>('custom')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -790,8 +834,15 @@ export default function LibraryScreen() {
         : filter === 'next'
           ? all.filter(e => isUpcomingRelease(e.release_date))
           : all.filter(e => e.status === filter)
-    return sort === 'custom' ? orderEntriesByIds(byStatus, customOrderIds) : sortEntries(byStatus, sort, sortDirection)
-  }, [customOrderIds, entries, filter, sort, sortDirection])
+    const byPlatform =
+      platformFilter === 'all'
+        ? byStatus
+        : byStatus.filter(e =>
+            e.platforms != null &&
+            PLATFORM_SLUGS[platformFilter].some(slug => e.platforms!.includes(slug))
+          )
+    return sort === 'custom' ? orderEntriesByIds(byPlatform, customOrderIds) : sortEntries(byPlatform, sort, sortDirection)
+  }, [customOrderIds, entries, filter, platformFilter, sort, sortDirection])
 
   const searchFiltered = useMemo(() => {
     const q = searchQuery.trim()
@@ -921,12 +972,14 @@ export default function LibraryScreen() {
 
       <LibraryFilters
         activeFilter={filter}
+        activePlatform={platformFilter}
         activeViewMode={activeViewMode}
         currentSortLabel={currentSortLabel}
         isCustomSort={sort === 'custom'}
         isWide={isWide}
         sortDirection={sortDirection}
         onFilterChange={setFilter}
+        onPlatformChange={setPlatformFilter}
         onSortPress={() => setSortPickerVisible(true)}
         onViewModeChange={setViewMode}
         onDirectionToggle={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
@@ -1243,5 +1296,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
+  },
+  platformRow: {
+    flexDirection: 'row',
+    gap: Spacing.xxs,
+  },
+  platformTab: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.borderSoft,
+    backgroundColor: 'transparent',
+  },
+  platformTabActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '22',
+  },
+  platformLabel: {
+    color: Colors.textMuted,
+  },
+  platformLabelActive: {
+    color: Colors.primary,
   },
 })

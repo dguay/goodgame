@@ -93,6 +93,7 @@ export function useAddToLibrary() {
         custom_order: customOrder,
         game_cover_url: entry.game_cover_url ?? null,
         game_title: entry.game_title,
+        platforms: entry.platforms ?? null,
         rawg_game_id: entry.rawg_game_id,
         release_date: entry.release_date ?? null,
         status: entry.status,
@@ -312,3 +313,4 @@ export function useRemoveFromLibrary() {
     },
   })
 }
+

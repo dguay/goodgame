@@ -15,7 +15,7 @@ import { STATUS_COLORS, STATUS_LABELS, type LibraryStatus } from '@/types'
 import type { RawgGame } from '@/types/rawg'
 
 interface Props {
-  game: Pick<RawgGame, 'id' | 'name' | 'background_image' | 'released'>
+  game: Pick<RawgGame, 'id' | 'name' | 'background_image' | 'released' | 'platforms'>
 }
 
 export function AddToLibraryButton({ game }: Props) {
@@ -52,6 +52,7 @@ export function AddToLibraryButton({ game }: Props) {
         game_title: game.name,
         game_cover_url: game.background_image ?? null,
         release_date: game.released ?? null,
+        platforms: game.platforms != null ? game.platforms.map(p => p.platform.slug) : null,
         status,
       })
     }
