@@ -181,7 +181,7 @@ package.json                  → root scripts (proxies to mobile/ + supabase co
 
 ## RAWG Attribution (REQUIRED BY TOS)
 
-Every screen/page **must** render this footer:
+Every screen/page that uses RAWG data **must** render this footer:
 
 ```tsx
 // components/RawgFooter.tsx

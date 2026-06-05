@@ -20,6 +20,7 @@ const TABS: {
   { name: 'index', path: '/', label: 'Home', icon: 'home-outline', iconActive: 'home' },
   { name: 'search', path: '/search', label: 'Search', icon: 'search-outline', iconActive: 'search' },
   { name: 'library', path: '/library', label: 'Library', icon: 'bookmark-outline', iconActive: 'bookmark', useGoodgameIcon: true },
+  { name: 'news', path: '/news', label: 'News', icon: 'newspaper-outline', iconActive: 'newspaper' },
   { name: 'profile', path: '/profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' },
 ]
 
@@ -118,6 +119,7 @@ export default function TabLayout() {
             <Tabs.Screen name="index" options={{ title: 'Home' }} />
             <Tabs.Screen name="search" options={{ title: 'Search' }} />
             <Tabs.Screen name="library" options={{ title: 'Library' }} />
+            <Tabs.Screen name="news" options={{ title: 'News' }} />
             <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
           </Tabs>
         </View>
@@ -133,6 +135,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="search" options={{ title: 'Search' }} />
       <Tabs.Screen name="library" options={{ title: 'Library' }} />
+      <Tabs.Screen name="news" options={{ title: 'News' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   )

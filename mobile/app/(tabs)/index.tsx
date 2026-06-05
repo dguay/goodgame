@@ -8,10 +8,6 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { RawgFooter } from '@/components/RawgFooter'
 import { SmallGameCard } from '@/components/GameDisplayCards'
 import { NextGameChooser } from '@/components/NextGameChooser'
-import { GamingNews } from '@/components/GamingNews'
-import { TrendingGamesNews } from '@/components/TrendingGamesNews'
-import { ArpgEvents } from '@/components/ArpgEvents'
-import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { useProfile } from '@/hooks/useProfile'
@@ -251,7 +247,6 @@ export default function HomeScreen() {
   const user = useAuthStore((s) => s.user)
   const isAuthLoading = useAuthStore((s) => s.isLoading)
   const [refreshing, setRefreshing] = useState(false)
-  const queryClient = useQueryClient()
 
   const profileQuery = useProfile()
   const libraryQuery = useLibraryEntries()
@@ -294,14 +289,11 @@ export default function HomeScreen() {
         libraryQuery.refetch(),
         newReleasesQuery.refetch(),
         comingUpQuery.refetch(),
-        queryClient.invalidateQueries({ queryKey: ['news'] }),
-        queryClient.invalidateQueries({ queryKey: ['news-clusters'] }),
-        queryClient.invalidateQueries({ queryKey: ['trending-games'] }),
       ])
     } finally {
       setRefreshing(false)
     }
-  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery, queryClient])
+  }, [profileQuery, libraryQuery, newReleasesQuery, comingUpQuery])
 
   const renderUpcomingLibraryItem = useCallback(
     ({ item }: { item: LibraryEntry }) => (
@@ -405,7 +397,7 @@ export default function HomeScreen() {
         {/* Coming Up */}
         <View style={styles.section}>
           <SectionHeader
-            title="Coming Up"
+            title="Upcoming games"
             onSeeAll={() =>
               router.push({
                 pathname: '/release-calendar',
@@ -427,12 +419,6 @@ export default function HomeScreen() {
             />
           )}
         </View>
-
-        <ArpgEvents />
-
-        <TrendingGamesNews />
-
-        <GamingNews />
 
         <RawgFooter />
       </ScrollView>
