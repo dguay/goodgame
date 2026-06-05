@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { decodeHtmlEntities } from '@/lib/htmlEntities'
 
 export interface ClusterSource {
   id: string
@@ -67,7 +68,7 @@ async function fetchStoryClusters(limit = 25): Promise<StoryCluster[]> {
 
     return {
       id: cluster.id,
-      title: cluster.representative_title,
+      title: decodeHtmlEntities(cluster.representative_title),
       score: cluster.story_score,
       articleCount: cluster.article_count,
       uniqueSourceCount: cluster.unique_source_count,

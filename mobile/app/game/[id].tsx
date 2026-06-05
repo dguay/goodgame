@@ -35,7 +35,7 @@ import { useSteamAppId } from '@/hooks/useSteam'
 import { useNewsGame, useNewsGameArticles } from '@/hooks/useNewsForGame'
 import type { NewsItem } from '@/hooks/useNews'
 
-import { Colors, FontFamily, Radius, Spacing } from '@/constants'
+import { Colors, Radius, Spacing } from '@/constants'
 import { formatRatingCount } from '@/lib/rating'
 import { formatPubDate, isUpcomingRelease } from '@/lib/dates'
 import { getSteamStoreUrl } from '@/lib/steam'

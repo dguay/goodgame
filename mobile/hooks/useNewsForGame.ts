@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { NewsItem } from './useNews'
+import { decodeHtmlEntities } from '@/lib/htmlEntities'
 
 export interface NewsGame {
   id: string
@@ -57,7 +58,7 @@ async function fetchArticlesForGame(gameId: string, limit = 50): Promise<NewsIte
 
   return (data ?? []).map((row) => ({
     id: row.id,
-    title: row.title,
+    title: decodeHtmlEntities(row.title),
     link: row.url,
     pubDate: row.published_at,
     description: row.excerpt ?? null,

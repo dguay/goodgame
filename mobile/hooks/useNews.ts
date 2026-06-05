@@ -1,5 +1,6 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { decodeHtmlEntities } from '@/lib/htmlEntities'
 
 export interface NewsItem {
   id: string
@@ -27,7 +28,7 @@ function mapRow(row: {
 }): NewsItem {
   return {
     id: row.id,
-    title: row.title,
+    title: decodeHtmlEntities(row.title),
     link: row.url,
     pubDate: row.published_at,
     description: row.excerpt ?? null,
