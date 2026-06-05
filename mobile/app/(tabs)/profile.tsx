@@ -16,7 +16,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Text } from '@/components/ui/Text'
 import { Card } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { RawgFooter } from '@/components/RawgFooter'
 import { signOut } from '@/lib/auth'
 import { Colors, Spacing, FontSize } from '@/constants'
 import { STATUS_LABELS, STATUS_COLORS, type LibraryStatus } from '@/types'
@@ -313,7 +312,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <RawgFooter />
       </ScrollView>
     </SafeAreaView>
   )

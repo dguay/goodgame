@@ -4,7 +4,6 @@ import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import { Text } from '@/components/ui/Text'
-import { RawgFooter } from '@/components/RawgFooter'
 import { signInWithGoogle } from '@/lib/auth'
 import { Colors, Spacing, FontSize, Radius } from '@/constants'
 import appIcon from '../../assets/images/icon.png'
@@ -52,7 +51,6 @@ export default function LoginScreen() {
         </View>
       </View>
 
-      <RawgFooter />
     </SafeAreaView>
   )
 }

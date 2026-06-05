@@ -23,7 +23,6 @@ import { GameListCard, LargeGameCard } from '@/components/GameDisplayCards'
 import { Text } from '@/components/ui/Text'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
-import { RawgFooter } from '@/components/RawgFooter'
 import { StatusPicker } from '@/components/StatusPicker'
 import {
   useLibraryEntries,
@@ -1049,7 +1048,6 @@ export default function LibraryScreen() {
             <SkeletonLoader key={i} height={200} borderRadius={10} style={styles.skeletonCard} />
           ))}
         </View>
-        <RawgFooter />
       </SafeAreaView>
     )
   }
@@ -1172,7 +1170,6 @@ export default function LibraryScreen() {
             />
           </View>
         }
-        ListFooterComponent={<RawgFooter />}
       />
 
       <SortPicker

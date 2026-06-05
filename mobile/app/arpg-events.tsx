@@ -7,7 +7,6 @@ import * as WebBrowser from 'expo-web-browser'
 import { Text } from '@/components/ui/Text'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
-import { RawgFooter } from '@/components/RawgFooter'
 import { useArpgTimeline, type ArpgEvent, type ArpgEventType } from '@/hooks/useArpgTimeline'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
 
@@ -127,7 +126,6 @@ export default function ArpgEventsScreen() {
       {query.isLoading ? (
         <View style={styles.loadingContent}>
           <EventSkeletons />
-          <RawgFooter />
         </View>
       ) : events.length === 0 ? (
         <View style={styles.emptyContent}>
@@ -136,7 +134,6 @@ export default function ArpgEventsScreen() {
             heading="No upcoming events"
             subtext="No ARPG events found in the feed."
           />
-          <RawgFooter />
         </View>
       ) : (
         <FlatList
@@ -149,7 +146,6 @@ export default function ArpgEventsScreen() {
               <Text variant="caption" color={Colors.textMuted} style={styles.attribution}>
                 Events from arpg-timeline.com
               </Text>
-              <RawgFooter />
             </View>
           }
         />

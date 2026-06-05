@@ -3,7 +3,6 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import * as Linking from 'expo-linking'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Text } from '@/components/ui/Text'
-import { RawgFooter } from '@/components/RawgFooter'
 import { completeNativeAuthSession } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing } from '@/constants'
@@ -117,7 +116,6 @@ export default function AuthCallbackScreen() {
           </>
         )}
       </View>
-      <RawgFooter />
     </View>
   )
 }
