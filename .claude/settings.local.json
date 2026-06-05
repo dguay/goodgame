@@ -18,7 +18,9 @@
       "Bash(claude mcp *)",
       "Bash(xargs ls -la)",
       "mcp__supabase__get_edge_function",
-      "mcp__supabase__deploy_edge_function"
+      "mcp__supabase__deploy_edge_function",
+      "Bash(npx skills *)",
+      "Bash(node .agents/skills/impeccable/scripts/context.mjs)"
     ]
   }
 }

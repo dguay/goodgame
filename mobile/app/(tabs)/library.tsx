@@ -7,13 +7,13 @@ import {
   PanResponder,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
   type GestureResponderEvent,
   type NativeSyntheticEvent,
   type NativeTouchEvent,
-  useWindowDimensions,
 } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -67,7 +67,6 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string; compactLabel: string }
   { key: 'want_to_play', label: 'TBP', compactLabel: 'TBP' },
   { key: 'done', label: 'Done', compactLabel: 'Done' },
   { key: 'did_not_finish', label: 'DNF', compactLabel: 'DNF' },
-  { key: 'next', label: 'Upcoming', compactLabel: 'Next' },
 ]
 
 const FILTER_KEYS: FilterStatus[] = FILTER_OPTIONS.map(option => option.key)
@@ -625,8 +624,8 @@ function LibraryFilters({
   activeViewMode,
   currentSortLabel,
   isCustomSort,
-  isWide,
   sortDirection,
+  gameCount,
   onFilterChange,
   onPlatformChange,
   onSortPress,
@@ -638,8 +637,8 @@ function LibraryFilters({
   activeViewMode: ViewMode
   currentSortLabel: string
   isCustomSort: boolean
-  isWide: boolean
   sortDirection: SortDirection
+  gameCount: number
   onFilterChange: (filter: FilterStatus) => void
   onPlatformChange: (platform: PlatformFilter) => void
   onSortPress: () => void
@@ -647,129 +646,240 @@ function LibraryFilters({
   onDirectionToggle: () => void
 }) {
   return (
-    <View style={[styles.filterPanel, isWide && styles.filterPanelWide]}>
-      <View style={styles.controls}>
-        <View style={styles.viewToggle}>
+    <View style={fbStyles.panel}>
+      {/* Row 1: view toggle + count + sort controls */}
+      <View style={fbStyles.topRow}>
+        <View style={fbStyles.viewToggle}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Grid view"
             accessibilityState={{ selected: activeViewMode === 'grid' }}
-            style={[styles.toggleBtn, activeViewMode === 'grid' && styles.toggleBtnActive]}
+            style={[fbStyles.toggleBtn, activeViewMode === 'grid' && fbStyles.toggleBtnActive]}
             onPress={() => onViewModeChange('grid')}
             hitSlop={4}
           >
             <Ionicons
               name="grid-outline"
-              size={16}
-              color={activeViewMode === 'grid' ? Colors.textPrimary : Colors.textSecondary}
+              size={15}
+              color={activeViewMode === 'grid' ? Colors.textPrimary : Colors.textMuted}
             />
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="List view"
             accessibilityState={{ selected: activeViewMode === 'list' }}
-            style={[styles.toggleBtn, activeViewMode === 'list' && styles.toggleBtnActive]}
+            style={[fbStyles.toggleBtn, activeViewMode === 'list' && fbStyles.toggleBtnActive]}
             onPress={() => onViewModeChange('list')}
             hitSlop={4}
           >
             <Ionicons
               name="list-outline"
-              size={16}
-              color={activeViewMode === 'list' ? Colors.textPrimary : Colors.textSecondary}
+              size={15}
+              color={activeViewMode === 'list' ? Colors.textPrimary : Colors.textMuted}
             />
           </Pressable>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Sort by ${currentSortLabel}`}
-          style={({ pressed }) => [styles.sortBtn, pressed && styles.sortBtnPressed]}
-          onPress={onSortPress}
-        >
-          <Ionicons name="swap-vertical-outline" size={15} color={Colors.textSecondary} />
-          <Text variant="caption" numberOfLines={1} style={styles.sortLabel}>
-            {currentSortLabel}
-          </Text>
-          <Ionicons name="chevron-down" size={13} color={Colors.textMuted} />
-        </Pressable>
+        <Text variant="caption" style={fbStyles.gameCount}>
+          {gameCount === 1 ? '1 game' : `${gameCount} games`}
+        </Text>
 
-        {!isCustomSort && (
+        <View style={fbStyles.sortControls}>
+          {!isCustomSort && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={sortDirection === 'asc' ? 'Ascending order' : 'Descending order'}
+              style={({ pressed }) => [fbStyles.directionBtn, pressed && fbStyles.btnPressed]}
+              onPress={onDirectionToggle}
+              hitSlop={4}
+            >
+              <Ionicons
+                name={sortDirection === 'asc' ? 'arrow-up-outline' : 'arrow-down-outline'}
+                size={14}
+                color={Colors.textSecondary}
+              />
+            </Pressable>
+          )}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={sortDirection === 'asc' ? 'Ascending order' : 'Descending order'}
-            style={({ pressed }) => [styles.directionBtn, pressed && styles.sortBtnPressed]}
-            onPress={onDirectionToggle}
-            hitSlop={4}
+            accessibilityLabel={`Sort by ${currentSortLabel}`}
+            style={({ pressed }) => [fbStyles.sortBtn, pressed && fbStyles.btnPressed]}
+            onPress={onSortPress}
           >
-            <Ionicons
-              name={sortDirection === 'asc' ? 'arrow-up-outline' : 'arrow-down-outline'}
-              size={15}
-              color={Colors.textSecondary}
-            />
+            <Text variant="label" numberOfLines={1} style={fbStyles.sortLabel}>
+              {currentSortLabel}
+            </Text>
+            <Ionicons name="chevron-down" size={11} color={Colors.textMuted} />
           </Pressable>
-        )}
+        </View>
       </View>
 
-      <View style={[styles.filterContent, isWide && styles.filterContentWide]}>
-        {FILTER_OPTIONS.map(({ key, label, compactLabel }) => {
+      {/* Row 2: filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={fbStyles.chipScroll}
+        contentContainerStyle={fbStyles.chipContent}
+      >
+        {FILTER_OPTIONS.map(({ key, compactLabel }) => {
           const isActive = activeFilter === key
-          const displayLabel = isWide ? label : compactLabel
-
           return (
             <Pressable
               key={key}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
-              style={({ pressed }) => [
-                styles.filterTab,
-                isWide && styles.filterTabWide,
-                !isWide && styles.filterTabCompact,
-                isActive && styles.filterTabActive,
-                pressed && !isActive && styles.filterTabPressed,
-              ]}
+              style={[fbStyles.chip, isActive && fbStyles.chipActive]}
               onPress={() => onFilterChange(key)}
             >
-              <Text
-                variant="label"
-                numberOfLines={1}
-                style={[styles.filterLabel, isActive && styles.filterLabelActive]}
-              >
-                {displayLabel}
+              <Text variant="label" style={[fbStyles.chipLabel, isActive && fbStyles.chipLabelActive]}>
+                {compactLabel}
               </Text>
             </Pressable>
           )
         })}
-      </View>
 
-      <View style={styles.platformRow}>
-        {PLATFORM_OPTIONS.map(({ key, label }) => {
+        <View style={fbStyles.chipDivider} />
+
+        {PLATFORM_OPTIONS.filter(p => p.key !== 'all').map(({ key, label }) => {
           const isActive = activePlatform === key
           return (
             <Pressable
               key={key}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
-              style={({ pressed }) => [
-                styles.platformTab,
-                isActive && styles.platformTabActive,
-                pressed && !isActive && styles.filterTabPressed,
-              ]}
-              onPress={() => onPlatformChange(key)}
+              style={[fbStyles.chip, isActive && fbStyles.chipPlatformActive]}
+              onPress={() => onPlatformChange(isActive ? 'all' : key)}
             >
-              <Text
-                variant="label"
-                numberOfLines={1}
-                style={[styles.platformLabel, isActive && styles.platformLabelActive]}
-              >
+              <Text variant="label" style={[fbStyles.chipLabel, isActive && fbStyles.chipPlatformLabelActive]}>
                 {label}
               </Text>
             </Pressable>
           )
         })}
-      </View>
+      </ScrollView>
     </View>
   )
 }
+
+const fbStyles = StyleSheet.create({
+  panel: {
+    backgroundColor: Colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderSoft,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.xs,
+    gap: Spacing.xs,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    gap: 2,
+    padding: 2,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.borderSoft,
+    backgroundColor: Colors.surface,
+    flexShrink: 0,
+  },
+  toggleBtn: {
+    width: 27,
+    height: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.pill,
+  },
+  toggleBtnActive: {
+    backgroundColor: Colors.surfaceRaised,
+  },
+  gameCount: {
+    flex: 1,
+    color: Colors.textMuted,
+  },
+  sortControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xxs,
+    flexShrink: 0,
+  },
+  chipScroll: {
+    marginHorizontal: -Spacing.md,
+  },
+  chipContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xxs,
+    paddingHorizontal: Spacing.md,
+  },
+  chip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    minHeight: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipPlatformActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '20',
+  },
+  chipLabel: {
+    color: Colors.textMuted,
+  },
+  chipLabelActive: {
+    color: Colors.textPrimary,
+  },
+  chipPlatformLabelActive: {
+    color: Colors.primary,
+  },
+  chipDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: Colors.border,
+    marginHorizontal: 2,
+  },
+  directionBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  sortBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    minHeight: 26,
+    maxWidth: 110,
+  },
+  btnPressed: {
+    opacity: 0.75,
+  },
+  sortLabel: {
+    color: Colors.textSecondary,
+    flexShrink: 1,
+  },
+})
 
 
 export default function LibraryScreen() {
@@ -794,9 +904,7 @@ export default function LibraryScreen() {
   const { data: userPreferences, isSuccess: preferencesLoaded } = useUserPreferences()
   const { mutate: updateUserPreferences } = useUpdateUserPreferences()
 
-  const { width } = useWindowDimensions()
   const activeViewMode = viewMode
-  const isWide = width >= 768
 
   useEffect(() => {
     const nextFilter = Array.isArray(filterParam) ? filterParam[0] : filterParam
@@ -965,9 +1073,6 @@ export default function LibraryScreen() {
             autoCorrect={false}
           />
         </View>
-        <Text variant="caption" style={styles.resultLabel}>
-          {searchFiltered.length === 1 ? '1 game' : `${searchFiltered.length} games`}
-        </Text>
       </View>
 
       <LibraryFilters
@@ -976,8 +1081,8 @@ export default function LibraryScreen() {
         activeViewMode={activeViewMode}
         currentSortLabel={currentSortLabel}
         isCustomSort={sort === 'custom'}
-        isWide={isWide}
         sortDirection={sortDirection}
+        gameCount={searchFiltered.length}
         onFilterChange={setFilter}
         onPlatformChange={setPlatformFilter}
         onSortPress={() => setSortPickerVisible(true)}
@@ -1109,7 +1214,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
-    gap: Spacing.xxs,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -1135,124 +1239,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 13,
     textAlignVertical: 'center',
-  },
-  filterPanel: {
-    flexShrink: 0,
-    gap: Spacing.xxs,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.xxs,
-    paddingBottom: Spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderSoft,
-    backgroundColor: Colors.background,
-  },
-  filterPanelWide: {
-    paddingHorizontal: Spacing.lg,
-  },
-  resultLabel: {
-    color: Colors.textSecondary,
-  },
-  filterContent: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    gap: Spacing.xxs,
-    alignSelf: 'stretch',
-  },
-  filterContentWide: {
-    flexWrap: 'wrap',
-    gap: Spacing.xxs,
-  },
-  filterTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 28,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xxxs,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  filterTabCompact: {
-    flex: 1,
-    minHeight: 30,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xxxs,
-  },
-  filterTabWide: {
-    width: 96,
-    paddingHorizontal: Spacing.sm,
-  },
-  filterTabActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  filterTabPressed: {
-    backgroundColor: Colors.surfaceRaised,
-  },
-  filterLabel: {
-    color: Colors.textSecondary,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  filterLabelActive: {
-    color: Colors.textPrimary,
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: Spacing.xs,
-    padding: Spacing.xxs,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderSoft,
-    backgroundColor: Colors.background,
-  },
-  viewToggle: {
-    flexDirection: 'row',
-    gap: Spacing.xxs,
-    padding: 1,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.borderSoft,
-    backgroundColor: Colors.surface,
-  },
-  toggleBtn: {
-    width: 30,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.pill,
-    backgroundColor: 'transparent',
-  },
-  toggleBtnActive: {
-    backgroundColor: Colors.surfaceRaised,
-  },
-  toggleBtnDisabled: {
-    opacity: 0.35,
-  },
-  sortBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: Spacing.xs,
-    marginLeft: 'auto',
-    minHeight: 30,
-    paddingVertical: Spacing.xxxs,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  sortBtnPressed: {
-    opacity: 0.82,
-  },
-  sortLabel: {
-    color: Colors.textSecondary,
-    flexShrink: 1,
   },
   listContent: {
     paddingTop: Spacing.sm,
@@ -1286,37 +1272,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: 72,
-  },
-  directionBtn: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  platformRow: {
-    flexDirection: 'row',
-    gap: Spacing.xxs,
-  },
-  platformTab: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.borderSoft,
-    backgroundColor: 'transparent',
-  },
-  platformTabActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '22',
-  },
-  platformLabel: {
-    color: Colors.textMuted,
-  },
-  platformLabelActive: {
-    color: Colors.primary,
   },
 })
