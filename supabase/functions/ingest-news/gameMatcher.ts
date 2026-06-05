@@ -56,7 +56,8 @@ function extractBeforeKeyword(title: string): string[] {
 }
 
 function extractCapitalizedPhrases(title: string): string[] {
-  const matches = title.match(/[A-Z][a-zA-Z0-9]*(?:\s+[A-Z][a-zA-Z0-9]*){1,4}/g) ?? [];
+  // Also captures "NNN TitleCase..." patterns like "007 First Light"
+  const matches = title.match(/(?:\d+\s+)?[A-Z][a-zA-Z0-9]*(?:\s+[A-Z][a-zA-Z0-9]*){1,4}/g) ?? [];
   return matches.filter((m) => m.length >= 4 && m.split(' ').length >= 2);
 }
 
