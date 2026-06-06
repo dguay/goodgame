@@ -1,16 +1,24 @@
 #!/usr/bin/env node
 // One-time script: populate library_entries.platforms from RAWG for all rows where platforms IS NULL.
-// Usage: SUPABASE_SERVICE_KEY=<key> node scripts/backfill-platforms.mjs
+// Usage: SUPABASE_SERVICE_KEY=<key> RAWG_API_KEY=<key> node scripts/backfill-platforms.mjs
 //
 // Get service key from: Supabase dashboard → Project Settings → API → service_role key
 // Or run: supabase status (if local) / check supabase dashboard
 
-const SUPABASE_URL = 'https://zjluauqdqockjswczndb.supabase.co'
-const RAWG_API_KEY = 'REDACTED'
+const SUPABASE_URL = process.env.SUPABASE_URL
+const RAWG_API_KEY = process.env.RAWG_API_KEY
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
 
 if (!SERVICE_KEY) {
   console.error('Set SUPABASE_SERVICE_KEY env var (service_role key from Supabase dashboard)')
+  process.exit(1)
+}
+if (!SUPABASE_URL) {
+  console.error('Set SUPABASE_SERVICE_KEY env var (service_role key from Supabase dashboard)')
+  process.exit(1)
+}
+if (!RAWG_API_KEY) {
+  console.error('Set RAWG_API_KEY env var')
   process.exit(1)
 }
 
