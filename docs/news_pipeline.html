@@ -186,9 +186,9 @@
   <!-- 1. OVERVIEW -->
   <h2 id="overview">1. Overview</h2>
   <p>
-    The news pipeline ingests RSS feeds from 7 gaming publications every 10 minutes, normalizes and deduplicates articles,
-    clusters related stories, links articles to game entities via RAWG, and computes per-game trending scores every 30 minutes.
-    The mobile app reads directly from Supabase.
+    The news pipeline ingests RSS feeds from 7 gaming publications every 10 minutes during active hours (~6 AM–11 PM EST),
+    normalizes and deduplicates articles, clusters related stories, links articles to game entities via RAWG, and computes
+    per-game trending scores every 30 minutes. The mobile app reads directly from Supabase.
   </p>
   <div class="grid2">
     <div class="card">
@@ -197,7 +197,7 @@
     </div>
     <div class="card">
       <h3>Schedules</h3>
-      <p><code>ingest-news</code> every 10 min · <code>calculate-news-trends</code> every 30 min · pg_cron + net.http_post</p>
+      <p><code>ingest-news</code> every 10 min, active hours only (UTC 11–03, ~6 AM–11 PM EST) · <code>calculate-news-trends</code> every 30 min · pg_cron + net.http_post</p>
     </div>
     <div class="card">
       <h3>Game matching</h3>
@@ -214,7 +214,7 @@
   <p>End-to-end path from cron tick to mobile screen:</p>
 
   <div class="flow">
-    <div class="flow-box cron">pg_cron<span class="label">*/10 * * * *</span></div>
+    <div class="flow-box cron">pg_cron<span class="label">*/10 11-23,0-3 * * *</span></div>
     <div class="arrow">→</div>
     <div class="flow-box fn">ingest-news<span class="label">Edge Function</span></div>
     <div class="arrow">→</div>
@@ -277,18 +277,19 @@
     </tbody>
   </table>
 
-  <h3>Retry-safe game matching</h3>
+  <h3>One-shot game matching</h3>
   <p>
     Matching is decoupled from insertion. After each source fetch, <code>matchUnmatchedArticles()</code>
-    queries <em>all</em> articles from the last 72 hours that have no <code>news_article_games</code> row
-    and runs the RAWG matcher on them. This retries articles that were stored during a RAWG outage or missing API key.
+    queries articles from the last 72 hours where <code>game_match_attempted_at IS NULL</code> and runs
+    the RAWG matcher on them. After each attempt — regardless of result — <code>game_match_attempted_at</code>
+    is set, so articles are never re-queried on subsequent cycles. This cuts RAWG usage from ~542k/month to ~3k/month.
   </p>
-  <pre><span class="comment">-- Finds unmatched articles regardless of current run</span>
+  <pre><span class="comment">-- Only articles that have never been through the matcher</span>
 <span class="kw">SELECT</span> id, title, excerpt
 <span class="kw">FROM</span>   news_articles
 <span class="kw">WHERE</span>  source_id = $1
   <span class="kw">AND</span>  fetched_at &gt;= now() - interval <span class="str">'72 hours'</span>
-  <span class="kw">AND</span>  id <span class="kw">NOT IN</span> (<span class="kw">SELECT</span> article_id <span class="kw">FROM</span> news_article_games);</pre>
+  <span class="kw">AND</span>  game_match_attempted_at <span class="kw">IS NULL</span>;</pre>
 
   <!-- 4. PARSING -->
   <h2 id="parsing">4. RSS Parsing &amp; Validation</h2>
@@ -371,10 +372,15 @@
   </table>
 
   <h3>Candidate extraction</h3>
-  <p>Before searching, <code>extractCandidates()</code> pulls game name candidates from title + excerpt:</p>
+  <p>
+    <code>extractCandidates()</code> pulls game name candidates from title + excerpt for local cache checks.
+    Only the keyword-based candidate (text before <em>review, trailer, announced…</em>) is forwarded to
+    RAWG — capitalized phrases from title/excerpt are checked against local cache only (free) and never
+    trigger an API call.
+  </p>
   <ul>
-    <li>Text before keywords: <em>review, preview, trailer, hands-on, announced…</em></li>
-    <li>Capitalized multi-word phrases (≥2 words)</li>
+    <li><strong>Keyword candidate</strong> (RAWG-eligible): text before <em>review, preview, trailer, announced…</em> — at most 1 per article</li>
+    <li><strong>Capitalized phrases</strong> (local cache only): multi-word capitalized runs from title + excerpt</li>
   </ul>
 
   <h3>RAWG confidence scoring</h3>
@@ -449,7 +455,7 @@
       <tr>
         <td><code>news_articles</code></td>
         <td>Normalized article store</td>
-        <td><code>id</code>, <code>url</code> (unique), <code>title</code>, <code>excerpt</code>, <code>published_at</code>, <code>fetched_at</code>, <code>source_id</code>, <code>content_hash</code></td>
+        <td><code>id</code>, <code>url</code> (unique), <code>title</code>, <code>excerpt</code>, <code>published_at</code>, <code>fetched_at</code>, <code>source_id</code>, <code>content_hash</code>, <code>game_match_attempted_at</code></td>
       </tr>
       <tr>
         <td><code>news_story_clusters</code></td>
@@ -654,7 +660,7 @@
 <span class="kw">ORDER BY</span> name;</pre>
 
   <footer style="margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem;">
-    Goodgame news pipeline · last updated 2026-06-04
+    Goodgame news pipeline · last updated 2026-06-06
   </footer>
 </div>
 </body>

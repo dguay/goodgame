@@ -13,7 +13,7 @@ const NEWS_KEYWORDS = [
   'release',
 ];
 
-function normalizeGameName(name: string): string {
+export function normalizeGameName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^a-z0-9 ]/g, ' ')
@@ -21,7 +21,7 @@ function normalizeGameName(name: string): string {
     .trim();
 }
 
-function levenshtein(a: string, b: string): number {
+export function levenshtein(a: string, b: string): number {
   const m = a.length, n = b.length;
   if (m === 0) return n;
   if (n === 0) return m;
@@ -37,13 +37,13 @@ function levenshtein(a: string, b: string): number {
   return prev[n];
 }
 
-function stringSimilarity(a: string, b: string): number {
+export function stringSimilarity(a: string, b: string): number {
   const max = Math.max(a.length, b.length);
   if (max === 0) return 1;
   return 1 - levenshtein(a, b) / max;
 }
 
-function extractBeforeKeyword(title: string): string[] {
+export function extractBeforeKeyword(title: string): string[] {
   const lower = title.toLowerCase();
   for (const kw of NEWS_KEYWORDS) {
     const idx = lower.indexOf(` ${kw}`);
@@ -55,7 +55,7 @@ function extractBeforeKeyword(title: string): string[] {
   return [];
 }
 
-function extractCapitalizedPhrases(title: string): string[] {
+export function extractCapitalizedPhrases(title: string): string[] {
   // Also captures "NNN TitleCase..." patterns like "007 First Light"
   const matches = title.match(/(?:\d+\s+)?[A-Z][a-zA-Z0-9]*(?:\s+[A-Z][a-zA-Z0-9]*){1,4}/g) ?? [];
   return matches.filter((m) => m.length >= 4 && m.split(' ').length >= 2);
@@ -96,11 +96,14 @@ interface RawgSearchResponse {
   results?: RawgSearchResult[];
 }
 
-async function searchRawg(query: string): Promise<RawgSearchResult[]> {
+// Returns null when RAWG is unavailable (missing key, HTTP error, network failure).
+// Returns [] when RAWG responded but found no matching games.
+// Callers must treat null as a transient failure and avoid marking the article as attempted.
+async function searchRawg(query: string): Promise<RawgSearchResult[] | null> {
   const key = Deno.env.get('RAWG_API_KEY');
   if (!key) {
     console.warn('RAWG_API_KEY not set — skipping RAWG search for:', query);
-    return [];
+    return null;
   }
 
   const url = new URL(`${RAWG_BASE}/games`);
@@ -115,13 +118,13 @@ async function searchRawg(query: string): Promise<RawgSearchResult[]> {
     });
     if (!res.ok) {
       console.error(`RAWG search failed (${res.status}) for: ${query}`);
-      return [];
+      return null;
     }
     const data = (await res.json()) as RawgSearchResponse;
     return data.results ?? [];
   } catch (err) {
     console.error('RAWG search error:', err);
-    return [];
+    return null;
   }
 }
 
@@ -229,14 +232,26 @@ interface GameMatch {
   match_method: string;
 }
 
+export interface MatchArticleResult {
+  matches: GameMatch[];
+  // true when a RAWG call was attempted but failed (outage, missing key, HTTP error).
+  // Callers should not mark game_match_attempted_at so the article can be retried.
+  rawgFailed: boolean;
+}
+
 export async function matchArticleToGames(
   supabase: SupabaseClient,
   article: { id: string; title: string; excerpt: string | null }
-): Promise<GameMatch[]> {
+): Promise<MatchArticleResult> {
   const candidates = extractCandidates(article.title, article.excerpt);
-  if (!candidates.length) return [];
+  if (!candidates.length) return { matches: [], rawgFailed: false };
+
+  // Only keyword-based candidates (high signal) are eligible for RAWG queries.
+  // Capitalized-phrase candidates still go through the free local cache checks.
+  const rawgEligible = new Set(extractBeforeKeyword(article.title));
 
   const matches: GameMatch[] = [];
+  let rawgFailed = false;
 
   for (const candidate of candidates) {
     const normalized = normalizeGameName(candidate);
@@ -266,8 +281,14 @@ export async function matchArticleToGames(
       continue;
     }
 
-    // 3. RAWG search — only when no local match exists.
+    // 3. RAWG search — only keyword-based candidates to avoid noisy capitalized-phrase queries.
+    if (!rawgEligible.has(candidate)) continue;
+
     const rawgResults = await searchRawg(candidate);
+    if (rawgResults === null) {
+      rawgFailed = true;
+      continue;
+    }
     const best = scoreRawgResults(candidate, rawgResults, article.title);
 
     if (!best) continue;
@@ -283,7 +304,7 @@ export async function matchArticleToGames(
         supabase,
         article.id,
         candidate,
-        rawgResults,
+        rawgResults as RawgSearchResult[],
         best,
         'low_confidence'
       );
@@ -301,7 +322,7 @@ export async function matchArticleToGames(
     if (!prev || m.confidence > prev.confidence) byGame.set(m.game_id, m);
   }
 
-  return [...byGame.values()];
+  return { matches: [...byGame.values()], rawgFailed };
 }
 
 export async function saveArticleGameMatches(

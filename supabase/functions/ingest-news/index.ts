@@ -38,30 +38,27 @@ async function matchUnmatchedArticles(
 ): Promise<void> {
   const cutoff = new Date(now.getTime() - MATCH_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
 
-  const { data: recent } = await supabase
+  // Only fetch articles that have never been through the matcher.
+  // game_match_attempted_at is set after each attempt regardless of result,
+  // so articles with no confident RAWG match are not re-queried on every cycle.
+  const { data: toMatch } = await supabase
     .from('news_articles')
     .select('id, title, excerpt')
     .eq('source_id', sourceId)
-    .gte('fetched_at', cutoff);
+    .gte('fetched_at', cutoff)
+    .is('game_match_attempted_at', null);
 
-  if (!recent?.length) return;
+  if (!toMatch?.length) return;
 
-  const recentIds = (recent as ArticleRow[]).map((a) => a.id);
-
-  const { data: matched } = await supabase
-    .from('news_article_games')
-    .select('article_id')
-    .in('article_id', recentIds);
-
-  const matchedIds = new Set(
-    (matched ?? []).map((r: { article_id: string }) => r.article_id)
-  );
-
-  const toMatch = (recent as ArticleRow[]).filter((a) => !matchedIds.has(a.id));
-
-  for (const article of toMatch) {
-    const matches = await matchArticleToGames(supabase, article);
+  for (const article of toMatch as ArticleRow[]) {
+    const { matches, rawgFailed } = await matchArticleToGames(supabase, article);
     await saveArticleGameMatches(supabase, article.id, matches);
+    if (!rawgFailed) {
+      await supabase
+        .from('news_articles')
+        .update({ game_match_attempted_at: now.toISOString() })
+        .eq('id', article.id);
+    }
   }
 }
 
