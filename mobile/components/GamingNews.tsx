@@ -5,7 +5,7 @@ import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { useStoryClusters, type StoryCluster } from '@/hooks/useStoryClusters'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
-import { formatPubDate } from '@/lib/dates'
+import { formatPubDate, formatUpdatedTimestamp, getLatestTimestamp } from '@/lib/dates'
 
 function ClusterCard({ cluster }: { cluster: StoryCluster }) {
   const primarySource = cluster.sources[0] ?? null
@@ -73,13 +73,23 @@ function NewsSkeletons() {
 
 export function GamingNews() {
   const clustersQuery = useStoryClusters(25)
+  const updatedTimestamp = formatUpdatedTimestamp(
+    getLatestTimestamp(clustersQuery.data?.map((cluster) => cluster.latestPublishedAt) ?? [])
+  )
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text variant="body" style={styles.sectionTitle}>
-          Top Stories
-        </Text>
+        <View style={styles.headerCopy}>
+          <Text variant="body" style={styles.sectionTitle}>
+            Top Stories
+          </Text>
+          {updatedTimestamp !== '' && (
+            <Text variant="caption" color={Colors.textMuted} style={styles.updatedAt}>
+              {updatedTimestamp}
+            </Text>
+          )}
+        </View>
         <Pressable onPress={() => router.push('/news/latest')}>
           <Text variant="caption" color={Colors.primary} style={styles.seeAll}>
             See all
@@ -110,16 +120,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     marginBottom: Spacing.sm,
+  },
+  headerCopy: {
+    flex: 1,
   },
   sectionTitle: {
     fontFamily: FontFamily.semibold,
     lineHeight: FontSize.md * 1.3,
   },
+  updatedAt: {
+    marginTop: 2,
+  },
   seeAll: {
     fontFamily: FontFamily.medium,
+    paddingTop: 2,
   },
   list: {
     paddingHorizontal: Spacing.md,

@@ -33,6 +33,7 @@ import {
 import { useUpdateUserPreferences, useUserPreferences } from '@/hooks/useUserPreferences'
 import { Colors, Radius, Spacing } from '@/constants'
 import { isUpcomingRelease } from '@/lib/dates'
+import { sortLibraryEntries, type SortDirection } from '@/lib/librarySort'
 import {
   LIBRARY_SORT_KEYS,
   STATUS_LABELS,
@@ -46,7 +47,6 @@ type FilterStatus = Exclude<LibraryStatus, 'playing'> | 'all' | 'next'
 type PlatformFilter = 'all' | 'ps5' | 'pc'
 type SortKey = LibrarySortKey
 type ViewMode = 'grid' | 'list'
-type SortDirection = 'asc' | 'desc'
 
 const HEADER_SEARCH_MAX_WIDTH = 360
 
@@ -105,35 +105,6 @@ function fuzzyMatch(text: string, query: string): boolean {
     if (t[ti] === q[qi]) qi++
   }
   return qi === q.length
-}
-
-function sortEntries(entries: LibraryEntry[], sort: SortKey, direction: SortDirection): LibraryEntry[] {
-  const dir = direction === 'asc' ? 1 : -1
-  return [...entries].sort((a, b) => {
-    switch (sort) {
-      case 'recent':
-        return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      case 'title':
-        return dir * a.game_title.localeCompare(b.game_title)
-      case 'rating': {
-        const rA = a.personal_rating ?? -1
-        const rB = b.personal_rating ?? -1
-        return dir * (rA - rB)
-      }
-      case 'release_date': {
-        const dA = a.release_date != null ? new Date(a.release_date).getTime() : -1
-        const dB = b.release_date != null ? new Date(b.release_date).getTime() : -1
-        return dir * (dA - dB)
-      }
-      case 'finished_at': {
-        const dA = a.finished_at != null ? new Date(a.finished_at).getTime() : -1
-        const dB = b.finished_at != null ? new Date(b.finished_at).getTime() : -1
-        return dir * (dA - dB)
-      }
-      case 'custom':
-        return 0
-    }
-  })
 }
 
 function orderEntriesByIds(entries: LibraryEntry[], orderedIds: string[]): LibraryEntry[] {
@@ -948,7 +919,9 @@ export default function LibraryScreen() {
             e.platforms != null &&
             PLATFORM_SLUGS[platformFilter].some(slug => e.platforms!.includes(slug))
           )
-    return sort === 'custom' ? orderEntriesByIds(byPlatform, customOrderIds) : sortEntries(byPlatform, sort, sortDirection)
+    return sort === 'custom'
+      ? orderEntriesByIds(byPlatform, customOrderIds)
+      : sortLibraryEntries(byPlatform, sort, sortDirection)
   }, [customOrderIds, entries, filter, platformFilter, sort, sortDirection])
 
   const searchFiltered = useMemo(() => {

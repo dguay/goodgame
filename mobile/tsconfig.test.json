@@ -11,6 +11,9 @@
   },
   "include": [
     "lib/dates.ts",
-    "lib/dates.test.ts"
+    "lib/dates.test.ts",
+    "lib/librarySort.ts",
+    "lib/librarySort.test.ts",
+    "types/**/*.ts"
   ]
 }

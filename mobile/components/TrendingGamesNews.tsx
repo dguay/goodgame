@@ -5,6 +5,7 @@ import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { useTrendingGames, type TrendingGame } from '@/hooks/useTrendingGames'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
+import { formatUpdatedTimestamp, getLatestTimestamp } from '@/lib/dates'
 
 const CARD_WIDTH = 120
 const CARD_HEIGHT = 160
@@ -61,6 +62,9 @@ function ItemSeparator() {
 
 export function TrendingGamesNews() {
   const query = useTrendingGames(10)
+  const updatedTimestamp = formatUpdatedTimestamp(
+    getLatestTimestamp(query.data?.map((game) => game.calculatedAt) ?? [])
+  )
 
   if (!query.isLoading && (query.data == null || query.data.length === 0)) {
     return null
@@ -69,9 +73,16 @@ export function TrendingGamesNews() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text variant="body" style={styles.sectionTitle}>
-          Trending Games
-        </Text>
+        <View style={styles.headerCopy}>
+          <Text variant="body" style={styles.sectionTitle}>
+            Trending Games
+          </Text>
+          {updatedTimestamp !== '' && (
+            <Text variant="caption" color={Colors.textMuted} style={styles.updatedAt}>
+              {updatedTimestamp}
+            </Text>
+          )}
+        </View>
         <Pressable onPress={() => router.push('/news/trending-games')}>
           <Text variant="caption" color={Colors.primary} style={styles.seeAll}>
             See all
@@ -102,16 +113,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     marginBottom: Spacing.sm,
+  },
+  headerCopy: {
+    flex: 1,
   },
   sectionTitle: {
     fontFamily: FontFamily.semibold,
     lineHeight: FontSize.md * 1.3,
   },
+  updatedAt: {
+    marginTop: 2,
+  },
   seeAll: {
     fontFamily: FontFamily.medium,
+    paddingTop: 2,
   },
   listContent: {
     paddingHorizontal: Spacing.md,

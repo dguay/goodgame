@@ -8,6 +8,7 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { NewsArticleRow } from '@/components/NewsArticleRow'
 import { useLatestNews, type NewsItem } from '@/hooks/useNews'
 import { Colors, FontSize, Radius, Spacing } from '@/constants'
+import { formatUpdatedTimestamp, getLatestTimestamp } from '@/lib/dates'
 
 
 function ArticleSkeletons() {
@@ -32,6 +33,9 @@ export default function LatestNewsScreen() {
   const allItems = useMemo(
     () => query.data?.pages.flatMap((p) => p.items) ?? [],
     [query.data]
+  )
+  const updatedTimestamp = formatUpdatedTimestamp(
+    getLatestTimestamp(allItems.map((item) => item.pubDate))
   )
 
   const renderItem = useCallback(({ item }: { item: NewsItem }) => <NewsArticleRow item={item} />, [])
@@ -59,7 +63,7 @@ export default function LatestNewsScreen() {
             Latest News
           </Text>
           <Text variant="caption" style={styles.subtitle}>
-            All articles, newest first
+            {updatedTimestamp === '' ? 'All articles, newest first' : `All articles, newest first · ${updatedTimestamp}`}
           </Text>
         </View>
       </View>

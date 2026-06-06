@@ -73,3 +73,33 @@ export function formatPubDate(
   if (isNaN(date.getTime())) return ''
   return new Intl.DateTimeFormat('en', options).format(date)
 }
+
+export function formatUpdatedTimestamp(timestamp: string | null): string {
+  const formattedTimestamp = formatPubDate(timestamp, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/New_York',
+    timeZoneName: 'short',
+  })
+
+  return formattedTimestamp === '' ? '' : `Updated ${formattedTimestamp}`
+}
+
+export function getLatestTimestamp(timestamps: (string | null)[]): string | null {
+  let latestTimestamp: string | null = null
+  let latestTime = Number.NEGATIVE_INFINITY
+
+  for (const timestamp of timestamps) {
+    if (timestamp == null) continue
+
+    const time = new Date(timestamp).getTime()
+    if (Number.isNaN(time) || time <= latestTime) continue
+
+    latestTime = time
+    latestTimestamp = timestamp
+  }
+
+  return latestTimestamp
+}

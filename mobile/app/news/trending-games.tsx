@@ -9,6 +9,7 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useTrendingGames, type TrendingGame } from '@/hooks/useTrendingGames'
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
+import { formatUpdatedTimestamp, getLatestTimestamp } from '@/lib/dates'
 
 function TrendingGameRow({ game, rank }: { game: TrendingGame; rank: number }) {
   return (
@@ -72,6 +73,9 @@ function RowSkeletons() {
 
 export default function TrendingGamesScreen() {
   const query = useTrendingGames(25)
+  const updatedTimestamp = formatUpdatedTimestamp(
+    getLatestTimestamp(query.data?.map((game) => game.calculatedAt) ?? [])
+  )
 
   const renderItem = useCallback(
     ({ item, index }: { item: TrendingGame; index: number }) => (
@@ -97,7 +101,7 @@ export default function TrendingGamesScreen() {
             Trending Games
           </Text>
           <Text variant="caption" style={styles.subtitle}>
-            Most covered in the last 72 hours
+            {updatedTimestamp === '' ? 'Most covered in the last 72 hours' : `Most covered in the last 72 hours · ${updatedTimestamp}`}
           </Text>
         </View>
       </View>

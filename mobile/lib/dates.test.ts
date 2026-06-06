@@ -3,6 +3,8 @@ import {
   formatDate,
   formatLocalDate,
   formatPubDate,
+  formatUpdatedTimestamp,
+  getLatestTimestamp,
   isKnownReleased,
   isUpcomingRelease,
 } from './dates'
@@ -83,4 +85,30 @@ test('formatPubDate accepts custom format options', () => {
     formatPubDate('2026-05-09T12:00:00', { month: 'long', day: 'numeric', year: 'numeric' }),
     'May 9, 2026',
   )
+})
+
+test('formatUpdatedTimestamp prefixes valid timestamps', () => {
+  assert.equal(formatUpdatedTimestamp('2026-05-09T16:00:00Z'), 'Updated May 9, 12:00 PM EDT')
+  assert.equal(formatUpdatedTimestamp('2026-01-09T17:00:00Z'), 'Updated Jan 9, 12:00 PM EST')
+})
+
+test('formatUpdatedTimestamp returns empty for null and invalid input', () => {
+  assert.equal(formatUpdatedTimestamp(null), '')
+  assert.equal(formatUpdatedTimestamp('not-a-date'), '')
+})
+
+test('getLatestTimestamp returns the newest valid timestamp', () => {
+  assert.equal(
+    getLatestTimestamp([
+      '2026-05-09T12:00:00',
+      null,
+      'not-a-date',
+      '2026-05-10T08:30:00',
+    ]),
+    '2026-05-10T08:30:00',
+  )
+})
+
+test('getLatestTimestamp returns null when no valid timestamps exist', () => {
+  assert.equal(getLatestTimestamp([null, 'not-a-date']), null)
 })
