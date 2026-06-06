@@ -1,19 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import DraggableFlatList, { ScaleDecorator, type RenderItemParams } from 'react-native-draggable-flatlist'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
   FlatList,
   Modal,
-  PanResponder,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   View,
-  type GestureResponderEvent,
-  type NativeSyntheticEvent,
-  type NativeTouchEvent,
 } from 'react-native'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -31,8 +28,8 @@ import {
   useUpdateLibraryEntry,
 } from '@/hooks/useLibrary'
 import { useUpdateUserPreferences, useUserPreferences } from '@/hooks/useUserPreferences'
-import { Colors, Radius, Spacing } from '@/constants'
-import { isUpcomingRelease } from '@/lib/dates'
+import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants'
+import { formatDate, isUpcomingRelease } from '@/lib/dates'
 import { sortLibraryEntries, type SortDirection } from '@/lib/librarySort'
 import {
   LIBRARY_SORT_KEYS,
@@ -46,7 +43,7 @@ import type { RawgGameDetail } from '@/types/rawg'
 type FilterStatus = Exclude<LibraryStatus, 'playing'> | 'all' | 'next'
 type PlatformFilter = 'all' | 'ps5' | 'pc'
 type SortKey = LibrarySortKey
-type ViewMode = 'grid' | 'list'
+type ViewMode = 'grid' | 'list' | 'minimalist'
 
 const HEADER_SEARCH_MAX_WIDTH = 360
 
@@ -151,11 +148,28 @@ function swapItems<T>(items: T[], firstIndex: number, secondIndex: number): T[] 
   return next
 }
 
+function mergeOrder(current: string[], newVisible: string[]): string[] {
+  const newVisibleSet = new Set(newVisible)
+  const result: string[] = []
+  let visibleIdx = 0
+  for (const id of current) {
+    if (newVisibleSet.has(id)) {
+      result.push(newVisible[visibleIdx++]!)
+    } else {
+      result.push(id)
+    }
+  }
+  return result
+}
+
 function ReorderableLibraryEntry({
   entry,
   children,
   canMoveUp,
   canMoveDown,
+  isActive,
+  drag,
+  compact,
   onMove,
   onDragEnd,
 }: {
@@ -163,146 +177,60 @@ function ReorderableLibraryEntry({
   children: ReactNode
   canMoveUp: boolean
   canMoveDown: boolean
+  isActive: boolean
+  drag: () => void
+  compact?: boolean
   onMove: (id: string, direction: -1 | 1) => void
   onDragEnd: () => void
 }) {
-  const [isDragging, setIsDragging] = useState(false)
-  const dragOffsetRef = useRef(0)
-  const isDraggingRef = useRef(false)
-  const movedRef = useRef(false)
-  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const webStartYRef = useRef(0)
-
-  const clearHoldTimer = useCallback(() => {
-    if (holdTimerRef.current != null) {
-      clearTimeout(holdTimerRef.current)
-      holdTimerRef.current = null
-    }
-  }, [])
-
-  const stopDragging = useCallback(() => {
-    clearHoldTimer()
-    const didMove = movedRef.current
-    isDraggingRef.current = false
-    movedRef.current = false
-    dragOffsetRef.current = 0
-    setIsDragging(false)
-    if (didMove) onDragEnd()
-  }, [clearHoldTimer, onDragEnd])
-
-  const moveFromDelta = useCallback((delta: number) => {
-    if (delta <= -48) {
-      dragOffsetRef.current += delta
-      movedRef.current = true
-      onMove(entry.id, -1)
-    }
-
-    if (delta >= 48) {
-      dragOffsetRef.current += delta
-      movedRef.current = true
-      onMove(entry.id, 1)
-    }
-  }, [entry.id, onMove])
-
-  const beginDragging = useCallback(() => {
-    isDraggingRef.current = true
-    setIsDragging(true)
-  }, [])
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: () => {
-          movedRef.current = false
-          dragOffsetRef.current = 0
-          clearHoldTimer()
-          holdTimerRef.current = setTimeout(() => {
-            beginDragging()
-          }, 220)
-        },
-        onPanResponderMove: (_event, gestureState) => {
-          if (!isDraggingRef.current) return
-          const delta = gestureState.dy - dragOffsetRef.current
-          moveFromDelta(delta)
-        },
-        onPanResponderRelease: stopDragging,
-        onPanResponderTerminate: stopDragging,
-      }),
-    [beginDragging, clearHoldTimer, moveFromDelta, stopDragging]
-  )
-
-  const startWebDrag = useCallback((event: GestureResponderEvent) => {
-    if (Platform.OS !== 'web') return
-
-    clearHoldTimer()
-    movedRef.current = false
-    webStartYRef.current = event.nativeEvent.pageY
-    dragOffsetRef.current = 0
-
-    holdTimerRef.current = setTimeout(() => {
-      beginDragging()
-    }, 120)
-  }, [beginDragging, clearHoldTimer])
-
-  const updateWebDrag = useCallback((event: NativeSyntheticEvent<NativeTouchEvent>) => {
-    if (Platform.OS !== 'web' || !isDraggingRef.current) return
-
-    const totalDelta = event.nativeEvent.pageY - webStartYRef.current
-    const delta = totalDelta - dragOffsetRef.current
-    moveFromDelta(delta)
-  }, [moveFromDelta])
-
   const handleStep = useCallback((direction: -1 | 1) => {
-    movedRef.current = true
     onMove(entry.id, direction)
     onDragEnd()
   }, [entry.id, onDragEnd, onMove])
 
   return (
-    <View style={[rdStyles.row, isDragging && rdStyles.rowDragging]}>
+    <View style={[rdStyles.row, isActive && rdStyles.rowDragging]}>
       <View
-        style={[rdStyles.handle, isDragging && rdStyles.handleActive]}
+        style={[rdStyles.handle, compact && rdStyles.handleCompact, isActive && rdStyles.handleActive]}
         accessibilityLabel={`Reorder ${entry.game_title}`}
       >
+        {!compact && (
+          <Pressable
+            style={[rdStyles.stepButton, !canMoveUp && rdStyles.stepButtonDisabled]}
+            disabled={!canMoveUp}
+            onPress={() => handleStep(-1)}
+            accessibilityRole="button"
+            accessibilityLabel={`Move ${entry.game_title} up`}
+            hitSlop={4}
+          >
+            <Ionicons name="chevron-up" size={16} color={canMoveUp ? Colors.textSecondary : Colors.textMutedSoft} />
+          </Pressable>
+        )}
         <Pressable
-          style={[rdStyles.stepButton, !canMoveUp && rdStyles.stepButtonDisabled]}
-          disabled={!canMoveUp}
-          onPress={() => handleStep(-1)}
-          accessibilityRole="button"
-          accessibilityLabel={`Move ${entry.game_title} up`}
-          hitSlop={4}
-        >
-          <Ionicons name="chevron-up" size={16} color={canMoveUp ? Colors.textSecondary : Colors.textMutedSoft} />
-        </Pressable>
-        <View
           style={rdStyles.grip}
+          onLongPress={drag}
+          delayLongPress={150}
           accessibilityRole="button"
-          accessibilityHint="Hold, then drag up or down to reorder"
-          onStartShouldSetResponder={() => Platform.OS === 'web'}
-          onResponderGrant={startWebDrag}
-          onResponderMove={updateWebDrag}
-          onResponderRelease={stopDragging}
-          onResponderTerminate={stopDragging}
-          {...(Platform.OS === 'web' ? {} : panResponder.panHandlers)}
+          accessibilityHint="Hold and drag to reorder"
         >
           <Ionicons
             name="reorder-three-outline"
             size={24}
-            color={isDragging ? Colors.primary : Colors.textMuted}
+            color={isActive ? Colors.primary : Colors.textMuted}
           />
-        </View>
-        <Pressable
-          style={[rdStyles.stepButton, !canMoveDown && rdStyles.stepButtonDisabled]}
-          disabled={!canMoveDown}
-          onPress={() => handleStep(1)}
-          accessibilityRole="button"
-          accessibilityLabel={`Move ${entry.game_title} down`}
-          hitSlop={4}
-        >
-          <Ionicons name="chevron-down" size={16} color={canMoveDown ? Colors.textSecondary : Colors.textMutedSoft} />
         </Pressable>
+        {!compact && (
+          <Pressable
+            style={[rdStyles.stepButton, !canMoveDown && rdStyles.stepButtonDisabled]}
+            disabled={!canMoveDown}
+            onPress={() => handleStep(1)}
+            accessibilityRole="button"
+            accessibilityLabel={`Move ${entry.game_title} down`}
+            hitSlop={4}
+          >
+            <Ionicons name="chevron-down" size={16} color={canMoveDown ? Colors.textSecondary : Colors.textMutedSoft} />
+          </Pressable>
+        )}
       </View>
       <View style={rdStyles.card}>{children}</View>
     </View>
@@ -328,6 +256,9 @@ const rdStyles = StyleSheet.create({
     borderRightColor: Colors.borderSoft,
     paddingVertical: 4,
   },
+  handleCompact: {
+    width: 36,
+  },
   handleActive: {
     backgroundColor: Colors.surfaceRaised,
   },
@@ -349,6 +280,73 @@ const rdStyles = StyleSheet.create({
   },
   card: {
     flex: 1,
+  },
+})
+
+
+function MinimalistGameRow({
+  entry,
+  onLongPress,
+}: {
+  entry: LibraryEntry
+  onLongPress?: () => void
+}) {
+  const dateLabel =
+    entry.release_date != null
+      ? formatDate(entry.release_date, { month: 'short', year: 'numeric' })
+      : null
+
+  return (
+    <Pressable
+      style={({ pressed }) => [mlStyles.row, pressed && mlStyles.rowPressed]}
+      onPress={() => router.push(`/game/${entry.rawg_game_id}`)}
+      onLongPress={onLongPress}
+    >
+      <Text
+        variant="body"
+        style={mlStyles.title}
+        numberOfLines={1}
+      >
+        {entry.game_title}
+      </Text>
+      <Text
+        variant="caption"
+        style={[mlStyles.date, dateLabel == null && mlStyles.dateTba]}
+        numberOfLines={1}
+      >
+        {dateLabel ?? 'TBA'}
+      </Text>
+    </Pressable>
+  )
+}
+
+const mlStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 9,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
+  },
+  rowPressed: {
+    backgroundColor: Colors.surface,
+  },
+  title: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.medium,
+    color: Colors.textPrimary,
+  },
+  date: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.mono,
+    color: Colors.textMuted,
+    marginLeft: Spacing.sm,
+    flexShrink: 0,
+  },
+  dateTba: {
+    color: Colors.textMutedSoft,
   },
 })
 
@@ -646,6 +644,20 @@ function LibraryFilters({
               name="list-outline"
               size={15}
               color={activeViewMode === 'list' ? Colors.textPrimary : Colors.textMuted}
+            />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Minimalist view"
+            accessibilityState={{ selected: activeViewMode === 'minimalist' }}
+            style={[fbStyles.toggleBtn, activeViewMode === 'minimalist' && fbStyles.toggleBtnActive]}
+            onPress={() => onViewModeChange('minimalist')}
+            hitSlop={4}
+          >
+            <Ionicons
+              name="reorder-four-outline"
+              size={15}
+              color={activeViewMode === 'minimalist' ? Colors.textPrimary : Colors.textMuted}
             />
           </Pressable>
         </View>
@@ -987,6 +999,14 @@ export default function LibraryScreen() {
     updateCustomOrder(next)
   }, [updateCustomOrder])
 
+  const handleDragEnd = useCallback(({ data }: { data: LibraryEntry[] }) => {
+    const newVisibleIds = data.map(e => e.id)
+    const next = mergeOrder(customOrderIdsRef.current, newVisibleIds)
+    customOrderIdsRef.current = next
+    setCustomOrderIds(next)
+    updateCustomOrder(next)
+  }, [updateCustomOrder])
+
   const handleSortSelect = useCallback((nextSort: SortKey) => {
     setSort(nextSort)
     setSortDirection(SORT_DEFAULT_DIRECTION[nextSort])
@@ -1062,88 +1082,206 @@ export default function LibraryScreen() {
       />
 
       {/* Game list */}
-      <FlatList
-        data={searchFiltered}
-        renderItem={({ item, index }) => {
-          const card =
-            activeViewMode === 'grid' ? (
-              <LargeGameCard
-                entry={item}
-                gameDetail={queryClient.getQueryData<RawgGameDetail>([
-                  'rawg',
-                  'game',
-                  item.rawg_game_id,
-                ])}
-                onStatusPress={setStatusPickerEntry}
-                onLongPress={() => setContextMenuEntry(item)}
-              />
-            ) : (
-              <GameListCard
-                entry={item}
-                gameDetail={queryClient.getQueryData<RawgGameDetail>([
-                  'rawg',
-                  'game',
-                  item.rawg_game_id,
-                ])}
-                onStatusPress={setStatusPickerEntry}
-                onDelete={handleDelete}
-                onLongPress={() => setContextMenuEntry(item)}
-              />
-            )
-          if (sort === 'custom' && activeViewMode === 'list' && searchQuery.trim().length === 0) {
-            return (
-              <ReorderableLibraryEntry
-                entry={item}
-                canMoveUp={index > 0}
-                canMoveDown={index < searchFiltered.length - 1}
-                onMove={handleCustomMove}
-                onDragEnd={handleCustomDragEnd}
-              >
-                {card}
-              </ReorderableLibraryEntry>
-            )
-          }
-          if (activeViewMode === 'list' && Platform.OS !== 'web') {
-            return (
-              <ReanimatedSwipeable
-                renderRightActions={() => (
-                  <Pressable
-                    style={styles.swipeDeleteAction}
-                    onPress={() => handleDelete(item.id)}
+      {sort === 'custom' && searchQuery.trim().length === 0 ? (
+        <DraggableFlatList
+          data={searchFiltered}
+          autoscrollSpeed={400}
+          autoscrollThreshold={60}
+          renderItem={({ item, drag, isActive, getIndex }: RenderItemParams<LibraryEntry>) => {
+            const index = getIndex() ?? 0
+            if (activeViewMode === 'minimalist') {
+              const row = (
+                <MinimalistGameRow
+                  entry={item}
+                  onLongPress={() => setContextMenuEntry(item)}
+                />
+              )
+              return (
+                <ScaleDecorator>
+                  <ReorderableLibraryEntry
+                    entry={item}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < searchFiltered.length - 1}
+                    isActive={isActive}
+                    drag={drag}
+                    compact
+                    onMove={handleCustomMove}
+                    onDragEnd={handleCustomDragEnd}
                   >
-                    <Ionicons name="trash-outline" size={22} color="#fff" />
-                  </Pressable>
-                )}
-                rightThreshold={64}
-                overshootRight={false}
-                friction={2}
-              >
-                {card}
-              </ReanimatedSwipeable>
-            )
+                    {row}
+                  </ReorderableLibraryEntry>
+                </ScaleDecorator>
+              )
+            }
+
+            const card =
+              activeViewMode === 'grid' ? (
+                <LargeGameCard
+                  entry={item}
+                  gameDetail={queryClient.getQueryData<RawgGameDetail>([
+                    'rawg',
+                    'game',
+                    item.rawg_game_id,
+                  ])}
+                  onStatusPress={setStatusPickerEntry}
+                  onLongPress={() => setContextMenuEntry(item)}
+                />
+              ) : (
+                <GameListCard
+                  entry={item}
+                  gameDetail={queryClient.getQueryData<RawgGameDetail>([
+                    'rawg',
+                    'game',
+                    item.rawg_game_id,
+                  ])}
+                  onStatusPress={setStatusPickerEntry}
+                  onDelete={handleDelete}
+                  onLongPress={() => setContextMenuEntry(item)}
+                />
+              )
+
+            if (activeViewMode === 'list') {
+              return (
+                <ScaleDecorator>
+                  <ReorderableLibraryEntry
+                    entry={item}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < searchFiltered.length - 1}
+                    isActive={isActive}
+                    drag={drag}
+                    onMove={handleCustomMove}
+                    onDragEnd={handleCustomDragEnd}
+                  >
+                    {card}
+                  </ReorderableLibraryEntry>
+                </ScaleDecorator>
+              )
+            }
+
+            return card
+          }}
+          keyExtractor={item => item.id}
+          onDragEnd={handleDragEnd}
+          key={`${activeViewMode}-custom`}
+          contentContainerStyle={[
+            styles.listContent,
+            activeViewMode === 'grid' && styles.gridContent,
+            searchFiltered.length === 0 && styles.listContentEmpty,
+          ]}
+          ItemSeparatorComponent={activeViewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
+          ListEmptyComponent={
+            <View style={styles.emptyWrapper}>
+              <EmptyState
+                icon="bookmark-outline"
+                heading={emptyHeading}
+                subtext={emptySubtext}
+                ctaLabel={filter === 'all' ? 'Browse Games' : undefined}
+                onCta={filter === 'all' ? () => router.push('/(tabs)/search') : undefined}
+              />
+            </View>
           }
-          return card
-        }}
-        keyExtractor={item => item.id}
-        key={`${activeViewMode}-${sort}`}
-        contentContainerStyle={[
-          styles.listContent,
-          activeViewMode === 'grid' && styles.gridContent,
-          searchFiltered.length === 0 && styles.listContentEmpty,
-        ]}
-        ItemSeparatorComponent={activeViewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
-        ListEmptyComponent={
-          <View style={styles.emptyWrapper}>
-            <EmptyState
-              icon="bookmark-outline"
-              heading={emptyHeading}
-              subtext={emptySubtext}
-              ctaLabel={filter === 'all' ? 'Browse Games' : undefined}
-              onCta={filter === 'all' ? () => router.push('/(tabs)/search') : undefined}
-            />
-          </View>
-        }
-      />
+        />
+      ) : (
+        <FlatList
+          data={searchFiltered}
+          renderItem={({ item, index }) => {
+            if (activeViewMode === 'minimalist') {
+              const row = (
+                <MinimalistGameRow
+                  entry={item}
+                  onLongPress={() => setContextMenuEntry(item)}
+                />
+              )
+              if (Platform.OS !== 'web') {
+                return (
+                  <ReanimatedSwipeable
+                    renderRightActions={() => (
+                      <Pressable
+                        style={styles.swipeDeleteAction}
+                        onPress={() => handleDelete(item.id)}
+                      >
+                        <Ionicons name="trash-outline" size={22} color="#fff" />
+                      </Pressable>
+                    )}
+                    rightThreshold={64}
+                    overshootRight={false}
+                    friction={2}
+                  >
+                    {row}
+                  </ReanimatedSwipeable>
+                )
+              }
+              return row
+            }
+
+            const card =
+              activeViewMode === 'grid' ? (
+                <LargeGameCard
+                  entry={item}
+                  gameDetail={queryClient.getQueryData<RawgGameDetail>([
+                    'rawg',
+                    'game',
+                    item.rawg_game_id,
+                  ])}
+                  onStatusPress={setStatusPickerEntry}
+                  onLongPress={() => setContextMenuEntry(item)}
+                />
+              ) : (
+                <GameListCard
+                  entry={item}
+                  gameDetail={queryClient.getQueryData<RawgGameDetail>([
+                    'rawg',
+                    'game',
+                    item.rawg_game_id,
+                  ])}
+                  onStatusPress={setStatusPickerEntry}
+                  onDelete={handleDelete}
+                  onLongPress={() => setContextMenuEntry(item)}
+                />
+              )
+
+            if (activeViewMode === 'list' && Platform.OS !== 'web') {
+              return (
+                <ReanimatedSwipeable
+                  renderRightActions={() => (
+                    <Pressable
+                      style={styles.swipeDeleteAction}
+                      onPress={() => handleDelete(item.id)}
+                    >
+                      <Ionicons name="trash-outline" size={22} color="#fff" />
+                    </Pressable>
+                  )}
+                  rightThreshold={64}
+                  overshootRight={false}
+                  friction={2}
+                >
+                  {card}
+                </ReanimatedSwipeable>
+              )
+            }
+            return card
+          }}
+          keyExtractor={item => item.id}
+          key={`${activeViewMode}-${sort}`}
+          contentContainerStyle={[
+            styles.listContent,
+            activeViewMode === 'grid' && styles.gridContent,
+            searchFiltered.length === 0 && styles.listContentEmpty,
+          ]}
+          ItemSeparatorComponent={activeViewMode === 'grid' ? () => <View style={styles.gridGap} /> : undefined}
+          ListEmptyComponent={
+            <View style={styles.emptyWrapper}>
+              <EmptyState
+                icon="bookmark-outline"
+                heading={emptyHeading}
+                subtext={emptySubtext}
+                ctaLabel={filter === 'all' ? 'Browse Games' : undefined}
+                onCta={filter === 'all' ? () => router.push('/(tabs)/search') : undefined}
+              />
+            </View>
+          }
+        />
+      )}
 
       <SortPicker
         visible={sortPickerVisible}
