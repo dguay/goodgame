@@ -92,7 +92,7 @@ export async function cancelReleaseNotifications(rawgGameId: number): Promise<vo
 }
 
 export async function syncAllReleaseNotifications(
-  entries: Array<{ rawg_game_id: number; game_title: string; release_date: string | null; status: string }>,
+  entries: { rawg_game_id: number; game_title: string; release_date: string | null; status: string }[],
 ): Promise<void> {
   if (Platform.OS === 'web') return
 
