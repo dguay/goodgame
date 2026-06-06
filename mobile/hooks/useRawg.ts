@@ -1,27 +1,34 @@
 import { useEffect } from 'react'
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
-import { syncLibraryReleaseDateFromRawg } from '@/hooks/useLibrary'
+import { syncLibraryRawgMetadata } from '@/hooks/useLibrary'
 import {
   searchGames,
-  getGameAdditions,
   getGameDetail,
   getGameScreenshots,
-  getGameSeries,
   getNewReleases,
   getReleaseCalendar,
-  getTopRated,
 } from '@/lib/rawg'
+import { DAY_MS, HOUR_MS } from '@/lib/time'
 import { useAuthStore } from '@/stores/authStore'
 
-const STALE = 5 * 60 * 1000
-const CACHE = 30 * 60 * 1000
+const SEARCH_STALE = 2 * HOUR_MS
+const RELEASE_STALE = HOUR_MS
+const GAME_DETAIL_STALE = DAY_MS
+const STATIC_METADATA_STALE = 30 * DAY_MS
+const CACHE = 30 * DAY_MS
+
+function getPlatformSlugs(
+  platforms: Awaited<ReturnType<typeof getGameDetail>>['platforms'],
+): string[] | null {
+  return platforms != null ? platforms.map(p => p.platform.slug) : null
+}
 
 export function useGameSearch(query: string) {
   return useQuery({
     queryKey: ['rawg', 'search', query],
     queryFn: () => searchGames(query),
     enabled: query.length > 1,
-    staleTime: STALE,
+    staleTime: SEARCH_STALE,
     gcTime: CACHE,
   })
 }
@@ -34,7 +41,7 @@ export function useGameSearchInfinite(query: string) {
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.next != null ? lastPageParam + 1 : undefined,
     enabled: query.length > 1,
-    staleTime: STALE,
+    staleTime: SEARCH_STALE,
     gcTime: CACHE,
   })
 }
@@ -46,42 +53,26 @@ export function useGameDetail(id: number | null) {
     queryKey: ['rawg', 'game', id],
     queryFn: () => getGameDetail(id!),
     enabled: id !== null,
-    staleTime: STALE,
+    staleTime: GAME_DETAIL_STALE,
     gcTime: CACHE,
   })
+  const gameId = query.data?.id
+  const released = query.data?.released
+  const platforms = query.data?.platforms
 
   useEffect(() => {
-    if (userId == null || query.data?.released == null) return
+    if (userId == null || gameId == null) return
 
-    void syncLibraryReleaseDateFromRawg(
+    void syncLibraryRawgMetadata(
       queryClient,
       userId,
-      query.data.id,
-      query.data.released,
+      gameId,
+      released ?? null,
+      getPlatformSlugs(platforms ?? null),
     )
-  }, [query.data?.id, query.data?.released, queryClient, userId])
+  }, [gameId, platforms, queryClient, released, userId])
 
   return query
-}
-
-export function useGameAdditions(id: number | null) {
-  return useQuery({
-    queryKey: ['rawg', 'game', id, 'additions'],
-    queryFn: () => getGameAdditions(id!),
-    enabled: id !== null,
-    staleTime: STALE,
-    gcTime: CACHE,
-  })
-}
-
-export function useGameSeries(id: number | null) {
-  return useQuery({
-    queryKey: ['rawg', 'game', id, 'series'],
-    queryFn: () => getGameSeries(id!),
-    enabled: id !== null,
-    staleTime: STALE,
-    gcTime: CACHE,
-  })
 }
 
 export function useGameScreenshots(id: number | null) {
@@ -89,7 +80,7 @@ export function useGameScreenshots(id: number | null) {
     queryKey: ['rawg', 'game', id, 'screenshots'],
     queryFn: () => getGameScreenshots(id!),
     enabled: id !== null,
-    staleTime: STALE,
+    staleTime: STATIC_METADATA_STALE,
     gcTime: CACHE,
   })
 }
@@ -100,7 +91,7 @@ export function useReleasePreview(mode: ReleaseCalendarMode) {
   return useQuery({
     queryKey: ['rawg', 'releasePreview', mode],
     queryFn: () => (mode === 'new' ? getNewReleases() : getReleaseCalendar()),
-    staleTime: STALE,
+    staleTime: RELEASE_STALE,
     gcTime: CACHE,
   })
 }
@@ -122,16 +113,7 @@ export function useReleaseCalendar(
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.next != null ? lastPageParam + 1 : undefined,
     enabled,
-    staleTime: STALE,
-    gcTime: CACHE,
-  })
-}
-
-export function useTopRated() {
-  return useQuery({
-    queryKey: ['rawg', 'topRated'],
-    queryFn: getTopRated,
-    staleTime: STALE,
+    staleTime: RELEASE_STALE,
     gcTime: CACHE,
   })
 }

@@ -16,8 +16,12 @@ function libraryKey(userId: string) {
   return ['library', userId] as const
 }
 
-const releaseDateSyncAttempts = new Set<string>()
-const releaseDateSyncInFlight = new Set<string>()
+const rawgMetadataSyncAttempts = new Set<string>()
+const rawgMetadataSyncInFlight = new Set<string>()
+
+function normalizePlatformKey(platforms: string[] | null): string {
+  return [...(platforms ?? [])].sort().join(',')
+}
 
 function getNextCustomOrder(entries: LibraryEntry[], requestedOrder?: number | null): number {
   if (requestedOrder != null) return requestedOrder
@@ -95,6 +99,7 @@ export function useAddToLibrary() {
         game_title: entry.game_title,
         platforms: entry.platforms ?? null,
         rawg_game_id: entry.rawg_game_id,
+        rawg_metadata_synced_at: entry.rawg_metadata_synced_at ?? null,
         release_date: entry.release_date ?? null,
         status: entry.status,
       }
@@ -216,33 +221,43 @@ export function useUpdateLibraryEntry() {
   })
 }
 
-export async function syncLibraryReleaseDateFromRawg(
+export async function syncLibraryRawgMetadata(
   queryClient: QueryClient,
   userId: string,
   rawgGameId: number,
   releaseDate: string | null,
+  platforms: string[] | null,
 ): Promise<void> {
-  if (releaseDate == null) return
+  if (releaseDate == null && platforms == null) return
 
   const key = libraryKey(userId)
   const entries = queryClient.getQueryData<LibraryEntry[]>(key)
   const entry = entries?.find(
     currentEntry =>
-      currentEntry.rawg_game_id === rawgGameId && currentEntry.release_date !== releaseDate
+      currentEntry.rawg_game_id === rawgGameId &&
+      (currentEntry.release_date !== releaseDate ||
+        normalizePlatformKey(currentEntry.platforms) !== normalizePlatformKey(platforms))
   )
   if (entry == null) return
 
-  const syncKey = `${userId}:${entry.id}:${releaseDate}`
-  if (releaseDateSyncAttempts.has(syncKey) || releaseDateSyncInFlight.has(syncKey)) return
+  const syncKey = `${userId}:${entry.id}:${releaseDate}:${normalizePlatformKey(platforms)}`
+  if (rawgMetadataSyncAttempts.has(syncKey) || rawgMetadataSyncInFlight.has(syncKey)) return
 
-  releaseDateSyncAttempts.add(syncKey)
-  releaseDateSyncInFlight.add(syncKey)
+  rawgMetadataSyncAttempts.add(syncKey)
+  rawgMetadataSyncInFlight.add(syncKey)
 
   const previousEntries = entries ?? []
+  const rawgMetadataSyncedAt = new Date().toISOString()
   queryClient.setQueryData<LibraryEntry[]>(key, old =>
     (old ?? []).map(currentEntry =>
       currentEntry.id === entry.id
-        ? { ...currentEntry, release_date: releaseDate, updated_at: new Date().toISOString() }
+        ? {
+            ...currentEntry,
+            platforms,
+            rawg_metadata_synced_at: rawgMetadataSyncedAt,
+            release_date: releaseDate,
+            updated_at: rawgMetadataSyncedAt,
+          }
         : currentEntry
     )
   )
@@ -250,7 +265,11 @@ export async function syncLibraryReleaseDateFromRawg(
   try {
     const { data, error } = await supabase
       .from('library_entries')
-      .update({ release_date: releaseDate })
+      .update({
+        platforms,
+        rawg_metadata_synced_at: rawgMetadataSyncedAt,
+        release_date: releaseDate,
+      })
       .eq('id', entry.id)
       .eq('user_id', userId)
       .select()
@@ -266,10 +285,10 @@ export async function syncLibraryReleaseDateFromRawg(
       await scheduleReleaseNotifications(data.rawg_game_id, data.game_title, data.release_date)
     }
   } catch (error) {
-    console.warn('Could not sync RAWG release date to library', error)
+    console.warn('Could not sync RAWG metadata to library', error)
     queryClient.setQueryData<LibraryEntry[]>(key, previousEntries)
   } finally {
-    releaseDateSyncInFlight.delete(syncKey)
+    rawgMetadataSyncInFlight.delete(syncKey)
   }
 }
 
@@ -313,4 +332,3 @@ export function useRemoveFromLibrary() {
     },
   })
 }
-

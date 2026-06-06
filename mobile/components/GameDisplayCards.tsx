@@ -391,7 +391,7 @@ export function GameListCard({
           {data.title}
         </Text>
         <View style={styles.listMetaStack}>
-          <ListMetadataLine value={`${developerLabel ?? 'Unknown'}`} />
+          {developerLabel != null && <ListMetadataLine value={developerLabel} />}
           <ListMetadataLine value={`${releaseLabel}`} />
           {metacriticScore != null && (
             <ListMetadataLine

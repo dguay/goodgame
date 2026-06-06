@@ -149,8 +149,9 @@ package.json                  → root scripts (proxies to mobile/ + supabase co
 ### Data Fetching
 - All Supabase interactions go through typed hooks in `/hooks/` — never raw `.from()` calls in components.
 - All RAWG API calls go through `/lib/rawg.ts` typed client — never raw `fetch` in components.
+- Before writing or updating code that could increase RAWG API usage, explicitly warn the user and call out the expected new request pattern.
 - Use **React Query** (`@tanstack/react-query`) for all server state.
-- Configure: `staleTime: 5 * 60 * 1000`, `cacheTime: 30 * 60 * 1000` for game data.
+- Configure RAWG query staleness by endpoint type in `/hooks/useRawg.ts`, using shared time constants from `/lib/time.ts`.
 - Use optimistic updates for library mutations (add/update/remove).
 
 ### Supabase

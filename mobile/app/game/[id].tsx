@@ -20,15 +20,12 @@ import { Text } from '@/components/ui/Text'
 import { LoadingSpinner, EmptyState } from '@/components/ui'
 import { AddToLibraryButton } from '@/components/AddToLibraryButton'
 import { DateField } from '@/components/DateField'
-import { SmallGameCard } from '@/components/GameDisplayCards'
 import { RawgFooter } from '@/components/RawgFooter'
 import { RatingInput } from '@/components/RatingInput'
 
 import {
-  useGameAdditions,
   useGameDetail,
   useGameScreenshots,
-  useGameSeries,
 } from '@/hooks/useRawg'
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
 import { useSteamAppId } from '@/hooks/useSteam'
@@ -40,7 +37,7 @@ import { formatRatingCount } from '@/lib/rating'
 import { formatPubDate, isUpcomingRelease } from '@/lib/dates'
 import { getSteamStoreUrl } from '@/lib/steam'
 import type { LibraryEntry } from '@/types/database'
-import type { RawgGame, RawgGameDetail } from '@/types/rawg'
+import type { RawgGameDetail } from '@/types/rawg'
 
 // helpers
 
@@ -455,67 +452,6 @@ function GameNewsSection({ slug }: GameNewsSectionProps) {
   )
 }
 
-// RelatedContent
-
-interface GameRailProps {
-  title: string
-  games: RawgGame[]
-  isLoading: boolean
-  isError: boolean
-}
-
-function GameRail({ title, games, isLoading, isError }: GameRailProps) {
-  return (
-    <View style={styles.relatedRail}>
-      <Text variant="label" style={styles.railTitle}>{title}</Text>
-      {isLoading ? (
-        <SectionLoading label={`Loading ${title.toLowerCase()}...`} />
-      ) : isError ? (
-        <SectionMessage label={`Could not load ${title.toLowerCase()}.`} />
-      ) : games.length === 0 ? (
-        <SectionMessage label={`No ${title.toLowerCase()} found.`} />
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.moreGamesRow}
-        >
-          {games.map(game => (
-            <SmallGameCard key={game.id} game={game} style={styles.moreGameCard} />
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  )
-}
-
-interface RelatedGamesProps {
-  gameId: number
-}
-
-function RelatedGamesSection({ gameId }: RelatedGamesProps) {
-  const additions = useGameAdditions(gameId)
-  const series = useGameSeries(gameId)
-
-  return (
-    <View style={styles.section}>
-      <Text variant="subheading" style={styles.sectionTitle}>DLCs & Series</Text>
-      <GameRail
-        title="DLCs and editions"
-        games={additions.data?.results ?? []}
-        isLoading={additions.isLoading}
-        isError={additions.isError}
-      />
-      <GameRail
-        title="Same series"
-        games={series.data?.results ?? []}
-        isLoading={series.isLoading}
-        isError={series.isError}
-      />
-    </View>
-  )
-}
-
 // PersonalTracking
 
 interface TrackingProps { entry: LibraryEntry }
@@ -754,7 +690,6 @@ export default function GameDetailScreen() {
           <ScreenshotGallery gameId={game.id} />
           {entry != null && <PersonalTracking entry={entry} />}
           <GameNewsSection slug={game.slug} />
-          <RelatedGamesSection gameId={game.id} />
           <RawgFooter />
         </View>
       </ScrollView>
@@ -1004,18 +939,6 @@ const styles = StyleSheet.create({
     right: Spacing.md,
   },
 
-  // Related content
-  relatedRail: {
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  railTitle: {
-    color: Colors.textSecondary,
-  },
-  disabledCard: {
-    opacity: 0.62,
-  },
-
   // External links
   linkButton: {
     minHeight: 32,
@@ -1191,15 +1114,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-
-  // More Like This
-  moreGamesRow: {
-    gap: Spacing.sm,
-    paddingRight: Spacing.md,
-  },
-  moreGameCard: {
-    width: 160,
   },
 
   // Back button overlay

@@ -53,6 +53,7 @@ export function AddToLibraryButton({ game }: Props) {
         game_cover_url: game.background_image ?? null,
         release_date: game.released ?? null,
         platforms: game.platforms != null ? game.platforms.map(p => p.platform.slug) : null,
+        rawg_metadata_synced_at: new Date().toISOString(),
         status,
       })
     }

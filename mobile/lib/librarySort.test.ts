@@ -19,6 +19,7 @@ function makeEntry(overrides: Pick<LibraryEntry, 'id' | 'game_title' | 'release_
     personal_rating: null,
     platforms: null,
     rawg_game_id: 1,
+    rawg_metadata_synced_at: null,
     started_at: null,
     status: 'want_to_play',
     updated_at: '2026-01-01T00:00:00.000Z',

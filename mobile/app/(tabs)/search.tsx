@@ -6,7 +6,6 @@ import {
   TextInput,
   Pressable,
   FlatList,
-  useWindowDimensions,
   Platform,
   Keyboard,
 } from 'react-native'
@@ -16,33 +15,11 @@ import { Text } from '@/components/ui/Text'
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { RawgFooter } from '@/components/RawgFooter'
-import { GameListCard, SmallGameCard } from '@/components/GameDisplayCards'
-import { useGameSearchInfinite, useTopRated } from '@/hooks/useRawg'
+import { GameListCard } from '@/components/GameDisplayCards'
+import { useGameSearchInfinite } from '@/hooks/useRawg'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Colors, Spacing } from '@/constants'
 import type { RawgGame } from '@/types/rawg'
-
-const H_PAD = Spacing.md      // 16
-const COL_GAP = Spacing.sm    // 8
-// Each card: marginHorizontal = COL_GAP/2 = 4
-// FlatList paddingHorizontal = H_PAD - COL_GAP/2 = 12
-// Net edge space = 12 + 4 = 16 = H_PAD
-// Net gap between cards = 4 + 4 = 8 = COL_GAP
-const CARD_MARGIN = COL_GAP / 2
-
-function GridSkeletons({ cardWidth }: { cardWidth: number }) {
-  return (
-    <View style={styles.skeletonGrid}>
-      {Array.from({ length: 6 }, (_, i) => (
-        <View key={i} style={[styles.skeletonCard, { width: cardWidth }]}>
-          <SkeletonLoader height={130} borderRadius={8} />
-          <SkeletonLoader height={14} style={styles.skeletonGap} />
-          <SkeletonLoader height={12} width="60%" style={styles.skeletonGap} />
-        </View>
-      ))}
-    </View>
-  )
-}
 
 function ListSkeletons() {
   return (
@@ -63,21 +40,17 @@ function ListSkeletons() {
 export default function SearchScreen() {
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebounce(query)
-  const { width } = useWindowDimensions()
   const inputRef = useRef<TextInput>(null)
 
   const isSearching = debouncedQuery.length > 1
 
-  const topRated = useTopRated()
   const searchResult = useGameSearchInfinite(debouncedQuery)
 
-  const cardWidth = (width - (H_PAD - CARD_MARGIN) * 2 - COL_GAP) / 2
-
   const gameData: RawgGame[] = isSearching
-    ? (searchResult.data?.pages.flatMap(p => p.results) ?? [])
-    : (topRated.data?.results ?? [])
+    ? searchResult.data?.pages.flatMap(p => p.results) ?? []
+    : []
 
-  const isLoading = isSearching ? searchResult.isLoading : topRated.isLoading
+  const isLoading = isSearching && searchResult.isLoading
   const hasNoResults =
     isSearching &&
     !searchResult.isLoading &&
@@ -91,11 +64,8 @@ export default function SearchScreen() {
   }, [searchResult])
 
   const renderItem = useCallback(
-    ({ item }: { item: RawgGame }) => {
-      if (isSearching) return <GameListCard game={item} />
-      return <SmallGameCard game={item} style={styles.gridCard} />
-    },
-    [isSearching],
+    ({ item }: { item: RawgGame }) => <GameListCard game={item} />,
+    [],
   )
 
   useFocusEffect(
@@ -108,8 +78,6 @@ export default function SearchScreen() {
     setQuery('')
     inputRef.current?.focus()
   }, [])
-
-  const COLUMNS = isSearching ? 1 : 2
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -137,11 +105,7 @@ export default function SearchScreen() {
       </View>
 
       {/* Loading */}
-      {isLoading && (
-        isSearching
-          ? <ListSkeletons />
-          : <GridSkeletons cardWidth={cardWidth} />
-      )}
+      {isLoading && <ListSkeletons />}
 
       {/* No results */}
       {hasNoResults && (
@@ -153,44 +117,31 @@ export default function SearchScreen() {
       )}
 
       {/* Results */}
-      {!isLoading && !hasNoResults && (
+      {isSearching && !isLoading && !hasNoResults && (
         <FlatList
-          key={isSearching ? 'list' : 'grid'}
           data={gameData}
           keyExtractor={item => String(item.id)}
-          numColumns={COLUMNS}
-          contentContainerStyle={
-            isSearching ? styles.listContent : styles.gridContent
-          }
+          contentContainerStyle={styles.listContent}
           renderItem={renderItem}
-          onEndReached={isSearching ? handleLoadMore : undefined}
+          onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           onScrollBeginDrag={Keyboard.dismiss}
-          ListHeaderComponent={
-            !isSearching ? (
-              <Text variant="subheading" style={styles.sectionTitle}>
-                Popular Games
-              </Text>
-            ) : null
-          }
           ListFooterComponent={
             <View>
-              {isSearching && searchResult.isFetchingNextPage && (
+              {searchResult.isFetchingNextPage && (
                 <View style={styles.loadingMore}>
                   <SkeletonLoader height={60} borderRadius={8} />
                 </View>
               )}
-              {isSearching &&
-                searchResult.hasNextPage &&
-                !searchResult.isFetchingNextPage && (
-                  <Pressable style={styles.loadMoreBtn} onPress={handleLoadMore}>
-                    <Text variant="body" color={Colors.primary}>
-                      Load more
-                    </Text>
-                  </Pressable>
-                )}
+              {searchResult.hasNextPage && !searchResult.isFetchingNextPage && (
+                <Pressable style={styles.loadMoreBtn} onPress={handleLoadMore}>
+                  <Text variant="body" color={Colors.primary}>
+                    Load more
+                  </Text>
+                </Pressable>
+              )}
               <RawgFooter />
             </View>
           }
@@ -227,20 +178,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     padding: 0,
   },
-  // Grid layout
-  gridContent: {
-    paddingHorizontal: H_PAD - CARD_MARGIN,
-    paddingBottom: Spacing.xl,
-  },
-  gridCard: {
-    flex: 1,
-    marginHorizontal: CARD_MARGIN,
-    marginBottom: COL_GAP,
-  },
-  sectionTitle: {
-    marginHorizontal: CARD_MARGIN,
-    marginBottom: Spacing.md,
-  },
   // List layout
   listContent: {
     paddingBottom: Spacing.xl,
@@ -255,16 +192,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   // Skeletons
-  skeletonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: H_PAD - CARD_MARGIN,
-  },
-  skeletonCard: {
-    marginHorizontal: CARD_MARGIN,
-    marginBottom: COL_GAP,
-    gap: Spacing.xs,
-  },
   skeletonGap: {
     marginTop: Spacing.xs,
   },

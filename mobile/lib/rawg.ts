@@ -47,18 +47,6 @@ export async function getGameDetail(id: number): Promise<RawgGameDetail> {
   return get<RawgGameDetail>(`/games/${id}`)
 }
 
-export async function getGameAdditions(id: number): Promise<RawgPaginatedResponse<RawgGame>> {
-  return get<RawgPaginatedResponse<RawgGame>>(`/games/${id}/additions`, {
-    page_size: 10,
-  })
-}
-
-export async function getGameSeries(id: number): Promise<RawgPaginatedResponse<RawgGame>> {
-  return get<RawgPaginatedResponse<RawgGame>>(`/games/${id}/game-series`, {
-    page_size: 10,
-  })
-}
-
 export async function getGameScreenshots(
   id: number,
 ): Promise<RawgPaginatedResponse<RawgScreenshot>> {
@@ -113,12 +101,4 @@ export async function getReleaseCalendar(
   if (platformId !== null) params.platforms = platformId
 
   return get<RawgPaginatedResponse<RawgGame>>('/games', params)
-}
-
-export async function getTopRated(): Promise<RawgPaginatedResponse<RawgGame>> {
-  return get<RawgPaginatedResponse<RawgGame>>('/games', {
-    ordering: '-metacritic',
-    metacritic: '80,100',
-    page_size: 20,
-  })
 }

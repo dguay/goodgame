@@ -48,6 +48,7 @@ export type Database = {
           personal_rating: number | null
           platforms: string[] | null
           rawg_game_id: number
+          rawg_metadata_synced_at: string | null
           release_date: string | null
           started_at: string | null
           status: string
@@ -66,6 +67,7 @@ export type Database = {
           personal_rating?: number | null
           platforms?: string[] | null
           rawg_game_id: number
+          rawg_metadata_synced_at?: string | null
           release_date?: string | null
           started_at?: string | null
           status: string
@@ -84,6 +86,7 @@ export type Database = {
           personal_rating?: number | null
           platforms?: string[] | null
           rawg_game_id?: number
+          rawg_metadata_synced_at?: string | null
           release_date?: string | null
           started_at?: string | null
           status?: string
