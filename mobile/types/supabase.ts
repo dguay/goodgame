@@ -514,18 +514,21 @@ export type Database = {
         Row: {
           created_at: string
           library_sort: string
+          library_view: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           library_sort?: string
+          library_view?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           library_sort?: string
+          library_view?: string
           updated_at?: string
           user_id?: string
         }

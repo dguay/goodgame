@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
-import { LIBRARY_SORT_KEYS, type LibrarySortKey } from '@/types'
+import { LIBRARY_SORT_KEYS, isLibraryViewKey, type LibrarySortKey } from '@/types'
 import type { UserPreferences, UserPreferencesUpdate } from '@/types/database'
 
 function userPreferencesKey(userId: string) {
@@ -39,20 +39,23 @@ export function useUpdateUserPreferences() {
   const user = useAuthStore(s => s.user)
 
   return useMutation({
-    mutationFn: async (update: Pick<UserPreferencesUpdate, 'library_sort'>): Promise<UserPreferences> => {
+    mutationFn: async (update: Pick<UserPreferencesUpdate, 'library_sort' | 'library_view'>): Promise<UserPreferences> => {
       if (user == null) throw new Error('Not authenticated')
-      const librarySort = update.library_sort
 
-      if (librarySort == null || !isLibrarySortKey(librarySort)) {
+      if (update.library_sort != null && !isLibrarySortKey(update.library_sort)) {
         throw new Error('Invalid library sort preference')
       }
+      if (update.library_view != null && !isLibraryViewKey(update.library_view)) {
+        throw new Error('Invalid library view preference')
+      }
+
+      const patch: { user_id: string; library_sort?: string; library_view?: string } = { user_id: user.id }
+      if (update.library_sort != null) patch.library_sort = update.library_sort
+      if (update.library_view != null) patch.library_view = update.library_view
 
       const { data, error } = await supabase
         .from('user_preferences')
-        .upsert(
-          { user_id: user.id, library_sort: librarySort },
-          { onConflict: 'user_id' }
-        )
+        .upsert(patch, { onConflict: 'user_id' })
         .select()
         .single()
 
@@ -60,14 +63,15 @@ export function useUpdateUserPreferences() {
       return data
     },
     onMutate: async (update) => {
-      if (user == null || update.library_sort == null) return undefined
+      if (user == null) return undefined
       const key = userPreferencesKey(user.id)
       await queryClient.cancelQueries({ queryKey: key })
       const prev = queryClient.getQueryData<UserPreferences | null>(key)
       const now = new Date().toISOString()
       queryClient.setQueryData<UserPreferences>(key, {
         user_id: user.id,
-        library_sort: update.library_sort,
+        library_sort: update.library_sort ?? prev?.library_sort ?? 'custom',
+        library_view: update.library_view ?? prev?.library_view ?? 'grid',
         created_at: prev?.created_at ?? now,
         updated_at: now,
       })

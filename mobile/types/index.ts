@@ -28,3 +28,11 @@ export const LIBRARY_SORT_KEYS: LibrarySortKey[] = [
   'finished_at',
   'custom',
 ]
+
+export const LIBRARY_VIEW_KEYS = ['grid', 'list', 'minimalist'] as const
+
+export type LibraryViewKey = (typeof LIBRARY_VIEW_KEYS)[number]
+
+export function isLibraryViewKey(value: string): value is LibraryViewKey {
+  return LIBRARY_VIEW_KEYS.includes(value as LibraryViewKey)
+}

@@ -16,14 +16,14 @@ const variantStyles: Record<TextVariant, TextStyle> = {
     fontFamily:    FontFamily.display,
     fontSize:      FontSize.xxxl,
     color:         Colors.textPrimary,
-    lineHeight:    FontSize.xxxl * 1.0,
+    lineHeight:    FontSize.xxxl * 1.2,
     letterSpacing: LetterSpacing.display,
   },
   heading: {
     fontFamily:    FontFamily.display,
     fontSize:      FontSize.xxl,
     color:         Colors.textPrimary,
-    lineHeight:    FontSize.xxl * 1.0,
+    lineHeight:    FontSize.xxl * 1.2,
     letterSpacing: LetterSpacing.tight,
   },
   subheading: {

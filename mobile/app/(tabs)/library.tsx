@@ -34,8 +34,10 @@ import { sortLibraryEntries, type SortDirection } from '@/lib/librarySort'
 import {
   LIBRARY_SORT_KEYS,
   STATUS_LABELS,
+  isLibraryViewKey,
   type LibrarySortKey,
   type LibraryStatus,
+  type LibraryViewKey,
 } from '@/types'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGameDetail } from '@/types/rawg'
@@ -43,7 +45,7 @@ import type { RawgGameDetail } from '@/types/rawg'
 type FilterStatus = Exclude<LibraryStatus, 'playing'> | 'all' | 'next'
 type PlatformFilter = 'all' | 'ps5' | 'pc'
 type SortKey = LibrarySortKey
-type ViewMode = 'grid' | 'list' | 'minimalist'
+type ViewMode = LibraryViewKey
 
 const HEADER_SEARCH_MAX_WIDTH = 360
 
@@ -878,6 +880,7 @@ export default function LibraryScreen() {
   const [contextMenuEntry, setContextMenuEntry] = useState<LibraryEntry | null>(null)
   const [customOrderIds, setCustomOrderIds] = useState<string[]>([])
   const customOrderIdsRef = useRef<string[]>([])
+  const prefsInitRef = useRef(false)
 
   const { data: entries, isLoading } = useLibraryEntries()
   const { mutate: updateEntry } = useUpdateLibraryEntry()
@@ -896,10 +899,15 @@ export default function LibraryScreen() {
   }, [filterParam])
 
   useEffect(() => {
-    if (!preferencesLoaded || userPreferences == null) return
+    if (!preferencesLoaded || userPreferences == null || prefsInitRef.current) return
+    prefsInitRef.current = true
     if (isSortKey(userPreferences.library_sort)) {
       setSort(userPreferences.library_sort)
       setSortDirection(SORT_DEFAULT_DIRECTION[userPreferences.library_sort])
+    }
+    const savedView = userPreferences.library_view
+    if (isLibraryViewKey(savedView)) {
+      setViewMode(savedView)
     }
   }, [preferencesLoaded, userPreferences])
 
@@ -1014,6 +1022,11 @@ export default function LibraryScreen() {
     updateUserPreferences({ library_sort: nextSort })
   }, [updateUserPreferences])
 
+  const handleViewModeChange = useCallback((nextViewMode: ViewMode) => {
+    setViewMode(nextViewMode)
+    updateUserPreferences({ library_view: nextViewMode, library_sort: sort })
+  }, [sort, updateUserPreferences])
+
   const currentSortLabel = SORT_OPTIONS.find(s => s.key === sort)?.label ?? 'Sort'
 
   const emptyHeading =
@@ -1077,7 +1090,7 @@ export default function LibraryScreen() {
         onFilterChange={setFilter}
         onPlatformChange={setPlatformFilter}
         onSortPress={() => setSortPickerVisible(true)}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         onDirectionToggle={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
       />
 
