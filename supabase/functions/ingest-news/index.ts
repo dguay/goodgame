@@ -6,6 +6,7 @@ import { upsertArticles, updateSourceState } from './articles.ts';
 import { clusterRecentArticles } from './clusterer.ts';
 import { matchArticleToGames, saveArticleGameMatches } from './gameMatcher.ts';
 import { sendFeedAlertEmail } from './emailAlerts.ts';
+import { sendErrorAlert } from '../_shared/errorAlert.ts';
 import type { NewsSource } from './types.ts';
 
 const CORS_HEADERS = {
@@ -142,6 +143,16 @@ async function ingest(): Promise<IngestResult> {
           consecutiveFailures: failures,
           isEnabled: failures < 3,
         });
+        await sendErrorAlert(
+          `ingest-news: feed error — ${source.name} (${source.id})`,
+          result.error ?? `HTTP ${result.statusCode}`,
+          {
+            feedUrl: source.feed_url,
+            statusCode: result.statusCode ?? 'none',
+            consecutiveFailures: failures,
+            nextFetchAt: backoff.toISOString(),
+          }
+        );
         if (failures === 3) {
           await sendFeedAlertEmail({
             source,
@@ -177,6 +188,7 @@ async function ingest(): Promise<IngestResult> {
     } catch (err) {
       errors.push(`${source.id}: ${String(err)}`);
       console.error(`Error processing source ${source.id}:`, err);
+      await sendErrorAlert(`ingest-news: unexpected error — ${source.id}`, err);
     }
   }
 
@@ -185,6 +197,7 @@ async function ingest(): Promise<IngestResult> {
   } catch (err) {
     errors.push(`clustering: ${String(err)}`);
     console.error('Clustering error:', err);
+    await sendErrorAlert('ingest-news: clustering error', err);
   }
 
   return { processed: sources.length, totalInserted, errors };
@@ -206,6 +219,7 @@ Deno.serve(async (req) => {
     return json({ success: true, ...result });
   } catch (err) {
     console.error('Ingest fatal error:', err);
+    await sendErrorAlert('ingest-news: fatal error', err);
     return json({ error: String(err) }, 500);
   }
 });

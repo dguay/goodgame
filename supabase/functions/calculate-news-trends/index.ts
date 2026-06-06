@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { effectiveArticleTime, type ArticleTimeFields } from '../_shared/articleTime.ts';
+import { sendErrorAlert } from '../_shared/errorAlert.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -103,7 +104,11 @@ async function calculateTrends(): Promise<{ gamesUpdated: number }> {
       calculated_at: now.toISOString(),
     });
 
-    if (!upsertError) gamesUpdated++;
+    if (upsertError) {
+      await sendErrorAlert('calculate-news-trends: upsert error', upsertError.message, { gameId });
+    } else {
+      gamesUpdated++;
+    }
   }
 
   return { gamesUpdated };
@@ -125,6 +130,7 @@ Deno.serve(async (req) => {
     return json({ success: true, ...result });
   } catch (err) {
     console.error('Trends calculation error:', err);
+    await sendErrorAlert('calculate-news-trends: fatal error', err);
     return json({ error: String(err) }, 500);
   }
 });
