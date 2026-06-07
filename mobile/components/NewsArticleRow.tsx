@@ -33,6 +33,11 @@ export function NewsArticleRow({ item }: Props) {
         <Text variant="body" style={styles.articleTitle} numberOfLines={5}>
           {item.title}
         </Text>
+        {item.description != null && item.description !== '' && (
+          <Text variant="caption" color={Colors.textMuted} style={styles.excerpt} numberOfLines={20}>
+            {item.description}
+          </Text>
+        )}
         <View style={styles.articleMeta}>
           <Text variant="caption" color={Colors.primary}>
             {item.sourceName}
@@ -74,6 +79,9 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     color: Colors.textPrimary,
     lineHeight: FontSize.md * 1.3,
+  },
+  excerpt: {
+    lineHeight: FontSize.xs * 1.4,
   },
   articleMeta: {
     flexDirection: 'row',

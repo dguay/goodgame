@@ -28,6 +28,11 @@ function ClusterCard({ cluster }: { cluster: StoryCluster }) {
         <Text variant="label" style={styles.title} numberOfLines={5}>
           {cluster.title}
         </Text>
+        {cluster.excerpt != null && cluster.excerpt !== '' && (
+          <Text variant="caption" color={Colors.textMuted} style={styles.excerpt} numberOfLines={20}>
+            {cluster.excerpt}
+          </Text>
+        )}
         <View style={styles.meta}>
           {primarySource != null && (
             <Text variant="caption" color={Colors.primary}>
@@ -159,6 +164,9 @@ const styles = StyleSheet.create({
   title: {
     color: Colors.textPrimary,
     lineHeight: FontSize.sm * 1.4,
+  },
+  excerpt: {
+    lineHeight: FontSize.xs * 1.4,
   },
   meta: {
     flexDirection: 'row',

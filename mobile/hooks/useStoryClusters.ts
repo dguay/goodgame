@@ -17,6 +17,7 @@ export interface StoryCluster {
   firstPublishedAt: string | null
   latestPublishedAt: string | null
   imageUrl: string | null
+  excerpt: string | null
   sources: ClusterSource[]
 }
 
@@ -35,7 +36,7 @@ async function fetchStoryClusters(limit = 25): Promise<StoryCluster[]> {
 
   const { data: articles, error: articlesError } = await supabase
     .from('news_articles')
-    .select('id, url, image_url, cluster_id, source_id, news_sources(id, name)')
+    .select('id, url, image_url, excerpt, cluster_id, source_id, news_sources(id, name)')
     .in('cluster_id', clusterIds)
 
   if (articlesError) throw articlesError
@@ -54,10 +55,14 @@ async function fetchStoryClusters(limit = 25): Promise<StoryCluster[]> {
     const sources: ClusterSource[] = []
 
     let imageUrl: string | null = null
+    let excerpt: string | null = null
 
     for (const article of clusterArticles) {
       if (imageUrl == null && article.image_url != null) {
         imageUrl = article.image_url
+      }
+      if (excerpt == null && article.excerpt != null) {
+        excerpt = article.excerpt
       }
       const source = article.news_sources as { id: string; name: string } | null
       if (source != null && !seenSources.has(source.id)) {
@@ -75,6 +80,7 @@ async function fetchStoryClusters(limit = 25): Promise<StoryCluster[]> {
       firstPublishedAt: cluster.first_published_at,
       latestPublishedAt: cluster.latest_published_at,
       imageUrl,
+      excerpt,
       sources,
     }
   })
