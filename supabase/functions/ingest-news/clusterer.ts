@@ -1,7 +1,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { effectiveArticleTime, type ArticleTimeFields } from '../_shared/articleTime.ts';
 
-const SAME_STORY_THRESHOLD = 0.72;
+const SAME_STORY_THRESHOLD = 0.5;
 const CLUSTER_WINDOW_HOURS = 72;
 const RECENCY_SCORE_2H = 50;
 const RECENCY_SCORE_6H = 40;
@@ -32,33 +32,32 @@ interface ClusterScoreArticleRow extends ArticleTimeFields {
   news_sources: { source_weight: number } | Array<{ source_weight: number }> | null;
 }
 
-function levenshtein(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
+// Words that carry no story-differentiating signal in headlines.
+// Platform names are included because "announced for PS5, Xbox Series, Switch 2, and PC"
+// is boilerplate that would otherwise falsely link unrelated game announcements.
+export const CLUSTER_STOP_WORDS = new Set([
+  'for', 'and', 'of', 'in', 'on', 'to', 'at', 'by', 'with', 'from',
+  'or', 'as', 'is', 'are', 'it', 'its', 'so', 'be', 'how', 'get',
+  'ps4', 'ps5', 'xbox', 'pc', 'steam', 'nintendo', 'switch', 'playstation', 'series',
+]);
 
-  const prev = Array.from({ length: n + 1 }, (_, i) => i);
-  const curr = new Array<number>(n + 1);
-
-  for (let i = 1; i <= m; i++) {
-    curr[0] = i;
-    for (let j = 1; j <= n; j++) {
-      curr[j] =
-        a[i - 1] === b[j - 1]
-          ? prev[j - 1]
-          : 1 + Math.min(prev[j], curr[j - 1], prev[j - 1]);
-    }
-    prev.splice(0, n + 1, ...curr);
-  }
-
-  return prev[n];
+export function tokenize(normalizedTitle: string): Set<string> {
+  return new Set(
+    normalizedTitle.split(' ').filter((w) => w.length > 1 && !CLUSTER_STOP_WORDS.has(w))
+  );
 }
 
-function similarity(a: string, b: string): number {
-  const maxLen = Math.max(a.length, b.length);
-  if (maxLen === 0) return 1;
-  return 1 - levenshtein(a, b) / maxLen;
+// Jaccard word-overlap similarity. Returns 0 when fewer than 2 words overlap —
+// a single shared word (e.g. "review") is not enough signal to link two stories.
+export function wordJaccard(a: string, b: string): number {
+  if (a.length > 0 && a === b) return 1;
+  const tokensA = tokenize(a);
+  const tokensB = tokenize(b);
+  let intersection = 0;
+  for (const w of tokensA) if (tokensB.has(w)) intersection++;
+  if (intersection < 2) return 0;
+  const union = tokensA.size + tokensB.size - intersection;
+  return union === 0 ? 1 : intersection / union;
 }
 
 function recencyScore(timestamp: string | null): number {
@@ -74,6 +73,12 @@ function recencyScore(timestamp: string | null): number {
   if (hoursOld <= 24) return RECENCY_SCORE_24H;
   if (hoursOld <= 48) return RECENCY_SCORE_48H;
   return 0;
+}
+
+export function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
 }
 
 function setsOverlap(a: Set<string>, b: Set<string>): boolean {
@@ -155,10 +160,43 @@ async function fetchClusterGameMap(
   return gamesByCluster;
 }
 
-function canJoinCluster(
+async function fetchClusterSourceMap(
+  supabase: SupabaseClient,
+  clusterIds: string[]
+): Promise<Map<string, Set<string>>> {
+  if (clusterIds.length === 0) return new Map();
+
+  const sourcesByCluster = new Map<string, Set<string>>();
+  for (const chunk of chunkArray(clusterIds, 100)) {
+    const { data, error } = await supabase
+      .from('news_articles')
+      .select('cluster_id, source_id')
+      .in('cluster_id', chunk);
+    if (error) {
+      console.error('Error loading cluster sources:', error.message);
+      continue;
+    }
+    for (const row of data ?? []) {
+      const r = row as { cluster_id: string; source_id: string };
+      const sources = sourcesByCluster.get(r.cluster_id) ?? new Set<string>();
+      sources.add(r.source_id);
+      sourcesByCluster.set(r.cluster_id, sources);
+    }
+  }
+
+  return sourcesByCluster;
+}
+
+// An article may only join a cluster if:
+// 1. It comes from a source not already represented (clusters exist to surface multi-source coverage).
+// 2. Game associations overlap (or either side has no game data yet).
+export function canJoinCluster(
   articleGameIds: Set<string>,
-  clusterGameIds: Set<string>
+  clusterGameIds: Set<string>,
+  articleSourceId: string,
+  clusterSourceIds: Set<string>
 ): boolean {
+  if (clusterSourceIds.has(articleSourceId)) return false;
   if (articleGameIds.size === 0 || clusterGameIds.size === 0) return true;
   return setsOverlap(articleGameIds, clusterGameIds);
 }
@@ -233,17 +271,18 @@ async function updateRecentClusterScores(
   if (clusterRows.length === 0) return;
 
   const clusterIds = clusterRows.map((cluster) => cluster.id);
-  const { data: articles, error: articlesError } = await supabase
-    .from('news_articles')
-    .select('id, cluster_id, source_id, published_at, fetched_at, created_at, news_sources(source_weight)')
-    .in('cluster_id', clusterIds);
-
-  if (articlesError) {
-    console.error('Error loading articles for cluster score update:', articlesError.message);
-    return;
+  const articleRows: ClusterScoreArticleRow[] = [];
+  for (const chunk of chunkArray(clusterIds, 100)) {
+    const { data, error: chunkError } = await supabase
+      .from('news_articles')
+      .select('id, cluster_id, source_id, published_at, fetched_at, created_at, news_sources(source_weight)')
+      .in('cluster_id', chunk);
+    if (chunkError) {
+      console.error('Error loading articles for cluster score update:', chunkError.message);
+      return;
+    }
+    articleRows.push(...((data ?? []) as unknown as ClusterScoreArticleRow[]));
   }
-
-  const articleRows = (articles ?? []) as unknown as ClusterScoreArticleRow[];
   const articleIds = articleRows.map((article) => article.id);
   const articlesByCluster = new Map<string, ClusterScoreArticleRow[]>();
 
@@ -254,15 +293,17 @@ async function updateRecentClusterScores(
     articlesByCluster.set(article.cluster_id, existing);
   }
 
-  const { data: articleGames, error: articleGamesError } = articleIds.length > 0
-    ? await supabase
+  const articleGames: Array<{ article_id: string; game_id: string }> = [];
+  for (const chunk of chunkArray(articleIds, 100)) {
+    const { data, error: chunkError } = await supabase
       .from('news_article_games')
       .select('article_id, game_id')
-      .in('article_id', articleIds)
-    : { data: [], error: null };
-
-  if (articleGamesError) {
-    console.error('Error loading games for cluster score update:', articleGamesError.message);
+      .in('article_id', chunk);
+    if (chunkError) {
+      console.error('Error loading games for cluster score update:', chunkError.message);
+    } else {
+      articleGames.push(...(data ?? []));
+    }
   }
 
   const clusterByArticle = new Map(
@@ -272,7 +313,7 @@ async function updateRecentClusterScores(
   );
   const gamesByCluster = new Map<string, Set<string>>();
 
-  for (const row of articleGames ?? []) {
+  for (const row of articleGames) {
     const articleId = (row as { article_id: string }).article_id;
     const gameId = (row as { game_id: string }).game_id;
     const clusterId = clusterByArticle.get(articleId);
@@ -366,6 +407,10 @@ export async function clusterRecentArticles(supabase: SupabaseClient): Promise<v
     supabase,
     clusters.map((cluster) => cluster.id)
   );
+  const clusterSourceMap = await fetchClusterSourceMap(
+    supabase,
+    clusters.map((cluster) => cluster.id)
+  );
 
   for (const article of unclusteredArticles) {
     let bestCluster: ClusterRow | null = null;
@@ -374,9 +419,10 @@ export async function clusterRecentArticles(supabase: SupabaseClient): Promise<v
 
     for (const cluster of clusters) {
       const clusterGameIds = clusterGameMap.get(cluster.id) ?? new Set<string>();
-      if (!canJoinCluster(articleGameIds, clusterGameIds)) continue;
+      const clusterSourceIds = clusterSourceMap.get(cluster.id) ?? new Set<string>();
+      if (!canJoinCluster(articleGameIds, clusterGameIds, article.source_id, clusterSourceIds)) continue;
 
-      const sim = similarity(article.normalized_title, cluster.normalized_title);
+      const sim = wordJaccard(article.normalized_title, cluster.normalized_title);
       if (sim >= SAME_STORY_THRESHOLD && sim > bestSim) {
         bestSim = sim;
         bestCluster = cluster;
@@ -411,6 +457,10 @@ export async function clusterRecentArticles(supabase: SupabaseClient): Promise<v
         for (const gameId of articleGameIds) clusterGames.add(gameId);
         clusterGameMap.set(bestCluster.id, clusterGames);
 
+        const clusterSources = clusterSourceMap.get(bestCluster.id) ?? new Set<string>();
+        clusterSources.add(article.source_id);
+        clusterSourceMap.set(bestCluster.id, clusterSources);
+
         bestCluster.article_count++;
         bestCluster.unique_source_count = uniqueSources;
         bestCluster.latest_published_at = newLatest;
@@ -439,6 +489,7 @@ export async function clusterRecentArticles(supabase: SupabaseClient): Promise<v
 
         clusters.push(created as ClusterRow);
         clusterGameMap.set((created as ClusterRow).id, articleGameIds);
+        clusterSourceMap.set((created as ClusterRow).id, new Set([article.source_id]));
       }
     }
   }

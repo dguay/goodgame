@@ -49,6 +49,13 @@ When reviewing or modifying code, call out violations of SOLID, KISS, or DRY onl
 
 ---
 
+## Prefer Libraries Over Custom Code
+
+Before implementing any non-trivial utility, algorithm, or integration:
+- Search the web for existing libraries that solve the problem.
+- If a well-maintained library exists, propose it and ask the user whether to use it.
+- Only write custom code when no suitable library exists, the dependency cost outweighs the benefit, or the user explicitly prefers custom.
+
 ## Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -162,6 +169,7 @@ package.json                  → root scripts (proxies to mobile/ + supabase co
   ```
   Or from root: `pnpm run db:types`
 - Schema changes go in `/supabase/migrations/` as timestamped `.sql` files.
+- Never push migrations or deploy edge functions update without asking
 
 ### State Management
 - **Zustand** for global client state (auth session, UI preferences).
