@@ -16,6 +16,8 @@
     "lib/librarySort.test.ts",
     "lib/authHelpers.ts",
     "lib/authHelpers.test.ts",
+    "lib/pcgamingwiki.ts",
+    "lib/pcgamingwiki.test.ts",
     "types/**/*.ts"
   ]
 }

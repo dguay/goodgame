@@ -8,7 +8,6 @@ import {
   Modal,
   Platform,
   ActivityIndicator,
-  Linking,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -22,12 +21,14 @@ import { AddToLibraryButton } from '@/components/AddToLibraryButton'
 import { DateField } from '@/components/DateField'
 import { RawgFooter } from '@/components/RawgFooter'
 import { RatingInput } from '@/components/RatingInput'
+import { PcFeaturesSection } from '@/components/PcFeaturesSection'
 
 import {
   useGameDetail,
   useGameScreenshots,
 } from '@/hooks/useRawg'
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
+import { usePcGamingWikiFeatures } from '@/hooks/usePcGamingWiki'
 import { useSteamAppId } from '@/hooks/useSteam'
 import { useNewsGame, useNewsGameArticles } from '@/hooks/useNewsForGame'
 import type { NewsItem } from '@/hooks/useNews'
@@ -35,7 +36,7 @@ import type { NewsItem } from '@/hooks/useNews'
 import { Colors, Radius, Spacing } from '@/constants'
 import { formatRatingCount } from '@/lib/rating'
 import { formatPubDate, isUpcomingRelease } from '@/lib/dates'
-import { getSteamStoreUrl } from '@/lib/steam'
+import { openExternalUrl } from '@/lib/links'
 import type { LibraryEntry } from '@/types/database'
 import type { RawgGameDetail } from '@/types/rawg'
 
@@ -70,8 +71,6 @@ const PLATFORM_LABELS: Record<string, string> = {
   macos: 'Mac',
   linux: 'Lin',
 }
-
-const STEAM_BLUE = '#66c0f4'
 
 function metacriticColor(score: number): string {
   if (score >= 75) return Colors.success
@@ -108,14 +107,6 @@ function getReleaseDateInfo(released: string | null): ReleaseDateInfo | null {
   return {
     label: `${MONTH_NAMES[monthIndex]} ${dayNumber}, ${year}`,
     isFuture: isUpcomingRelease(released),
-  }
-}
-
-async function openExternalUrl(url: string): Promise<void> {
-  try {
-    await Linking.openURL(url)
-  } catch (error) {
-    console.warn('Could not open external URL', error)
   }
 }
 
@@ -248,16 +239,12 @@ function HeroSection({ game }: HeroProps) {
 interface InfoProps {
   description: string
   genres: { id: number; name: string; slug: string }[]
-  steamAppId: number | null
-  steamLoading: boolean
 }
 
-function InfoSection({ description, genres, steamAppId, steamLoading }: InfoProps) {
+function InfoSection({ description, genres }: InfoProps) {
   const [expanded, setExpanded] = useState(false)
   const trimmed = description.trim()
-  const steamUrl = steamAppId != null ? getSteamStoreUrl(steamAppId) : null
-  const hasExternalLinks = steamUrl != null || steamLoading
-  const hasInfoMeta = genres.length > 0 || hasExternalLinks
+  const hasInfoMeta = genres.length > 0
   const shouldClamp = trimmed.length > 280
 
   return (
@@ -292,28 +279,6 @@ function InfoSection({ description, genres, steamAppId, steamLoading }: InfoProp
                   </Text>
                 </View>
               ))}
-            </View>
-          )}
-          {hasExternalLinks && (
-            <View style={styles.externalLinkRow}>
-              {steamUrl != null ? (
-                <Pressable
-                  style={[styles.linkButton, styles.steamButton]}
-                  onPress={() => void openExternalUrl(steamUrl)}
-                >
-                  <Ionicons name="logo-steam" size={14} color={STEAM_BLUE} />
-                  <Text variant="label" color={STEAM_BLUE}>
-                    Steam
-                  </Text>
-                </Pressable>
-              ) : steamLoading ? (
-                <View style={[styles.linkButton, styles.steamButton]}>
-                  <ActivityIndicator size="small" color={STEAM_BLUE} />
-                  <Text variant="label" color={STEAM_BLUE}>
-                    Steam
-                  </Text>
-                </View>
-              ) : null}
             </View>
           )}
         </View>
@@ -618,8 +583,13 @@ export default function GameDetailScreen() {
 
   const { data: game, isLoading, isError } = useGameDetail(safeGameId)
   const entry = useLibraryEntry(safeGameId)
-  const steamQuery = useSteamAppId(game?.id ?? null, game?.name ?? null)
+  const isPcGame = game?.platforms?.some((entry) => entry.platform.slug === 'pc') ?? false
+  const steamQuery = useSteamAppId(
+    isPcGame ? game?.id ?? null : null,
+    isPcGame ? game?.name ?? null : null,
+  )
   const steamAppId = steamQuery.data ?? null
+  const pcgwQuery = usePcGamingWikiFeatures(isPcGame ? game?.id ?? null : null, steamAppId)
   const actionBarBottomPadding =
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.xl) + Spacing.xs
@@ -684,9 +654,22 @@ export default function GameDetailScreen() {
           <InfoSection
             description={game.description_raw}
             genres={game.genres ?? []}
-            steamAppId={steamAppId}
-            steamLoading={steamQuery.isLoading}
           />
+          {isPcGame && (
+            <PcFeaturesSection
+              controllerSupport={pcgwQuery.data?.controllerSupport ?? null}
+              isError={pcgwQuery.isError}
+              isLoading={pcgwQuery.isLoading || (steamQuery.isLoading && steamAppId == null)}
+              officialDiscordUrl={pcgwQuery.data?.officialDiscordUrl ?? null}
+              oneTwentyFps={pcgwQuery.data?.oneTwentyFps ?? null}
+              pageName={pcgwQuery.data?.pageName ?? null}
+              perspectives={pcgwQuery.data?.perspectives ?? []}
+              sixtyFps={pcgwQuery.data?.sixtyFps ?? null}
+              steamAppId={steamAppId}
+              steamLoading={steamQuery.isLoading}
+              ultrawidescreen={pcgwQuery.data?.ultrawidescreen ?? null}
+            />
+          )}
           <ScreenshotGallery gameId={game.id} />
           {entry != null && <PersonalTracking entry={entry} />}
           <GameNewsSection slug={game.slug} />
@@ -891,11 +874,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.xs,
   },
-  externalLinkRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
   genreChip: {
     borderWidth: 1,
     borderColor: Colors.primary,
@@ -937,22 +915,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing.xl,
     right: Spacing.md,
-  },
-
-  // External links
-  linkButton: {
-    minHeight: 32,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    backgroundColor: 'transparent',
-    paddingHorizontal: Spacing.sm,
-  },
-  steamButton: {
-    borderColor: 'rgba(102,192,244,0.42)',
   },
 
   // Personal Tracking

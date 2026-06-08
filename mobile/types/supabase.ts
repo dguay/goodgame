@@ -35,6 +35,138 @@ export type Database = {
         }
         Relationships: []
       }
+      pcgamingwiki_features: {
+        Row: {
+          controller_support:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          created_at: string
+          official_discord_url: string | null
+          one_twenty_fps:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          pcgw_page_id: number | null
+          pcgw_page_name: string | null
+          perspectives: string[]
+          rawg_game_id: number
+          refreshed_at: string
+          sixty_fps:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          steam_app_id: number | null
+          ultrawidescreen:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          updated_at: string
+        }
+        Insert: {
+          controller_support?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          created_at?: string
+          official_discord_url?: string | null
+          one_twenty_fps?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          pcgw_page_id?: number | null
+          pcgw_page_name?: string | null
+          perspectives?: string[]
+          rawg_game_id: number
+          refreshed_at?: string
+          sixty_fps?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          steam_app_id?: number | null
+          ultrawidescreen?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          updated_at?: string
+        }
+        Update: {
+          controller_support?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          created_at?: string
+          official_discord_url?: string | null
+          one_twenty_fps?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          pcgw_page_id?: number | null
+          pcgw_page_name?: string | null
+          perspectives?: string[]
+          rawg_game_id?: number
+          refreshed_at?: string
+          sixty_fps?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          steam_app_id?: number | null
+          ultrawidescreen?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       library_entries: {
         Row: {
           created_at: string
