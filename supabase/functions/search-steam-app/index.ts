@@ -42,9 +42,13 @@ function buildSteamSearchUrl(term: string): string {
   return `${STEAM_SEARCH_URL}?${query.toString()}`
 }
 
+function normalizeName(name: string): string {
+  return name.toLowerCase().replace(/[™®©]/g, '').replace(/\s+/g, ' ').trim()
+}
+
 function selectSteamAppId(term: string, items: SteamStoreSearchItem[] | undefined): number | null {
-  const normalizedTerm = term.toLowerCase()
-  const match = items?.find(item => item.name.toLowerCase() === normalizedTerm)
+  const normalizedTerm = normalizeName(term)
+  const match = items?.find(item => normalizeName(item.name) === normalizedTerm)
   return match?.id ?? null
 }
 

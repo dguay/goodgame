@@ -65,6 +65,7 @@ Before implementing:
 - If multiple interpretations exist, present them - don't pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
+- Enumerate all edge cases for this feature: null vs empty states, transient failures, race conditions, timezone/date boundaries, future vs past states, partial-data scenarios, and concurrent updates. List them, then design the implementation to handle each explicitly.
 
 ## Surgical Changes
 
@@ -139,6 +140,15 @@ package.json                  → root scripts (proxies to mobile/ + supabase co
 
 ---
 
+## Code Review Workflow
+- Expect iterative review rounds; surface and fix edge cases proactively rather than waiting for reviewers to find them
+- For features touching DB schemas, always consider: null vs empty-array semantics, backfill scripts, and migration ordering
+
+## Project Conventions
+- This is an Expo/React Native + Supabase project; ngrok is bundled via @expo/ngrok (do NOT suggest brew install)
+- All pages using RAWG data MUST include the RawgFooter attribution component
+- Mobile screens should include 'bottom' edge in SafeAreaView to avoid Android nav overlap
+
 ## Mandatory Rules
 
 ### General
@@ -170,6 +180,8 @@ package.json                  → root scripts (proxies to mobile/ + supabase co
   Or from root: `pnpm run db:types`
 - Schema changes go in `/supabase/migrations/` as timestamped `.sql` files.
 - Never push migrations or deploy edge functions update without asking
+- Cron-triggered Supabase edge functions must have `verify_jwt = false` in config.toml
+- When writing shared modules used by multiple functions, ensure idempotency to avoid duplicate side effects (e.g., duplicate alert emails)
 
 ### State Management
 - **Zustand** for global client state (auth session, UI preferences).
@@ -209,37 +221,6 @@ This is a legal requirement from RAWG's free tier. Do not omit it from any scree
 Design tokens live in `/constants/`. Always use tokens — never magic numbers.
 
 Look at `DESIGN.md`
-
----
-
-## Database Schema (reference)
-
-```sql
-profiles (
-  id uuid PRIMARY KEY,          -- matches auth.users.id
-  username text UNIQUE,
-  display_name text,
-  avatar_url text,
-  created_at timestamptz
-)
-
-library_entries (
-  id uuid PRIMARY KEY,
-  user_id uuid → profiles.id,
-  rawg_game_id integer,
-  game_title text,              -- denormalized
-  game_cover_url text,          -- denormalized
-  status LibraryStatus,
-  personal_rating numeric(3,1), -- 0.0–10.0
-  personal_playtime_minutes integer,
-  personal_notes text,
-  started_at date,
-  finished_at date,
-  created_at timestamptz,
-  updated_at timestamptz,
-  UNIQUE(user_id, rawg_game_id)
-)
-```
 
 ---
 

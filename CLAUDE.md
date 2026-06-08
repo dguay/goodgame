@@ -1,6 +1,9 @@
 # Goodgame Agent Instructions
 
-Claude Code should follow the project instructions in:
+## Code Review Workflow
+- After implementing changes, proactively run `/codex:review --wait` (always use --wait flag) before declaring work complete
+
+Additionally, Claude Code should follow the project instructions in:
 
 `AGENTS.md`
 
