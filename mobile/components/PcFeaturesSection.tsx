@@ -116,22 +116,6 @@ export function PcFeaturesSection({
 
       <View style={styles.featureList}>
         <FeatureRow
-          color={sixtyFps != null ? FEATURE_SUPPORT_COLORS[sixtyFps] : Colors.textMuted}
-          icon="speedometer-outline"
-          isError={isError}
-          isLoading={isLoading}
-          label="60 FPS"
-          value={sixtyFps != null ? FEATURE_SUPPORT_LABELS[sixtyFps] : 'Not documented'}
-        />
-        <FeatureRow
-          color={oneTwentyFps != null ? FEATURE_SUPPORT_COLORS[oneTwentyFps] : Colors.textMuted}
-          icon="flash-outline"
-          isError={isError}
-          isLoading={isLoading}
-          label="120 FPS"
-          value={oneTwentyFps != null ? FEATURE_SUPPORT_LABELS[oneTwentyFps] : 'Not documented'}
-        />
-        <FeatureRow
           color={ultrawidescreen != null ? FEATURE_SUPPORT_COLORS[ultrawidescreen] : Colors.textMuted}
           icon="resize-outline"
           isError={isError}
@@ -147,6 +131,23 @@ export function PcFeaturesSection({
           label="Controller"
           value={controllerSupport != null ? FEATURE_SUPPORT_LABELS[controllerSupport] : 'Not documented'}
         />
+        <FeatureRow
+          color={sixtyFps != null ? FEATURE_SUPPORT_COLORS[sixtyFps] : Colors.textMuted}
+          icon="speedometer-outline"
+          isError={isError}
+          isLoading={isLoading}
+          label="60 FPS"
+          value={sixtyFps != null ? FEATURE_SUPPORT_LABELS[sixtyFps] : 'Not documented'}
+        />
+        <FeatureRow
+          color={oneTwentyFps != null ? FEATURE_SUPPORT_COLORS[oneTwentyFps] : Colors.textMuted}
+          icon="flash-outline"
+          isError={isError}
+          isLoading={isLoading}
+          label="120 FPS"
+          value={oneTwentyFps != null ? FEATURE_SUPPORT_LABELS[oneTwentyFps] : 'Not documented'}
+        />
+        
         <FeatureRow
           color={perspectives.length > 0 ? Colors.primary : Colors.textMuted}
           icon="eye-outline"
