@@ -9,12 +9,15 @@ export type PcgwSupportState =
 export interface PcgwFeatureResult {
   controllerSupport: PcgwSupportState | null
   officialDiscordUrl: string | null
+  pageSourceFetchFailed: boolean
   oneTwentyFps: PcgwSupportState | null
   pageId: number | null
   pageName: string | null
   perspectives: string[]
   sixtyFps: PcgwSupportState | null
   ultrawidescreen: PcgwSupportState | null
+  xboxGamePass: PcgwSupportState | null
+  xboxGamePassFetchFailed: boolean
 }
 
 interface CargoQueryRow {
@@ -26,6 +29,7 @@ interface CargoQueryRow {
     Perspectives?: string | null
     SixtyFps?: string | null
     Ultrawidescreen?: string | null
+    XboxGamePass?: string | null
   }
 }
 
@@ -130,6 +134,37 @@ async function getPcgwPageSource(pageName: string): Promise<string | null> {
   return page?.revisions?.[0]?.slots?.main?.['*'] ?? null
 }
 
+const GAME_PASS_SUPPORT_PRIORITY: Record<PcgwSupportState, number> = {
+  'always on': 6,
+  'true': 5,
+  'limited': 4,
+  'hackable': 3,
+  'unknown': 2,
+  'false': 1,
+}
+
+export async function getPcgwXboxGamePassByPageId(pageId: number): Promise<PcgwSupportState | null> {
+  const params = new URLSearchParams({
+    origin: '*',
+    action: 'cargoquery',
+    format: 'json',
+    tables: 'Availability',
+    fields: 'Availability.Xbox_Game_Pass=XboxGamePass',
+    where: `Availability._pageID="${pageId}"`,
+    limit: '50',
+  })
+  const body = await fetchPcgwJson<CargoQueryResponse>(params)
+  let best: PcgwSupportState | null = null
+  for (const row of body.cargoquery ?? []) {
+    const value = parsePcgwFeatureSupport(row.title?.XboxGamePass)
+    if (value == null) continue
+    if (best == null || GAME_PASS_SUPPORT_PRIORITY[value] > GAME_PASS_SUPPORT_PRIORITY[best]) {
+      best = value
+    }
+  }
+  return best
+}
+
 export async function getPcgwFeaturesBySteamAppId(
   steamAppId: number
 ): Promise<PcgwFeatureResult | null> {
@@ -155,17 +190,30 @@ export async function getPcgwFeaturesBySteamAppId(
   const body = await fetchPcgwJson<CargoQueryResponse>(params)
   const title = body.cargoquery?.[0]?.title
   if (title == null) return null
+  const pageId = parsePageId(title.PageID)
   const pageName = title.PageName ?? null
-  const pageSource = pageName != null ? await getPcgwPageSource(pageName) : null
+
+  const [pageSourceResult, xboxGamePassResult] = await Promise.allSettled([
+    pageName != null ? getPcgwPageSource(pageName) : Promise.resolve(null),
+    pageId != null ? getPcgwXboxGamePassByPageId(pageId) : Promise.resolve(null),
+  ])
+
+  const pageSourceFetchFailed = pageSourceResult.status === 'rejected'
+  const pageSource = pageSourceResult.status === 'fulfilled' ? pageSourceResult.value : null
+  const xboxGamePassFetchFailed = xboxGamePassResult.status === 'rejected'
+  const xboxGamePass = xboxGamePassResult.status === 'fulfilled' ? xboxGamePassResult.value : null
 
   return {
     controllerSupport: parsePcgwFeatureSupport(title.ControllerSupport),
     officialDiscordUrl: pageSource != null ? parseOfficialDiscordUrl(pageSource) : null,
+    pageSourceFetchFailed,
     oneTwentyFps: parsePcgwFeatureSupport(title.OneTwentyFps),
-    pageId: parsePageId(title.PageID),
+    pageId,
     pageName,
     perspectives: parsePcgwList(title.Perspectives),
     sixtyFps: parsePcgwFeatureSupport(title.SixtyFps),
     ultrawidescreen: parsePcgwFeatureSupport(title.Ultrawidescreen),
+    xboxGamePass,
+    xboxGamePassFetchFailed,
   }
 }

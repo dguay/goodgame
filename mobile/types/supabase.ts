@@ -78,6 +78,15 @@ export type Database = {
             | "unknown"
             | null
           updated_at: string
+          xbox_game_pass:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          xbox_game_pass_checked_at: string | null
         }
         Insert: {
           controller_support?:
@@ -121,6 +130,15 @@ export type Database = {
             | "unknown"
             | null
           updated_at?: string
+          xbox_game_pass?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          xbox_game_pass_checked_at?: string | null
         }
         Update: {
           controller_support?:
@@ -164,6 +182,15 @@ export type Database = {
             | "unknown"
             | null
           updated_at?: string
+          xbox_game_pass?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
+          xbox_game_pass_checked_at?: string | null
         }
         Relationships: []
       }

@@ -42,6 +42,7 @@ interface Props {
   steamAppId: number | null
   steamLoading: boolean
   ultrawidescreen: PcgwSupportState | null
+  xboxGamePass: PcgwSupportState | null
 }
 
 interface FeatureRowProps {
@@ -81,6 +82,7 @@ export function PcFeaturesSection({
   steamAppId,
   steamLoading,
   ultrawidescreen,
+  xboxGamePass,
 }: Props) {
   if (
     steamAppId == null &&
@@ -91,7 +93,8 @@ export function PcFeaturesSection({
     ultrawidescreen == null &&
     controllerSupport == null &&
     perspectives.length === 0 &&
-    officialDiscordUrl == null
+    officialDiscordUrl == null &&
+    xboxGamePass == null
   ) return null
 
   const pcgwUrl = pageName != null ? getPcgwPageUrl(pageName) : null
@@ -155,6 +158,14 @@ export function PcFeaturesSection({
           isLoading={isLoading}
           label="Perspectives"
           value={perspectivesLabel}
+        />
+        <FeatureRow
+          color={xboxGamePass != null ? FEATURE_SUPPORT_COLORS[xboxGamePass] : Colors.textMuted}
+          icon="logo-xbox"
+          isError={isError}
+          isLoading={isLoading}
+          label="Xbox Game Pass"
+          value={xboxGamePass != null ? FEATURE_SUPPORT_LABELS[xboxGamePass] : 'Not documented'}
         />
 
         {officialDiscordUrl != null && (

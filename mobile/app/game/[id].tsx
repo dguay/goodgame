@@ -668,6 +668,7 @@ export default function GameDetailScreen() {
               steamAppId={steamAppId}
               steamLoading={steamQuery.isLoading}
               ultrawidescreen={pcgwQuery.data?.ultrawidescreen ?? null}
+              xboxGamePass={pcgwQuery.data?.xboxGamePass ?? null}
             />
           )}
           <ScreenshotGallery gameId={game.id} />

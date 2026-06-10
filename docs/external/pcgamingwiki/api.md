@@ -58,6 +58,10 @@ Verified response for Elden Ring / Steam AppID `1245620`:
 }
 ```
 
+## Discover cargo fields
+
+Example: https://www.pcgamingwiki.com/w/api.php?action=cargofields&table=Availability&format=json
+
 ## Support Values
 
 Goodgame uses the same support-state parser for these PCGamingWiki fields:
