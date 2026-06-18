@@ -212,6 +212,7 @@ Every screen/page that uses RAWG data **must** render this footer:
 </Text>
 ```
 
+
 This is a legal requirement from RAWG's free tier. Do not omit it from any screen.
 
 ---

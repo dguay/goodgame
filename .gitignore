@@ -1,5 +1,9 @@
 # Local Claude Code settings (machine-specific)
 .claude/settings.local.json
+.claude/
+
+# Local Expo state
+.expo/
 
 # Dependencies
 node_modules/

@@ -64,7 +64,7 @@ ANDROID_HOME=/usr/local/share/android-commandlinetools \
 ANDROID_SDK_ROOT=/usr/local/share/android-commandlinetools \
 ANDROID_NDK_HOME=/usr/local/share/android-commandlinetools/ndk/27.1.12297006 \
 NODE_ENV=production \
-GOOGLE_SERVICES_JSON=/Users/davidguay/git/goodgame/mobile/google-services.json \
+GOOGLE_SERVICES_JSON=mobile/google-services.json \
 PATH="/usr/local/opt/openjdk@17/bin:/usr/local/share/android-commandlinetools/platform-tools:$PATH" \
 pnpm --dir mobile exec eas build --platform android --profile production-apk --local --non-interactive
 ```
@@ -93,13 +93,13 @@ adb devices
 Install or update the APK:
 
 ```bash
-adb install -r /Users/davidguay/git/goodgame/mobile/build-<timestamp>.apk
+adb install -r mobile/build-<timestamp>.apk
 ```
 
 If `adb` is not on your PATH, use the full path:
 
 ```bash
-/usr/local/share/android-commandlinetools/platform-tools/adb install -r /Users/davidguay/git/goodgame/mobile/build-<timestamp>.apk
+/usr/local/share/android-commandlinetools/platform-tools/adb install -r mobile/build-<timestamp>.apk
 ```
 
 ## Signature Mismatch
@@ -114,7 +114,7 @@ The installed app was signed with a different key. Uninstall first:
 
 ```bash
 adb uninstall com.davidguay.goodgame
-adb install /Users/davidguay/git/goodgame/mobile/build-<timestamp>.apk
+adb install mobile/build-<timestamp>.apk
 ```
 
 Uninstalling removes local app data on the phone. Supabase server-side data is unaffected.
