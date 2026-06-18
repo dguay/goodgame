@@ -1,5 +1,6 @@
 {
   "name": "goodgame",
+  "description": "Expo mobile and web app for tracking a personal gaming backlog.",
   "packageManager": "pnpm@10.33.2",
   "main": "expo-router/entry",
   "version": "1.0.0",

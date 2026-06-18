@@ -1,292 +1,125 @@
 # Goodgame
 
-A Goodreads-style gaming backlog tracker for Android and Web.
+Goodgame is a Goodreads-style gaming backlog tracker for Android and web. It helps players search for games, save them to a personal library, track playing status, rate completed games, and decide what to play next.
 
-**Stack:** Expo (expo-router) · Supabase · Vercel · RAWG.io API
+![Expo](https://img.shields.io/badge/Expo-54-000020?style=for-the-badge&logo=expo)
+![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB?style=for-the-badge&logo=react&logoColor=111111)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres_Auth_Edge_Functions-3FCF8E?style=for-the-badge&logo=supabase&logoColor=111111)
+![TanStack Query](https://img.shields.io/badge/TanStack_Query-server_state-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)
 
----
+## Product
 
-## Repository structure
+Goodgame is built around a personal game library:
 
+- Search RAWG game data and inspect details before adding a game.
+- Add games to a library with status, rating, playtime, platform, and notes.
+- Browse and sort the backlog by status, release date, rating, and custom order.
+- View recommendations, trending game news, ARPG calendar events, and PC feature metadata.
+- Authenticate with Google through Supabase Auth on Android and web.
+
+The product direction is documented in [PRODUCT.md](PRODUCT.md), and the visual system is documented in [DESIGN.md](DESIGN.md).
+
+## Architecture
+
+```text
+mobile/
+  app/          Expo Router routes for auth, tabs, details, and news screens
+  components/   Reusable React Native UI and product components
+  hooks/        React Query hooks for Supabase, RAWG, Steam, news, and profile data
+  lib/          Typed clients and focused domain helpers
+  stores/       Zustand client-only state
+  types/        Shared TypeScript and generated Supabase types
+
+supabase/
+  migrations/   Postgres schema, RLS policies, cron jobs, and RPC changes
+  functions/    Edge Functions for Steam lookup and gaming-news ingestion
 ```
-/mobile/            → Expo app (Android + Web)
-  /app              → expo-router screens
-  /components       → UI components
-  /hooks            → React hooks
-  /lib              → Supabase + RAWG clients
-  /stores           → Zustand stores
-  /types            → TypeScript types
-  /constants        → Design tokens
-  package.json      → app dependencies
 
-/supabase/          → Backend
-  /migrations       → SQL migration files
-  config.toml       → Supabase CLI config
+The app uses React Query for server state and Zustand only for client state. Supabase access is routed through typed hooks, while RAWG calls go through the typed RAWG client in `mobile/lib/rawg.ts`. Database migrations keep Row Level Security enabled and generated Supabase types checked into the mobile app.
 
-package.json        → Root scripts (run all commands from here)
-```
+## Tech Stack
 
----
+- Expo 54, React Native 0.81, Expo Router
+- TypeScript strict mode
+- Supabase Postgres, Auth, RLS, Edge Functions, Cron, and Vault
+- TanStack Query for server state
+- Zustand for lightweight client state
+- RAWG API for game metadata
+- PCGamingWiki and Steam lookup integrations for PC feature metadata
+- EAS Build and Google Play Internal App Sharing for Android distribution
 
-## Getting Started
+## Setup
 
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18+)
-- [pnpm](https://pnpm.io/)
-- [Android Studio](https://developer.android.com/studio) (for Android development)
-
-### 1. Install dependencies
+Install dependencies from the repository root:
 
 ```bash
-cd mobile && pnpm install
+pnpm install
+pnpm --dir mobile install
 ```
 
-### 2. Environment variables
-
-Create `mobile/.env.local` (gitignored):
-
-```
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-EXPO_PUBLIC_RAWG_API_KEY=your_rawg_api_key
-```
-
-> Get your RAWG API key at https://rawg.io/apidocs (free tier).
-
-### 3. Run the app
-
-All scripts are run from the **repo root**:
+Create `mobile/.env.local`:
 
 ```bash
-pnpm run web        # Open in browser at http://localhost:8081
-pnpm run android    # Launch on Android emulator or device
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+EXPO_PUBLIC_RAWG_API_KEY=your-rawg-api-key
 ```
 
-## Android dev build using production Supabase
+For Android builds with Google sign-in, keep `mobile/google-services.json` local. It is intentionally ignored and should not be committed.
 
-Use this when you want to run local code on a physical Android phone while the app talks to the hosted production database and Google auth returns to the local dev app.
+## Development
 
-The dev build installs as a separate app:
+Run the app:
 
 ```bash
-name: Goodgame Dev
-android package: com.davidguay.goodgame.dev
-auth redirect: goodgame-dev://auth/callback
+pnpm run web
+pnpm run android
 ```
 
-It can coexist with the production Goodgame app.
-
-### Setup
-
-From the repo root:
+Run checks:
 
 ```bash
-pnpm run setup:phone
-pnpm run dev:android:build:local
-pnpm run start:dev:tunnel
+pnpm run typecheck
+pnpm run lint
+pnpm run test
 ```
 
-Install the generated APK on your phone, open **Goodgame Dev**, and connect it to the tunnel Metro server. The local build requires Android Studio and uses Android Studio's bundled JDK automatically when `JAVA_HOME` is not already set.
-
-For Google auth, add this redirect URL in Supabase Auth URL Configuration for the hosted production project:
-
-```bash
-goodgame-dev://auth/callback
-```
-
-Production database warning: changes made in the dev build are real production writes.
-
----
-
-## Local development (isolated from production)
-
-Running `pnpm run db:start` spins up a full Supabase stack in Docker on your machine.
-Your local database is completely separate from the production project — no risk of touching prod data.
-
-### Prerequisites
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — must be **running** before `db:start`
-- [Supabase CLI](https://supabase.com/docs/guides/cli) — `npm install -g supabase`
-
-### 1. Start the local stack
+Run a local Supabase stack:
 
 ```bash
 pnpm run db:start
-```
-
-First run pulls ~1 GB of Docker images. Subsequent starts are fast (~10 s).
-
-The command prints credentials when ready:
-
-```
-API URL:    http://127.0.0.1:54221
-anon key:   eyJ...
-```
-
-### 2. Point the app at the local stack
-
-Update `mobile/.env.local` with the local credentials:
-
-```
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54221
-EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon key from output above>
-EXPO_PUBLIC_RAWG_API_KEY=your_rawg_api_key
-```
-
-Restore the production values when you want to run against prod again.
-
-### 3. Google OAuth for local testing
-
-Export your Google OAuth credentials before starting, then restart the stack:
-
-```bash
-export SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID="your_web_client_id"
-export SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET="your_web_client_secret"
-pnpm run db:start
-```
-
-Also add this URI to your Google Cloud Console project under **Authorized redirect URIs**:
-
-```
-http://127.0.0.1:54221/auth/v1/callback
-```
-
-### 4. Local Studio
-
-Open [http://127.0.0.1:54323](http://127.0.0.1:54323) for a full Supabase dashboard pointing at your local DB.
-
-### 5. Stop the stack
-
-```bash
+pnpm run db:reset
 pnpm run db:stop
 ```
 
----
-
-## Android setup
-
-### Emulator
-
-1. Open Android Studio → **Device Manager** → **+** → **Create Virtual Device**
-2. Select a phone (e.g. Pixel 8) → download system image (API 34) → **Finish**
-3. Click **▶** to start the emulator, then run `pnpm run android`
-
-### Physical device
-
-1. **Settings → About Phone** → tap **Build Number** 7 times
-2. **Settings → Developer Options** → enable **USB Debugging**
-3. Connect via USB, accept the prompt, then run `pnpm run android`
-
----
-
-## Android production release
-
-Check [LOCAL_ANDROID_APK_BUILD.md](LOCAL_ANDROID_APK_BUILD.md) for building production build locally without Expo
-
-Use this checklist every time you want to publish a new Android production build through EAS and Play Console.
-
-First-time EAS, Firebase, keystore, and OAuth setup is documented in [docs/android-internal-sharing.md](docs/android-internal-sharing.md). You only need to redo that setup if credentials, package name, Firebase project, or Google OAuth clients change.
-
-### 1. Prepare the release
-
-1. Confirm `mobile/google-services.json` exists locally.
-2. Confirm EAS has the production `GOOGLE_SERVICES_JSON`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and `EXPO_PUBLIC_RAWG_API_KEY` environment variables. Re-upload `GOOGLE_SERVICES_JSON` only if the Firebase file changed:
-   ```bash
-   cd mobile
-   eas env:create --name GOOGLE_SERVICES_JSON --environment production --visibility secret --type file --value ./google-services.json
-   ```
-3. Restore production values in `mobile/.env.local`.
-4. Run checks:
-   ```bash
-   pnpm run typecheck
-   pnpm run lint
-   ```
-5. Update the Expo app version in `mobile/app.json` if this is a new user-facing release.
-6. If Play Console rejected the previous upload with a reused version code, run `cd mobile && eas build:version:set`, choose Android, and enter the latest version code already accepted by Play Console.
-
-### 2. Build the Android AAB
-
-From the repo root:
+Generate Supabase types:
 
 ```bash
-pnpm run build:android
+pnpm run db:types:local
+pnpm run db:types
 ```
 
-On Windows PowerShell, if script execution policy blocks `pnpm`, use:
+## Deployment Status
 
-```bash
-pnpm.cmd run build:android
-```
+- Android: configured for EAS production builds and Google Play Internal App Sharing. See [docs/android-internal-sharing.md](docs/android-internal-sharing.md).
+- Web: Expo web export exists for development, but the public Vercel frontend is intentionally disabled while this repository is prepared for public review.
+- Supabase: migrations, RLS policies, and Edge Functions are tracked in the repository; production deployment remains an explicit manual step.
 
-When EAS finishes, download the `.aab` from the EAS dashboard or the build link printed in the terminal.
-
-### 3. Upload to Play Console
-
-1. Open Google Play Console.
-2. Select the Goodgame app.
-3. Go to **Testing** -> **Internal testing** or **Internal app sharing**.
-4. Upload the `.aab`.
-5. Complete any Play Console release notes or review prompts.
-6. Copy the tester/sharing link.
-
-### 4. Verify on a physical Android device
-
-- App installs from the Play Console link.
-- Google sign-in works.
-- Session persists after closing and reopening the app.
-- Home, Search, Library, Profile, and Game Detail screens load.
-- The app does not crash on first launch.
-
----
-
-## All root scripts
+## Scripts
 
 | Script | Description |
-|---|---|
-| `pnpm run setup:phone` | Prepare Android dev build phone development using production Supabase |
-| `pnpm run web` | Start dev server for web |
+| --- | --- |
+| `pnpm run web` | Start Expo web development server |
+| `pnpm run android` | Start Expo for Android emulator or device |
 | `pnpm run start:dev:tunnel` | Start Metro for a development build through a tunnel |
-| `pnpm run android` | Start dev server for Android |
 | `pnpm run dev:android:build:local` | Build the Android development APK locally |
-| `pnpm run build:web` | Export web build for Vercel |
-| `pnpm run typecheck` | Run TypeScript type check |
+| `pnpm run build:android` | Start an EAS Android production build |
+| `pnpm run build:web` | Export the Expo web build |
+| `pnpm run typecheck` | Run TypeScript with `--noEmit` |
 | `pnpm run lint` | Run ESLint |
-| `pnpm run db:start` | Start local Supabase stack (requires Docker) |
-| `pnpm run db:stop` | Stop local Supabase stack |
-| `pnpm run db:reset` | Reset local DB and re-run all migrations |
-| `pnpm run db:push` | Push migrations to production Supabase |
-| `pnpm run db:types` | Regenerate types from production schema |
-| `pnpm run db:types:local` | Regenerate types from local schema |
-
----
-
-## Supabase
-
-### First-time CLI setup
-
-```bash
-supabase login
-supabase link --project-ref <project-ref>
-```
-
-The project ref is the subdomain of your Supabase URL:
-`https://<project-ref>.supabase.co`
-
-### Schema changes
-
-1. Create a new migration file:
-   ```bash
-   supabase migration new <name>
-   # → supabase/migrations/<timestamp>_<name>.sql
-   ```
-2. Write your SQL, then push:
-   ```bash
-   pnpm run db:push
-   ```
-3. Regenerate types:
-   ```bash
-   pnpm run db:types
-   ```
-
----
+| `pnpm run test` | Run TypeScript test build and Node tests |
+| `pnpm run db:start` | Start the local Supabase stack |
+| `pnpm run db:reset` | Reset local database and apply migrations |
+| `pnpm run db:types:local` | Generate Supabase types from local schema |
+| `pnpm run db:types` | Generate Supabase types from production schema |

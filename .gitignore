@@ -1,6 +1,7 @@
 # Local Claude Code settings (machine-specific)
 .claude/settings.local.json
 .claude/
+.codex/
 
 # Local Expo state
 .expo/
@@ -16,14 +17,21 @@ mobile/dist/
 mobile/web-build/
 
 # Environment
+.env
+.env.*
 .env.local
 .env*.local
+mobile/.env
+mobile/.env.*
 mobile/.env.local
 mobile/.env*.local
 TODO.md
+!.env.example
+!mobile/.env.example
 
 # Native
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
@@ -58,4 +66,5 @@ graphify-out/
 
 # APK
 *.apk
+*.aab
 RAWG_API_KEY_JUNE
