@@ -46,6 +46,14 @@ export type Database = {
             | "unknown"
             | null
           created_at: string
+          four_k_ultra_hd:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
           official_discord_url: string | null
           one_twenty_fps:
             | "always on"
@@ -98,6 +106,14 @@ export type Database = {
             | "unknown"
             | null
           created_at?: string
+          four_k_ultra_hd?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
           official_discord_url?: string | null
           one_twenty_fps?:
             | "always on"
@@ -150,6 +166,14 @@ export type Database = {
             | "unknown"
             | null
           created_at?: string
+          four_k_ultra_hd?:
+            | "always on"
+            | "false"
+            | "hackable"
+            | "limited"
+            | "true"
+            | "unknown"
+            | null
           official_discord_url?: string | null
           one_twenty_fps?:
             | "always on"

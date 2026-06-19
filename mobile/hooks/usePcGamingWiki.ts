@@ -13,11 +13,12 @@ const REFRESH_AFTER_MS = 30 * DAY_MS
 const XBOX_GAME_PASS_REFRESH_AFTER_MS = 7 * DAY_MS
 const STALE = 30 * MINUTE_MS
 const CACHE = 24 * HOUR_MS
-// Migration guard: rows written before this cutoff lack xbox_game_pass and need one refresh.
-const FEATURE_FIELDS_ADDED_AT_MS = Date.parse('2026-06-10T00:00:00.000Z')
+// Migration guard: rows written before this cutoff lack newer PCGamingWiki fields.
+const FEATURE_FIELDS_ADDED_AT_MS = Date.parse('2026-06-18T00:00:00.000Z')
 
 export interface PcGamingWikiFeaturesResult {
   controllerSupport: PcgwSupportState | null
+  fourKUltraHd: PcgwSupportState | null
   officialDiscordUrl: string | null
   oneTwentyFps: PcgwSupportState | null
   ultrawidescreen: PcgwSupportState | null
@@ -94,6 +95,7 @@ async function upsertFeatures(
       steam_app_id: steamAppId,
       pcgw_page_id: result?.pageId ?? null,
       pcgw_page_name: result?.pageName ?? null,
+      four_k_ultra_hd: result?.fourKUltraHd ?? null,
       sixty_fps: result?.sixtyFps ?? null,
       one_twenty_fps: result?.oneTwentyFps ?? null,
       ultrawidescreen: result?.ultrawidescreen ?? null,
@@ -150,6 +152,7 @@ async function refreshXboxGamePass(row: PcGamingWikiFeatures): Promise<PcGamingW
 function toResult(row: PcGamingWikiFeatures | null): PcGamingWikiFeaturesResult {
   return {
     controllerSupport: row?.controller_support ?? null,
+    fourKUltraHd: row?.four_k_ultra_hd ?? null,
     officialDiscordUrl: row?.official_discord_url ?? null,
     oneTwentyFps: row?.one_twenty_fps ?? null,
     ultrawidescreen: row?.ultrawidescreen ?? null,
@@ -164,6 +167,7 @@ function toResult(row: PcGamingWikiFeatures | null): PcGamingWikiFeaturesResult 
 function toLiveResult(result: PcgwFeatureResult | null, fallback?: PcGamingWikiFeatures | null): PcGamingWikiFeaturesResult {
   return {
     controllerSupport: result?.controllerSupport ?? null,
+    fourKUltraHd: result?.fourKUltraHd ?? null,
     officialDiscordUrl: result?.pageSourceFetchFailed
       ? (fallback?.official_discord_url ?? null)
       : (result?.officialDiscordUrl ?? null),
