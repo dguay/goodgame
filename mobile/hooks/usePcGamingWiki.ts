@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import {
+  getPcgwFeaturesByGameName,
   getPcgwFeaturesBySteamAppId,
   getPcgwXboxGamePassByPageId,
   type PcgwFeatureResult,
@@ -13,8 +14,8 @@ const REFRESH_AFTER_MS = 30 * DAY_MS
 const XBOX_GAME_PASS_REFRESH_AFTER_MS = 7 * DAY_MS
 const STALE = 30 * MINUTE_MS
 const CACHE = 24 * HOUR_MS
-// Migration guard: rows written before this cutoff lack newer PCGamingWiki fields.
-const FEATURE_FIELDS_ADDED_AT_MS = Date.parse('2026-06-18T00:00:00.000Z')
+// Rows before this cutoff lack newer fields or may contain false negatives from Steam-only lookup.
+const MINIMUM_PCGW_REFRESH_AT_MS = Date.parse('2026-06-19T00:00:00.000Z')
 
 export interface PcGamingWikiFeaturesResult {
   controllerSupport: PcgwSupportState | null
@@ -51,7 +52,7 @@ function isMissingFeaturesTableError(error: SupabaseCacheError): boolean {
 
 function isFresh(row: PcGamingWikiFeatures): boolean {
   const refreshedAt = new Date(row.refreshed_at).getTime()
-  return refreshedAt >= FEATURE_FIELDS_ADDED_AT_MS && Date.now() - refreshedAt < REFRESH_AFTER_MS
+  return refreshedAt >= MINIMUM_PCGW_REFRESH_AT_MS && Date.now() - refreshedAt < REFRESH_AFTER_MS
 }
 
 function needsXboxGamePassRefresh(row: PcGamingWikiFeatures): boolean {
@@ -79,8 +80,8 @@ async function getStoredFeatures(rawgGameId: number): Promise<PcGamingWikiFeatur
 
 async function upsertFeatures(
   rawgGameId: number,
-  steamAppId: number,
-  result: Awaited<ReturnType<typeof getPcgwFeaturesBySteamAppId>>
+  steamAppId: number | null,
+  result: PcgwFeatureResult | null
 ): Promise<PcGamingWikiFeatures | null> {
   const now = new Date().toISOString()
   // result=null: primary lookup returned no page → clear page-specific fields explicitly
@@ -185,7 +186,8 @@ function toLiveResult(result: PcgwFeatureResult | null, fallback?: PcGamingWikiF
 
 async function resolvePcGamingWikiFeatures(
   rawgGameId: number,
-  steamAppId: number | null
+  steamAppId: number | null,
+  gameName: string | null
 ): Promise<PcGamingWikiFeaturesResult> {
   let cached: PcGamingWikiFeatures | null = null
   try {
@@ -201,10 +203,14 @@ async function resolvePcGamingWikiFeatures(
     return toResult(cached)
   }
 
-  if (steamAppId == null) return toResult(cached)
+  if (steamAppId == null && gameName == null) return toResult(cached)
 
   try {
-    const pcgwResult = await getPcgwFeaturesBySteamAppId(steamAppId)
+    const pcgwResult = steamAppId != null
+      ? await getPcgwFeaturesBySteamAppId(steamAppId)
+      : gameName != null
+        ? await getPcgwFeaturesByGameName(gameName)
+        : null
     try {
       const stored = await upsertFeatures(rawgGameId, steamAppId, pcgwResult)
       return toResult(stored)
@@ -221,11 +227,16 @@ async function resolvePcGamingWikiFeatures(
   }
 }
 
-export function usePcGamingWikiFeatures(rawgGameId: number | null, steamAppId: number | null) {
+export function usePcGamingWikiFeatures(
+  rawgGameId: number | null,
+  steamAppId: number | null,
+  gameName: string | null,
+  steamLookupComplete: boolean,
+) {
   return useQuery({
-    queryKey: ['pcgamingwiki', 'features', rawgGameId, steamAppId] as const,
-    queryFn: () => resolvePcGamingWikiFeatures(rawgGameId!, steamAppId),
-    enabled: rawgGameId != null,
+    queryKey: ['pcgamingwiki', 'features', rawgGameId, steamAppId, gameName] as const,
+    queryFn: () => resolvePcGamingWikiFeatures(rawgGameId!, steamAppId, gameName),
+    enabled: rawgGameId != null && steamLookupComplete,
     staleTime: STALE,
     gcTime: CACHE,
   })
