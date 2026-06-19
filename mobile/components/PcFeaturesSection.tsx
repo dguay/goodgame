@@ -32,6 +32,7 @@ const FEATURE_SUPPORT_COLORS: Record<PcgwSupportState, string> = {
 
 interface Props {
   controllerSupport: PcgwSupportState | null
+  fourKUltraHd: PcgwSupportState | null
   isError: boolean
   isLoading: boolean
   officialDiscordUrl: string | null
@@ -72,6 +73,7 @@ function FeatureRow({ color, icon, isError, isLoading, label, value }: FeatureRo
 
 export function PcFeaturesSection({
   controllerSupport,
+  fourKUltraHd,
   isError,
   isLoading,
   officialDiscordUrl,
@@ -90,6 +92,7 @@ export function PcFeaturesSection({
     !isLoading &&
     sixtyFps == null &&
     oneTwentyFps == null &&
+    fourKUltraHd == null &&
     ultrawidescreen == null &&
     controllerSupport == null &&
     perspectives.length === 0 &&
@@ -118,6 +121,14 @@ export function PcFeaturesSection({
       </View>
 
       <View style={styles.featureList}>
+        <FeatureRow
+          color={fourKUltraHd != null ? FEATURE_SUPPORT_COLORS[fourKUltraHd] : Colors.textMuted}
+          icon="desktop-outline"
+          isError={isError}
+          isLoading={isLoading}
+          label="4K Ultra HD"
+          value={fourKUltraHd != null ? FEATURE_SUPPORT_LABELS[fourKUltraHd] : 'Not documented'}
+        />
         <FeatureRow
           color={ultrawidescreen != null ? FEATURE_SUPPORT_COLORS[ultrawidescreen] : Colors.textMuted}
           icon="resize-outline"

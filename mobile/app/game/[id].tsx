@@ -658,6 +658,7 @@ export default function GameDetailScreen() {
           {isPcGame && (
             <PcFeaturesSection
               controllerSupport={pcgwQuery.data?.controllerSupport ?? null}
+              fourKUltraHd={pcgwQuery.data?.fourKUltraHd ?? null}
               isError={pcgwQuery.isError}
               isLoading={pcgwQuery.isLoading || (steamQuery.isLoading && steamAppId == null)}
               officialDiscordUrl={pcgwQuery.data?.officialDiscordUrl ?? null}

@@ -8,6 +8,7 @@ export type PcgwSupportState =
 
 export interface PcgwFeatureResult {
   controllerSupport: PcgwSupportState | null
+  fourKUltraHd: PcgwSupportState | null
   officialDiscordUrl: string | null
   pageSourceFetchFailed: boolean
   oneTwentyFps: PcgwSupportState | null
@@ -23,6 +24,7 @@ export interface PcgwFeatureResult {
 interface CargoQueryRow {
   title?: {
     ControllerSupport?: string | null
+    FourKUltraHd?: string | null
     OneTwentyFps?: string | null
     PageID?: string | null
     PageName?: string | null
@@ -176,6 +178,7 @@ export async function getPcgwFeaturesBySteamAppId(
     fields: [
       'Infobox_game._pageID=PageID',
       'Infobox_game._pageName=PageName',
+      'Video.4K_Ultra_HD=FourKUltraHd',
       'Video.60_FPS=SixtyFps',
       'Video.120_FPS=OneTwentyFps',
       'Video.Ultrawidescreen',
@@ -205,6 +208,7 @@ export async function getPcgwFeaturesBySteamAppId(
 
   return {
     controllerSupport: parsePcgwFeatureSupport(title.ControllerSupport),
+    fourKUltraHd: parsePcgwFeatureSupport(title.FourKUltraHd),
     officialDiscordUrl: pageSource != null ? parseOfficialDiscordUrl(pageSource) : null,
     pageSourceFetchFailed,
     oneTwentyFps: parsePcgwFeatureSupport(title.OneTwentyFps),
