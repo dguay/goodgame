@@ -589,7 +589,13 @@ export default function GameDetailScreen() {
     isPcGame ? game?.name ?? null : null,
   )
   const steamAppId = steamQuery.data ?? null
-  const pcgwQuery = usePcGamingWikiFeatures(isPcGame ? game?.id ?? null : null, steamAppId)
+  const steamLookupComplete = steamQuery.isFetched || steamQuery.isError
+  const pcgwQuery = usePcGamingWikiFeatures(
+    isPcGame ? game?.id ?? null : null,
+    steamAppId,
+    isPcGame ? game?.name ?? null : null,
+    steamLookupComplete,
+  )
   const actionBarBottomPadding =
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.xl) + Spacing.xs

@@ -1,7 +1,9 @@
 import {
+  getUniquePcgwPageNames,
   parseOfficialDiscordUrl,
   parsePcgwFeatureSupport,
   parsePcgwList,
+  sortPcgwResolvedPageNamesByInput,
 } from './pcgamingwiki'
 
 declare const require: (module: string) => unknown
@@ -39,6 +41,33 @@ test('parsePcgwList removes empty entries from comma-separated Cargo lists', () 
     'Third-person',
   ])
   assert.deepEqual(parsePcgwList(null), [])
+})
+
+test('getUniquePcgwPageNames trims, deduplicates, and drops title delimiters', () => {
+  assert.deepEqual(getUniquePcgwPageNames([
+    ' Diablo III ',
+    'Diablo III',
+    'Diablo II: Resurrected',
+    'Invalid|Title',
+    '',
+  ]), [
+    'Diablo III',
+    'Diablo II: Resurrected',
+  ])
+})
+
+test('sortPcgwResolvedPageNamesByInput preserves input priority after redirects', () => {
+  assert.deepEqual(
+    sortPcgwResolvedPageNamesByInput(
+      ['Diablo II: Resurrected', 'Diablo III'],
+      ['Diablo 3', 'Diablo 2: Resurrected'],
+      [
+        { from: 'Diablo 3', to: 'Diablo III' },
+        { from: 'Diablo 2: Resurrected', to: 'Diablo II: Resurrected' },
+      ],
+    ),
+    ['Diablo III', 'Diablo II: Resurrected'],
+  )
 })
 
 test('parseOfficialDiscordUrl returns the official Discord link from General information', () => {

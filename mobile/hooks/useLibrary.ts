@@ -10,6 +10,7 @@ import {
   scheduleReleaseNotifications,
   cancelReleaseNotifications,
 } from '@/lib/notifications'
+import { formatLocalDate } from '@/lib/dates'
 import type { LibraryEntry, LibraryEntryInsert, LibraryEntryUpdate } from '@/types/database'
 
 function libraryKey(userId: string) {
@@ -32,6 +33,31 @@ function getNextCustomOrder(entries: LibraryEntry[], requestedOrder?: number | n
   }, null)
 
   return minCustomOrder == null ? 1 : minCustomOrder - 1
+}
+
+function withDefaultStartedAtForPlaying<T extends { status?: string; started_at?: string | null }>(
+  update: T,
+  currentEntry?: Pick<LibraryEntry, 'started_at'> | null,
+): T {
+  if (update.status !== 'playing') return update
+  if ('started_at' in update) return update
+  if (currentEntry != null && currentEntry.started_at != null) return update
+
+  return {
+    ...update,
+    started_at: formatLocalDate(new Date()),
+  }
+}
+
+async function getStoredStartedAt(id: string): Promise<Pick<LibraryEntry, 'started_at'> | null> {
+  const { data, error } = await supabase
+    .from('library_entries')
+    .select('started_at')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  return data
 }
 
 export function useLibraryEntries(enabled = true) {
@@ -69,9 +95,10 @@ export function useAddToLibrary() {
       if (user == null) throw new Error('Not authenticated')
       const existingEntries = queryClient.getQueryData<LibraryEntry[]>(libraryKey(user.id)) ?? []
       const customOrder = getNextCustomOrder(existingEntries, entry.custom_order)
+      const insert = withDefaultStartedAtForPlaying(entry)
       const { data, error } = await supabase
         .from('library_entries')
-        .insert({ ...entry, custom_order: customOrder, user_id: user.id })
+        .insert({ ...insert, custom_order: customOrder, user_id: user.id })
         .select()
         .single()
       if (error) throw new Error(error.message)
@@ -82,26 +109,27 @@ export function useAddToLibrary() {
       const key = libraryKey(user.id)
       await queryClient.cancelQueries({ queryKey: key })
       const prev = queryClient.getQueryData<LibraryEntry[]>(key)
+      const insert = withDefaultStartedAtForPlaying(entry)
       const customOrder = getNextCustomOrder(prev ?? [], entry.custom_order)
       const now = new Date().toISOString()
       const optimistic: LibraryEntry = {
         id: `optimistic-${Date.now()}`,
         user_id: user.id,
-        created_at: entry.created_at ?? now,
-        updated_at: entry.updated_at ?? now,
-        finished_at: entry.finished_at ?? null,
-        started_at: entry.started_at ?? null,
-        personal_notes: entry.personal_notes ?? null,
-        personal_playtime_minutes: entry.personal_playtime_minutes ?? null,
-        personal_rating: entry.personal_rating ?? null,
+        created_at: insert.created_at ?? now,
+        updated_at: insert.updated_at ?? now,
+        finished_at: insert.finished_at ?? null,
+        started_at: insert.started_at ?? null,
+        personal_notes: insert.personal_notes ?? null,
+        personal_playtime_minutes: insert.personal_playtime_minutes ?? null,
+        personal_rating: insert.personal_rating ?? null,
         custom_order: customOrder,
-        game_cover_url: entry.game_cover_url ?? null,
-        game_title: entry.game_title,
-        platforms: entry.platforms ?? null,
-        rawg_game_id: entry.rawg_game_id,
-        rawg_metadata_synced_at: entry.rawg_metadata_synced_at ?? null,
-        release_date: entry.release_date ?? null,
-        status: entry.status,
+        game_cover_url: insert.game_cover_url ?? null,
+        game_title: insert.game_title,
+        platforms: insert.platforms ?? null,
+        rawg_game_id: insert.rawg_game_id,
+        rawg_metadata_synced_at: insert.rawg_metadata_synced_at ?? null,
+        release_date: insert.release_date ?? null,
+        status: insert.status,
       }
       queryClient.setQueryData<LibraryEntry[]>(key, old => [optimistic, ...(old ?? [])])
       return { prev }
@@ -177,9 +205,16 @@ export function useUpdateLibraryEntry() {
 
   return useMutation({
     mutationFn: async ({ id, ...update }: LibraryEntryUpdate & { id: string }): Promise<LibraryEntry> => {
+      const currentEntry = user == null
+        ? null
+        : queryClient.getQueryData<LibraryEntry[]>(libraryKey(user.id))?.find(entry => entry.id === id)
+      const entryForStartedAt = currentEntry == null && update.status === 'playing' && !('started_at' in update)
+        ? await getStoredStartedAt(id)
+        : currentEntry
+      const nextUpdate = withDefaultStartedAtForPlaying(update, entryForStartedAt)
       const { data, error } = await supabase
         .from('library_entries')
-        .update(update)
+        .update(nextUpdate)
         .eq('id', id)
         .select()
         .single()
@@ -193,7 +228,13 @@ export function useUpdateLibraryEntry() {
       const prev = queryClient.getQueryData<LibraryEntry[]>(key)
       queryClient.setQueryData<LibraryEntry[]>(key, old =>
         (old ?? []).map(e =>
-          e.id === id ? { ...e, ...update, updated_at: new Date().toISOString() } : e
+          e.id === id
+            ? {
+                ...e,
+                ...withDefaultStartedAtForPlaying(update, e),
+                updated_at: new Date().toISOString(),
+              }
+            : e
         )
       )
       return { prev }

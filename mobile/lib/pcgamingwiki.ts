@@ -39,6 +39,30 @@ interface CargoQueryResponse {
   cargoquery?: CargoQueryRow[]
 }
 
+interface SearchResponse {
+  query?: {
+    search?: {
+      ns?: number
+      title?: string
+    }[]
+  }
+}
+
+interface RedirectResponse {
+  query?: {
+    redirects?: {
+      from?: string
+      to?: string
+    }[]
+    pages?: Record<string, {
+      missing?: string
+      ns?: number
+      pageid?: number
+      title?: string
+    }>
+  }
+}
+
 interface PageSourceResponse {
   query?: {
     pages?: Record<string, {
@@ -55,6 +79,18 @@ interface PageSourceResponse {
 
 const PCGW_API_URL = 'https://www.pcgamingwiki.com/w/api.php'
 const PCGW_USER_AGENT = 'Goodgame/1.0'
+const PCGW_TITLE_SEARCH_LIMIT = 5
+const PCGW_FEATURE_FIELDS = [
+  'Infobox_game._pageID=PageID',
+  'Infobox_game._pageName=PageName',
+  'Video.4K_Ultra_HD=FourKUltraHd',
+  'Video.60_FPS=SixtyFps',
+  'Video.120_FPS=OneTwentyFps',
+  'Video.Ultrawidescreen',
+  'Input.Controller_support=ControllerSupport',
+  'Infobox_game.Perspectives=Perspectives',
+].join(',')
+const PCGW_FEATURE_JOIN = 'Infobox_game._pageID=Video._pageID,Infobox_game._pageID=Input._pageID'
 const FEATURE_SUPPORT_VALUES = new Set<PcgwSupportState>([
   'always on',
   'false',
@@ -103,6 +139,50 @@ export function getPcgwPageUrl(pageName: string): string {
   return `https://www.pcgamingwiki.com/wiki/${encodeURIComponent(pageName.replaceAll(' ', '_'))}`
 }
 
+export function getUniquePcgwPageNames(pageNames: string[]): string[] {
+  const seen = new Set<string>()
+  const unique: string[] = []
+  for (const pageName of pageNames) {
+    const normalized = pageName.trim()
+    if (normalized === '' || normalized.includes('|') || seen.has(normalized)) continue
+    seen.add(normalized)
+    unique.push(normalized)
+  }
+  return unique
+}
+
+export function sortPcgwResolvedPageNamesByInput(
+  resolvedPageNames: string[],
+  inputPageNames: string[],
+  redirects: { from?: string; to?: string }[],
+): string[] {
+  const priorityByPageName = new Map<string, number>()
+  const redirectToByFrom = new Map(
+    redirects
+      .filter((redirect): redirect is { from: string; to: string } =>
+        redirect.from != null && redirect.to != null
+      )
+      .map((redirect) => [redirect.from, redirect.to] as const),
+  )
+
+  getUniquePcgwPageNames(inputPageNames).forEach((pageName, index) => {
+    const resolvedPageName = redirectToByFrom.get(pageName) ?? pageName
+    const currentPriority = priorityByPageName.get(resolvedPageName)
+    if (currentPriority == null || index < currentPriority) {
+      priorityByPageName.set(resolvedPageName, index)
+    }
+  })
+
+  return getUniquePcgwPageNames(resolvedPageNames).sort((a, b) =>
+    (priorityByPageName.get(a) ?? Number.POSITIVE_INFINITY) -
+    (priorityByPageName.get(b) ?? Number.POSITIVE_INFINITY)
+  )
+}
+
+function escapeCargoString(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')
+}
+
 async function fetchPcgwJson<T>(params: URLSearchParams): Promise<T> {
   const response = await fetch(`${PCGW_API_URL}?${params.toString()}`, {
     headers: {
@@ -134,6 +214,86 @@ async function getPcgwPageSource(pageName: string): Promise<string | null> {
   const body = await fetchPcgwJson<PageSourceResponse>(params)
   const page = Object.values(body.query?.pages ?? {})[0]
   return page?.revisions?.[0]?.slots?.main?.['*'] ?? null
+}
+
+async function resolvePcgwPageNames(pageNames: string[]): Promise<string[]> {
+  const uniquePageNames = getUniquePcgwPageNames(pageNames)
+  if (uniquePageNames.length === 0) return []
+
+  const params = new URLSearchParams({
+    origin: '*',
+    action: 'query',
+    format: 'json',
+    redirects: '1',
+    titles: uniquePageNames.join('|'),
+  })
+
+  const body = await fetchPcgwJson<RedirectResponse>(params)
+  const resolvedPageNames = Object.values(body.query?.pages ?? {})
+    .filter((page) => page.missing == null && page.ns === 0 && page.pageid != null)
+    .map((page) => page.title)
+    .filter((title): title is string => title != null)
+
+  return sortPcgwResolvedPageNamesByInput(
+    resolvedPageNames,
+    uniquePageNames,
+    body.query?.redirects ?? [],
+  )
+}
+
+async function searchPcgwPageNames(gameName: string): Promise<string[]> {
+  const term = gameName.trim()
+  if (term === '') return []
+
+  const params = new URLSearchParams({
+    origin: '*',
+    action: 'query',
+    format: 'json',
+    list: 'search',
+    srsearch: term,
+    srlimit: PCGW_TITLE_SEARCH_LIMIT.toString(),
+  })
+
+  const body = await fetchPcgwJson<SearchResponse>(params)
+  return getUniquePcgwPageNames(
+    (body.query?.search ?? [])
+      .filter((result) => result.ns === 0)
+      .map((result) => result.title)
+      .filter((title): title is string => title != null),
+  )
+}
+
+async function getPcgwFeaturesFromTitle(
+  title: CargoQueryRow['title'] | undefined
+): Promise<PcgwFeatureResult | null> {
+  if (title == null) return null
+  const pageId = parsePageId(title.PageID)
+  const pageName = title.PageName ?? null
+
+  const [pageSourceResult, xboxGamePassResult] = await Promise.allSettled([
+    pageName != null ? getPcgwPageSource(pageName) : Promise.resolve(null),
+    pageId != null ? getPcgwXboxGamePassByPageId(pageId) : Promise.resolve(null),
+  ])
+
+  const pageSourceFetchFailed = pageSourceResult.status === 'rejected'
+  const pageSource = pageSourceResult.status === 'fulfilled' ? pageSourceResult.value : null
+  const xboxGamePassFetchFailed = xboxGamePassResult.status === 'rejected'
+  const xboxGamePass = xboxGamePassResult.status === 'fulfilled' ? xboxGamePassResult.value : null
+
+  return {
+    controllerSupport: parsePcgwFeatureSupport(title.ControllerSupport),
+    fourKUltraHd: parsePcgwFeatureSupport(title.FourKUltraHd),
+    officialDiscordUrl: pageSource != null ? parseOfficialDiscordUrl(pageSource) : null,
+    pageSourceFetchFailed,
+    oneTwentyFps: parsePcgwFeatureSupport(title.OneTwentyFps),
+    pageId,
+    pageName,
+    perspectives: parsePcgwList(title.Perspectives),
+    sixtyFps: parsePcgwFeatureSupport(title.SixtyFps),
+    ultrawidescreen: parsePcgwFeatureSupport(title.Ultrawidescreen),
+    xboxGamePass,
+    xboxGamePassFetchFailed,
+  }
 }
 
 const GAME_PASS_SUPPORT_PRIORITY: Record<PcgwSupportState, number> = {
@@ -175,49 +335,51 @@ export async function getPcgwFeaturesBySteamAppId(
     action: 'cargoquery',
     format: 'json',
     tables: 'Infobox_game,Video,Input',
-    fields: [
-      'Infobox_game._pageID=PageID',
-      'Infobox_game._pageName=PageName',
-      'Video.4K_Ultra_HD=FourKUltraHd',
-      'Video.60_FPS=SixtyFps',
-      'Video.120_FPS=OneTwentyFps',
-      'Video.Ultrawidescreen',
-      'Input.Controller_support=ControllerSupport',
-      'Infobox_game.Perspectives=Perspectives',
-    ].join(','),
-    join_on: 'Infobox_game._pageID=Video._pageID,Infobox_game._pageID=Input._pageID',
+    fields: PCGW_FEATURE_FIELDS,
+    join_on: PCGW_FEATURE_JOIN,
     where: `Infobox_game.Steam_AppID HOLDS "${steamAppId}"`,
     limit: '1',
   })
 
   const body = await fetchPcgwJson<CargoQueryResponse>(params)
-  const title = body.cargoquery?.[0]?.title
-  if (title == null) return null
-  const pageId = parsePageId(title.PageID)
-  const pageName = title.PageName ?? null
+  return getPcgwFeaturesFromTitle(body.cargoquery?.[0]?.title)
+}
 
-  const [pageSourceResult, xboxGamePassResult] = await Promise.allSettled([
-    pageName != null ? getPcgwPageSource(pageName) : Promise.resolve(null),
-    pageId != null ? getPcgwXboxGamePassByPageId(pageId) : Promise.resolve(null),
+export async function getPcgwFeaturesByGameName(gameName: string): Promise<PcgwFeatureResult | null> {
+  // Non-Steam fallback is slower: search page titles, resolve redirects, then query Cargo.
+  const [directPageNames, searchPageNames] = await Promise.all([
+    resolvePcgwPageNames([gameName]),
+    searchPcgwPageNames(gameName),
   ])
+  const candidatePageNames = getUniquePcgwPageNames([
+    ...directPageNames,
+    ...await resolvePcgwPageNames(searchPageNames),
+  ])
+  if (candidatePageNames.length === 0) return null
 
-  const pageSourceFetchFailed = pageSourceResult.status === 'rejected'
-  const pageSource = pageSourceResult.status === 'fulfilled' ? pageSourceResult.value : null
-  const xboxGamePassFetchFailed = xboxGamePassResult.status === 'rejected'
-  const xboxGamePass = xboxGamePassResult.status === 'fulfilled' ? xboxGamePassResult.value : null
+  const quotedPageNames = candidatePageNames
+    .map((pageName) => `"${escapeCargoString(pageName)}"`)
+    .join(',')
+  const params = new URLSearchParams({
+    origin: '*',
+    action: 'cargoquery',
+    format: 'json',
+    tables: 'Infobox_game,Video,Input',
+    fields: PCGW_FEATURE_FIELDS,
+    join_on: PCGW_FEATURE_JOIN,
+    where: `Infobox_game._pageName IN (${quotedPageNames})`,
+    limit: candidatePageNames.length.toString(),
+  })
 
-  return {
-    controllerSupport: parsePcgwFeatureSupport(title.ControllerSupport),
-    fourKUltraHd: parsePcgwFeatureSupport(title.FourKUltraHd),
-    officialDiscordUrl: pageSource != null ? parseOfficialDiscordUrl(pageSource) : null,
-    pageSourceFetchFailed,
-    oneTwentyFps: parsePcgwFeatureSupport(title.OneTwentyFps),
-    pageId,
-    pageName,
-    perspectives: parsePcgwList(title.Perspectives),
-    sixtyFps: parsePcgwFeatureSupport(title.SixtyFps),
-    ultrawidescreen: parsePcgwFeatureSupport(title.Ultrawidescreen),
-    xboxGamePass,
-    xboxGamePassFetchFailed,
-  }
+  const body = await fetchPcgwJson<CargoQueryResponse>(params)
+  const rowByPageName = new Map(
+    (body.cargoquery ?? [])
+      .map((row) => [row.title?.PageName, row] as const)
+      .filter((entry): entry is readonly [string, CargoQueryRow] => entry[0] != null),
+  )
+  const selectedRow = candidatePageNames
+    .map((pageName) => rowByPageName.get(pageName))
+    .find((row): row is CargoQueryRow => row != null)
+
+  return getPcgwFeaturesFromTitle(selectedRow?.title)
 }
