@@ -1,0 +1,1260 @@
+<title>Goodgame — Engineering Audit</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --raised:#eef1f5; --ink:#16181d; --muted:#5c6572; --faint:#8a92a0;
+  --border:#e2e6ec; --border-soft:#edf0f4; --accent:#0047e0; --accent-ink:#0047e0;
+  --crit:#c11828; --crit-bg:#fbeaec; --high:#b35300; --high-bg:#faefe2; --med:#8a6d00; --med-bg:#f8f1d8; --low:#3d6a8f; --low-bg:#e8f0f7;
+  --ok:#047a52; --ok-bg:#e3f3ec; --code-bg:#eef1f5;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0a0b0d; --surface:#16181c; --raised:#1e2228; --ink:#f2f3f5; --muted:#a8acb3; --faint:#6b7178;
+    --border:#ffffff14; --border-soft:#ffffff0a; --accent:#5c8dff; --accent-ink:#7ea3ff;
+    --crit:#ff6b78; --crit-bg:#3a1216; --high:#ffab5e; --high-bg:#33200e; --med:#e8c95a; --med-bg:#2e2810; --low:#8fb8dd; --low-bg:#14222e;
+    --ok:#4fd39a; --ok-bg:#0e2a1f; --code-bg:#1e2228;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0b0d; --surface:#16181c; --raised:#1e2228; --ink:#f2f3f5; --muted:#a8acb3; --faint:#6b7178;
+  --border:#ffffff14; --border-soft:#ffffff0a; --accent:#5c8dff; --accent-ink:#7ea3ff;
+  --crit:#ff6b78; --crit-bg:#3a1216; --high:#ffab5e; --high-bg:#33200e; --med:#e8c95a; --med-bg:#2e2810; --low:#8fb8dd; --low-bg:#14222e;
+  --ok:#4fd39a; --ok-bg:#0e2a1f; --code-bg:#1e2228;
+}
+:root[data-theme="light"]{
+  --bg:#f6f7f9; --surface:#ffffff; --raised:#eef1f5; --ink:#16181d; --muted:#5c6572; --faint:#8a92a0;
+  --border:#e2e6ec; --border-soft:#edf0f4; --accent:#0047e0; --accent-ink:#0047e0;
+  --crit:#c11828; --crit-bg:#fbeaec; --high:#b35300; --high-bg:#faefe2; --med:#8a6d00; --med-bg:#f8f1d8; --low:#3d6a8f; --low-bg:#e8f0f7;
+  --ok:#047a52; --ok-bg:#e3f3ec; --code-bg:#eef1f5;
+}
+html{background:var(--bg)}
+body{
+  background:var(--bg); color:var(--ink);
+  font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  margin:0; padding:0 20px 80px;
+  -webkit-font-smoothing:antialiased;
+}
+main{max-width:1020px; margin:0 auto}
+code,pre,.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+code{background:var(--code-bg); border:1px solid var(--border-soft); border-radius:4px; padding:1px 5px; font-size:12.5px; word-break:break-word}
+pre{background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:14px 16px; font-size:12.5px; line-height:1.55; overflow-x:auto}
+pre code{background:none;border:none;padding:0}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover,a:focus-visible{text-decoration:underline}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+/* header */
+header.report{padding:48px 0 28px; border-bottom:1px solid var(--border); margin-bottom:36px}
+.eyebrow{font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:var(--accent-ink); font-weight:600; margin:0 0 10px}
+h1{font-size:34px; line-height:1.1; letter-spacing:-0.8px; font-weight:650; margin:0 0 14px; text-wrap:balance}
+.meta-grid{display:flex; flex-wrap:wrap; gap:8px 28px; color:var(--muted); font-size:13px; margin-top:14px}
+.meta-grid b{color:var(--ink); font-weight:600}
+.check-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px}
+.check{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; border-radius:999px; padding:4px 12px; border:1px solid var(--border)}
+.check.pass{color:var(--ok); background:var(--ok-bg)}
+.check.warn{color:var(--high); background:var(--high-bg)}
+.check.fail{color:var(--crit); background:var(--crit-bg)}
+
+/* sections */
+section{margin:52px 0}
+h2{font-size:22px; letter-spacing:-0.4px; font-weight:650; margin:0 0 6px; padding-top:10px}
+h2 .num{color:var(--faint); font-weight:500; margin-right:10px; font-variant-numeric:tabular-nums}
+.section-sub{color:var(--muted); margin:0 0 22px; font-size:14px; max-width:72ch}
+h3{font-size:15.5px; font-weight:650; margin:28px 0 10px}
+p{max-width:76ch}
+ul,ol{padding-left:22px; max-width:80ch}
+li{margin:4px 0}
+li::marker{color:var(--faint)}
+
+/* toc */
+nav.toc{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:4px 24px; font-size:13.5px}
+nav.toc a{color:var(--ink); padding:3px 0; display:block}
+nav.toc a .n{color:var(--faint); margin-right:8px; font-variant-numeric:tabular-nums}
+
+/* tables */
+.tablewrap{overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+th{font-size:11px; letter-spacing:0.8px; text-transform:uppercase; color:var(--muted); font-weight:600; text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); white-space:nowrap}
+td{padding:9px 14px; border-bottom:1px solid var(--border-soft); vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.mono, th.mono{white-space:nowrap}
+.num-col{font-variant-numeric:tabular-nums; text-align:right}
+
+/* chips */
+.chip{display:inline-block; font-size:11px; font-weight:650; letter-spacing:0.3px; border-radius:5px; padding:2px 8px; white-space:nowrap}
+.sev-Critical{color:var(--crit); background:var(--crit-bg)}
+.sev-High{color:var(--high); background:var(--high-bg)}
+.sev-Medium{color:var(--med); background:var(--med-bg)}
+.sev-Low{color:var(--low); background:var(--low-bg)}
+.chip.cat{color:var(--muted); background:var(--raised)}
+.chip.ok{color:var(--ok); background:var(--ok-bg)}
+
+/* status pills in feature table */
+.st{font-size:11.5px; font-weight:650; border-radius:999px; padding:2px 10px; white-space:nowrap}
+.st.done{color:var(--ok); background:var(--ok-bg)}
+.st.partial{color:var(--high); background:var(--high-bg)}
+.st.broken{color:var(--crit); background:var(--crit-bg)}
+
+/* finding card */
+.finding{background:var(--surface); border:1px solid var(--border); border-radius:10px; margin:18px 0; overflow:hidden}
+.finding>.head{padding:14px 18px 12px; border-bottom:1px solid var(--border-soft); display:flex; flex-wrap:wrap; gap:8px 12px; align-items:baseline}
+.finding .fid{font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12.5px; font-weight:700; color:var(--accent-ink)}
+.finding .ftitle{font-size:15.5px; font-weight:650; flex:1 1 300px; text-wrap:balance}
+.finding .chips{display:flex; gap:6px; flex-wrap:wrap}
+.finding .body{padding:6px 18px 16px}
+.frow{display:grid; grid-template-columns:150px 1fr; gap:4px 18px; padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:13.5px}
+.frow:last-child{border-bottom:none}
+.frow>.k{font-size:11px; letter-spacing:0.7px; text-transform:uppercase; color:var(--muted); font-weight:600; padding-top:2px}
+.frow>.v{min-width:0}
+.frow ol,.frow ul{margin:2px 0; padding-left:18px}
+.frow p{margin:2px 0}
+@media (max-width:640px){ .frow{grid-template-columns:1fr} nav.toc{grid-template-columns:1fr 1fr} }
+
+/* severity stripe */
+.finding.s-Critical{border-left:3px solid var(--crit)}
+.finding.s-High{border-left:3px solid var(--high)}
+.finding.s-Medium{border-left:3px solid var(--med)}
+.finding.s-Low{border-left:3px solid var(--low)}
+
+/* packets */
+details.packet{background:var(--surface); border:1px solid var(--border); border-radius:10px; margin:12px 0}
+details.packet>summary{cursor:pointer; padding:12px 18px; font-weight:650; font-size:14px; list-style:none; display:flex; gap:12px; align-items:baseline}
+details.packet>summary::-webkit-details-marker{display:none}
+details.packet>summary::before{content:"▸"; color:var(--faint)}
+details.packet[open]>summary::before{content:"▾"}
+details.packet>summary .tid{font-family:ui-monospace,Menlo,monospace; color:var(--accent-ink); font-size:12.5px}
+details.packet .pbody{padding:0 18px 16px}
+
+/* phase blocks */
+.phase{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin:12px 0}
+.phase h4{margin:0 0 6px; font-size:14px}
+.phase .ids{font-family:ui-monospace,Menlo,monospace; font-size:12.5px; color:var(--accent-ink)}
+.phase p{margin:6px 0 0; font-size:13.5px; color:var(--muted)}
+
+.callout{border:1px solid var(--border); border-left:3px solid var(--accent); background:var(--surface); border-radius:8px; padding:12px 16px; font-size:13.5px; margin:16px 0; max-width:none}
+.kv{margin:0}
+.kv dt{font-size:11px; letter-spacing:0.7px; text-transform:uppercase; color:var(--muted); font-weight:600; margin-top:10px}
+.kv dd{margin:2px 0 0}
+footer.report{margin-top:64px; padding-top:20px; border-top:1px solid var(--border); color:var(--faint); font-size:12.5px}
+</style>
+
+<main>
+<header class="report">
+  <p class="eyebrow">Engineering Audit</p>
+  <h1>Goodgame — project audit &amp; execution plan</h1>
+  <p style="color:var(--muted); max-width:76ch; margin:0">
+    Goodreads-style gaming backlog tracker. Expo (React Native + Web) client, Supabase backend (Postgres/RLS/Edge Functions/Cron), RAWG · PCGamingWiki · Steam integrations.
+    Audit covers product, code quality, bugs, tests, UX, architecture, and security. Every finding cites file:line evidence and is packaged for hand-off to a cheaper coding model.
+  </p>
+  <div class="meta-grid">
+    <span>Date <b>2026-07-10</b></span>
+    <span>Branch <b class="mono">master</b> @ <b class="mono">a8f3cd3</b></span>
+    <span>Working tree <b>clean</b></span>
+    <span>App code <b>~11,200 lines TS/TSX</b> (mobile/) + <b>~2,000</b> (supabase/functions)</span>
+  </div>
+  <div class="check-row" aria-label="Verification results">
+    <span class="check pass">✓ tsc --noEmit — 0 errors</span>
+    <span class="check pass">✓ eslint — 0 problems</span>
+    <span class="check pass">✓ node tests — 48/48 pass</span>
+    <span class="check warn">△ Deno function tests — cannot run (no deno CLI installed; not wired into pnpm test)</span>
+    <span class="check fail">✗ CI — .github/workflows exists but is empty</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#s1"><span class="n">1</span>Executive Summary</a>
+  <a href="#s2"><span class="n">2</span>Project Map</a>
+  <a href="#s3"><span class="n">3</span>Feature Assessment</a>
+  <a href="#s4"><span class="n">4</span>Findings</a>
+  <a href="#s5"><span class="n">5</span>Quick Wins</a>
+  <a href="#s6"><span class="n">6</span>Next Feature Ideas</a>
+  <a href="#s7"><span class="n">7</span>Execution Order</a>
+  <a href="#s8"><span class="n">8</span>Cheap-Model Task Packets</a>
+  <a href="#s9"><span class="n">9</span>Residual Questions</a>
+</nav>
+
+<!-- ============================ 1. EXECUTIVE SUMMARY ============================ -->
+<section id="s1">
+  <h2><span class="num">1</span>Executive Summary</h2>
+
+  <p><strong>What this is.</strong> A personal gaming backlog tracker for the creator and a small circle of friends (per <code>PRODUCT.md</code>): search RAWG, save games to a library with status/rating/playtime/notes, sort and reorder the backlog, view release calendars, ARPG events, and PC feature metadata (Steam, PCGamingWiki, Game Pass). Android via EAS/Play Internal Sharing; web export exists but public Vercel deployment is intentionally disabled.</p>
+
+  <p><strong>Current maturity.</strong> Healthier than most side projects: TypeScript strict passes, lint is clean, 48 unit tests pass, secrets hygiene is good (nothing leaked in git history), RLS is enabled on every table, and the codebase follows its own AGENTS.md conventions closely. The core library workflow (search → add → track → reorder) is feature-complete on Android. The web build has real functional breaks, and a large dead subsystem (news pipeline) is still deployed.</p>
+
+  <p><strong>Biggest risk.</strong> Two structural security decisions in the database: (1) a blanket grant migration gives <code>anon</code> and <code>authenticated</code> INSERT/UPDATE/DELETE on <em>all current and future</em> public tables, so one forgotten <code>ENABLE ROW LEVEL SECURITY</code> line on any future table means public write access; (2) two shared cache tables (<code>game_external_ids</code>, <code>pcgamingwiki_features</code>) are already writable by any authenticated user — one account can poison Steam/PCGW data for everyone. Exposure is small today (invite-only user base) but both are cheap to fix now and expensive to fix after an incident.</p>
+
+  <p><strong>Best next move.</strong> Delete the dead news subsystem (ARCH-001) and land the Phase-1 correctness fixes. The news pipeline — 6 tables, 2 edge functions, ~2,000 lines, most of the backend's confirmed bugs — has had zero consumers since <code>20260619000002</code> unscheduled its cron jobs and the app's news routes became redirect stubs. Deleting it removes roughly half of this report's backend findings at once and shrinks the maintained surface dramatically.</p>
+
+  <h3>Highest-leverage recommendations</h3>
+  <ol>
+    <li><strong>Delete the dead news subsystem</strong> (ARCH-001) — removes ~2,000 lines of buggy, unmonitored, deployed code and 6 frozen tables in one PR.</li>
+    <li><strong>Fix the RAWG per-entry fan-out + persist the query cache</strong> (PERF-001, BUG-006) — the library grid fires one RAWG <code>/games/{id}</code> call per entry on every cold launch; this pattern already burned 542k calls/month once (documented in migration <code>20260606000001</code>).</li>
+    <li><strong>Make the web build actually work</strong> (BUG-002, UX-002) — <code>Alert.alert</code> is a silent no-op on react-native-web, so sign-out is impossible and every auth error is invisible on web. One small platform wrapper fixes five screens.</li>
+    <li><strong>Tighten DB grants and shared-cache RLS</strong> (SEC-001, SEC-002) — two short migrations close the standing footguns.</li>
+    <li><strong>Add CI</strong> (TEST-001) — typecheck, lint, and both test suites already exist and pass; they are enforced nowhere. A 40-line GitHub Actions workflow makes every other fix in this report durable.</li>
+  </ol>
+</section>
+
+<!-- ============================ 2. PROJECT MAP ============================ -->
+<section id="s2">
+  <h2><span class="num">2</span>Project Map</h2>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Area</th><th>Owns</th><th>Key files</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">mobile/app/</td><td>Expo Router routes: auth, 5 tabs (Home, Search, Library, News, Profile), game detail, release calendar, ARPG events, web HTML shell</td><td><code>(tabs)/library.tsx</code> (1,397 ln — largest file), <code>game/[id].tsx</code> (1,029), <code>(tabs)/index.tsx</code> (571), <code>_layout.tsx</code> (auth guard, QueryClient)</td></tr>
+      <tr><td class="mono">mobile/components/</td><td>Product UI (game cards, status picker, rating input, PC-features section) + <code>ui/</code> primitives (Button, Card, EmptyState, skeletons)</td><td><code>GameDisplayCards.tsx</code> (657 ln), <code>AddToLibraryButton.tsx</code>, <code>StatusPicker.tsx</code>, <code>RawgFooter.tsx</code> (TOS attribution)</td></tr>
+      <tr><td class="mono">mobile/hooks/</td><td>All server state via React Query: Supabase (library, profile, prefs), RAWG, PCGW, Steam, ARPG calendar, notification sync</td><td><code>useLibrary.ts</code> (375 ln, all mutations + optimistic updates), <code>useRawg.ts</code> (staleness policy), <code>useNotificationSync.ts</code></td></tr>
+      <tr><td class="mono">mobile/lib/</td><td>Typed API clients and pure helpers</td><td><code>rawg.ts</code>, <code>pcgamingwiki.ts</code> (385 ln), <code>supabase.ts</code> (PKCE + SecureStore), <code>dates.ts</code>, <code>librarySort.ts</code>, <code>notifications.ts</code></td></tr>
+      <tr><td class="mono">mobile/stores/</td><td>Zustand client state — auth session only (correctly no server data)</td><td><code>authStore.ts</code></td></tr>
+      <tr><td class="mono">mobile/constants/</td><td>Design tokens (colors, spacing, radius, typography) matching DESIGN.md</td><td><code>colors.ts</code> (bg <code>#0a0b0d</code>, primary <code>#0052ff</code>)</td></tr>
+      <tr><td class="mono">mobile/types/</td><td>Domain types + generated Supabase types</td><td><code>database.ts</code>, <code>supabase.ts</code> (generated, 868 ln)</td></tr>
+      <tr><td class="mono">supabase/migrations/</td><td>38 migrations: schema, RLS, grants, cron scheduling/unscheduling, PCGW cache columns</td><td><code>20250425000001_initial_schema.sql</code>, <code>20260513000002_grant_public_schema_privileges.sql</code>, <code>20260619000002_disable_news_cron_jobs.sql</code></td></tr>
+      <tr><td class="mono">supabase/functions/</td><td>Edge Functions: <code>search-steam-app</code> (only one the app calls), <code>ingest-news</code> + <code>calculate-news-trends</code> (dead — no consumers, cron unscheduled)</td><td><code>ingest-news/index.ts</code>, <code>ingest-news/clusterer.ts</code>, <code>_shared/errorAlert.ts</code></td></tr>
+      <tr><td class="mono">docs/ · scripts/</td><td>Android internal-sharing guide, external API notes (RSS feeds, PCGW, RAWG sample); Android env/build shell scripts</td><td><code>docs/android-internal-sharing.md</code>, <code>scripts/setup-mobile-production-env.sh</code></td></tr>
+      <tr><td class="mono">Root docs</td><td>Product/design/agent conventions — unusually complete</td><td><code>PRODUCT.md</code>, <code>DESIGN.md</code> (full token system), <code>AGENTS.md</code> (rules referenced throughout §4)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Verification commands found</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Command</th><th>What it runs</th><th>Status this audit</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">pnpm run typecheck</td><td><code>tsc --noEmit</code> in mobile/ (strict mode)</td><td><span class="chip ok">pass</span></td></tr>
+      <tr><td class="mono">pnpm run lint</td><td><code>eslint . --ext .ts,.tsx</code> (eslint-config-expo)</td><td><span class="chip ok">pass</span></td></tr>
+      <tr><td class="mono">pnpm run test</td><td>Compiles only 4 lib modules via <code>tsconfig.test.json</code>, runs <code>node --test</code> — dates, librarySort, authHelpers, pcgamingwiki</td><td><span class="chip ok">48/48</span></td></tr>
+      <tr><td class="mono">deno test supabase/functions/</td><td>clusterer, gameMatcher, errorAlert tests — <em>not wired into any pnpm script</em></td><td><span class="chip cat">not runnable — deno CLI not installed</span></td></tr>
+      <tr><td class="mono">pnpm run db:reset / db:types</td><td>Local Supabase stack + type generation (project ref <code>zjluauqdqockjswczndb</code>)</td><td><span class="chip cat">not run (requires Docker/local stack)</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============================ 3. FEATURE ASSESSMENT ============================ -->
+<section id="s3">
+  <h2><span class="num">3</span>Current Feature Assessment</h2>
+  <p class="section-sub">Per-screen inventory. "Complete" = works end-to-end on Android; web-specific breaks are called out.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Screen</th><th>What it does</th><th>State</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">(auth)/login.tsx</td><td>Google OAuth, magic link, email/password sign-in/up</td><td><span class="st partial">partial</span></td><td>Complete on native; on web all error/confirmation feedback is a silent no-op (BUG-002)</td></tr>
+      <tr><td class="mono">auth/callback.tsx</td><td>Completes OAuth/magic-link session (deep link + web)</td><td><span class="st done">complete</span></td><td>Session-recheck fallback mitigates a suspected PKCE double-exchange race</td></tr>
+      <tr><td class="mono">(tabs)/index.tsx</td><td>Home: currently-playing hero, stat pills, "Roll" next-game chooser, upcoming rail, RAWG new/upcoming rails</td><td><span class="st partial">partial</span></td><td>"Playing" stat pill navigates to a filter the library rejects (BUG-001); rails render blank on RAWG error (UX-001)</td></tr>
+      <tr><td class="mono">(tabs)/search.tsx</td><td>Debounced infinite RAWG search, add to library</td><td><span class="st done">complete</span></td><td>Network error shows "No games found" (UX-001)</td></tr>
+      <tr><td class="mono">(tabs)/library.tsx</td><td>Filters, platform chips, 6 sorts, 3 view modes, drag reorder, swipe delete, prefs persisted to Supabase</td><td><span class="st partial">partial</span></td><td>Feature-rich but: no RawgFooter (PROD-001), no error state, unconfirmed one-tap delete on web (UX-002), unreachable 'playing'/'next' filters</td></tr>
+      <tr><td class="mono">(tabs)/news.tsx</td><td>"News" tab — actually renders only ARPG calendar events</td><td><span class="st partial">partial</span></td><td>News in name only; <code>news/latest</code>, <code>news/trending-games</code>, <code>news/game/[slug]</code> are 5-line redirect stubs; the entire Supabase news backend is dead (ARCH-001)</td></tr>
+      <tr><td class="mono">(tabs)/profile.tsx</td><td>Avatar, editable display name, stats, status bar chart, top genres, sign out</td><td><span class="st broken">broken on web</span></td><td>Sign-out gated behind <code>Alert.alert</code> — impossible on web (BUG-002); RAWG-derived genres lack attribution (PROD-001)</td></tr>
+      <tr><td class="mono">game/[id].tsx</td><td>Detail hero, description, PC features (Steam/PCGW/Game Pass), screenshots, rating/playtime/dates/notes tracking</td><td><span class="st done">complete</span></td><td>Best screen in the app (has real error states); notes can be silently lost on fast back-navigation (BUG-003)</td></tr>
+      <tr><td class="mono">release-calendar.tsx</td><td>RAWG upcoming/new releases, platform filter, infinite scroll</td><td><span class="st done">complete</span></td><td>Error → misleading "RAWG does not have…" empty state (UX-001)</td></tr>
+      <tr><td class="mono">arpg-events.tsx</td><td>Full ARPG events list from arpg-timeline.com ICS feed</td><td><span class="st done">complete</span></td><td>Error → "No upcoming events" (UX-001)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Documented vs. implemented</h3>
+  <ul>
+    <li><strong>Implemented and matching docs:</strong> the whole core loop (search → add → status/rating/playtime/notes → sort/reorder → next-game chooser), Google auth, design-token system, RAWG staleness policy, release notifications for TBP games.</li>
+    <li><strong>Documented but effectively removed:</strong> "trending game news" — README still advertises it ("View recommendations, trending game news…"), but the pipeline was declared legacy and unscheduled on 2026-06-19 (<code>supabase/migrations/20260619000002</code>). Reddit threads feature was added and removed twice (6 migrations of churn).</li>
+    <li><strong>Deployed but unreachable:</strong> <code>ingest-news</code> and <code>calculate-news-trends</code> edge functions, 6 <code>news_*</code> tables with frozen data.</li>
+  </ul>
+
+  <p><strong>Most important workflow:</strong> the evening "what do I play tonight?" loop — open app → Home hero/stat pills → Library (or Roll) → update status/notes after playing. Phase-1 fixes target exactly this loop (broken Playing pill, notes loss, misleading empty states).</p>
+</section>
+
+<!-- ============================ 4. FINDINGS ============================ -->
+<section id="s4">
+  <h2><span class="num">4</span>Findings</h2>
+  <p class="section-sub">18 findings, most-severe first within each theme. Confirmed = traced end-to-end in code (and re-verified at the cited lines during this audit); Suspected = plausible from code shape but not fully traced. Line numbers are from commit <code>a8f3cd3</code>.</p>
+
+  <!-- SEC-001 -->
+  <article class="finding s-High" id="SEC-001">
+    <div class="head"><span class="fid">SEC-001</span><span class="ftitle">Shared cache tables are writable (and deletable) by any authenticated user</span>
+      <span class="chips"><span class="chip cat">Security</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: M</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>supabase/migrations/20260520000001_add_game_external_ids.sql:13-16</code> — policy "Authenticated users can manage game external ids" is <code>FOR ALL USING (auth.uid() IS NOT NULL)</code>. Same pattern on <code>pcgamingwiki_features</code> in <code>20260607172155_add_pcgamingwiki_ultrawide_cache.sql:29-32</code>. Both tables are global (no <code>user_id</code> column) and read by every user.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Any single account can UPDATE or DELETE the rawg→steam mapping and the PCGW feature cache for <em>all</em> users — cache poisoning (wrong Steam links, wrong "Game Pass / ultrawide / 4K" flags) or wholesale deletion. Exposure is limited today (invite-only user base) but the design silently becomes dangerous the moment sign-ups open.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Clients legitimately populate these caches (via <code>useSteam.ts</code> / <code>usePcGamingWiki.ts</code>), so don't remove write access blindly. Minimum viable hardening: drop DELETE, and replace free-form UPDATE with an "only fill or refresh" posture. Longer term, move cache writes server-side (the <code>search-steam-app</code> function already exists as the natural home for Steam-cache writes).</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Read <code>mobile/hooks/useSteam.ts</code> and <code>mobile/hooks/usePcGamingWiki.ts</code> to list exactly which columns the client inserts/updates on each table (so the new policies don't break the app).</li>
+        <li>Create migration <code>supabase/migrations/&lt;timestamp&gt;_tighten_shared_cache_policies.sql</code>.</li>
+        <li>For each of <code>game_external_ids</code> and <code>pcgamingwiki_features</code>: <code>DROP POLICY</code> the "…can manage…" FOR ALL policy; create separate <code>FOR INSERT WITH CHECK (auth.uid() IS NOT NULL)</code> and <code>FOR UPDATE USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL)</code> policies; create <em>no</em> DELETE policy.</li>
+        <li>Also <code>REVOKE DELETE ON game_external_ids, pcgamingwiki_features FROM authenticated;</code> (belt and suspenders at the grant layer).</li>
+        <li>Verify with local stack: <code>pnpm run db:reset</code>, then exercise add-game → Steam lookup → PCGW features in the app against local Supabase.</li>
+        <li>Do NOT push the migration to production — repo rule requires owner approval (<code>AGENTS.md</code> "Never push migrations… without asking").</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v">New file in <code>supabase/migrations/</code> only. No app code changes if step 1 confirms the client never deletes rows (audit found no client-side <code>.delete()</code> on these tables).</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual RLS check via SQL: as an authenticated role, attempt <code>DELETE FROM game_external_ids</code> — expect permission denied; INSERT/UPDATE still succeed.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run db:reset</code> replays cleanly; app flows (Steam lookup, PCGW section on game detail) still populate caches locally.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low — policies are additive/restrictive; a follow-up migration can restore the old policy verbatim.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Local Supabase stack (Docker). Owner must apply to production.</div></div>
+    </div>
+  </article>
+
+  <!-- SEC-002 -->
+  <article class="finding s-High" id="SEC-002">
+    <div class="head"><span class="fid">SEC-002</span><span class="ftitle">Blanket grants + default privileges give anon/authenticated write access to every current and future table</span>
+      <span class="chips"><span class="chip cat">Security</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>supabase/migrations/20260513000002_grant_public_schema_privileges.sql:8-11</code> — <code>GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated;</code> plus <code>ALTER DEFAULT PRIVILEGES … GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;</code>. (Added for the May 2026 PostgREST change that stopped default public-schema grants.)</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Safety now rests 100% on never forgetting <code>ENABLE ROW LEVEL SECURITY</code> on any future table — one missed line = public read/write/delete, including for unauthenticated <code>anon</code>. DELETE for <code>anon</code> has no use case anywhere in the app. This is a standing footgun, not an active breach (audit confirmed all current tables do have RLS enabled).</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Narrow the default: <code>anon</code> gets SELECT only; <code>authenticated</code> keeps SELECT/INSERT/UPDATE (drop DELETE from the default privileges — grant DELETE explicitly per table that needs it, currently only <code>library_entries</code> and <code>user_preferences</code>).</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Create migration <code>&lt;timestamp&gt;_narrow_public_grants.sql</code>.</li>
+        <li><code>REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public FROM anon;</code></li>
+        <li><code>REVOKE DELETE ON ALL TABLES IN SCHEMA public FROM authenticated;</code> then <code>GRANT DELETE ON library_entries, user_preferences TO authenticated;</code></li>
+        <li>Replace both <code>ALTER DEFAULT PRIVILEGES</code> statements: future tables → <code>SELECT</code> to anon, <code>SELECT, INSERT, UPDATE</code> to authenticated.</li>
+        <li>Grep the app for any other authenticated <code>.delete()</code> calls before finalizing step 3: <code>grep -rn "\.delete()" mobile/hooks mobile/lib</code> (audit found deletes only on <code>library_entries</code>).</li>
+        <li><code>pnpm run db:reset</code> and run the app against local: sign in, add/update/delete a library entry, edit prefs, edit display name.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v">New migration only.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">SQL probe as <code>anon</code>: INSERT into <code>profiles</code> → expect permission denied at the grant layer (before RLS even evaluates).</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Full app smoke on local stack; <code>pnpm run db:reset</code> replays with no errors.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low-medium — if a grant is missed for a real flow, symptom is an explicit Postgres permission error (loud, easy to trace); revert = re-grant.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Best landed together with SEC-001 in one review. Owner applies to production.</div></div>
+    </div>
+  </article>
+
+  <!-- ARCH-001 -->
+  <article class="finding s-High" id="ARCH-001">
+    <div class="head"><span class="fid">ARCH-001</span><span class="ftitle">Dead news subsystem: 6 tables, 2 edge functions, ~2,000 lines — deployed, buggy, zero consumers</span>
+      <span class="chips"><span class="chip cat">Architecture</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: M</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v">Cron jobs unscheduled as "legacy" in <code>supabase/migrations/20260619000002_disable_news_cron_jobs.sql</code>. App routes <code>mobile/app/news/latest.tsx</code>, <code>news/trending-games.tsx</code>, <code>news/game/[slug].tsx</code> are all 5-line <code>&lt;Redirect href="/news" /&gt;</code> stubs; the News tab renders only ARPG events. The only edge function the app invokes is <code>search-steam-app</code> (<code>mobile/lib/steam.ts:15-16</code>). Grep confirms no mobile code touches <code>news_articles</code>/<code>news_story_clusters</code>/trending.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">This dead code carries most of the backend's confirmed bugs — clusters never age out of the 72h window because each run refreshes <code>updated_at</code> (<code>clusterer.ts:259</code> + <code>363-369</code>); an unchunked <code>.in()</code> re-introduces the exact 16KB-URL bug its own test documents (<code>clusterer.ts:136</code> vs <code>clusterer.test.ts:11-14</code>); three unpaginated selects silently truncate at PostgREST's 1,000-row cap; error emails have no dedup (<code>_shared/errorAlert.ts</code>); no fetch timeouts anywhere. Every future contributor (human or model) pays to understand it; <code>news_articles</code> holds frozen data with full raw JSONB per row; README still advertises the feature.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Decide once: delete or revive. Recommendation: <strong>delete</strong> (the migration itself already calls it "legacy"). Git history preserves everything if news returns later. Keep <code>_shared/errorAlert.ts</code> only if something still imports it (only ingest-news does → delete it too).</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Confirm owner decision (Residual Question Q1). If delete:</li>
+        <li>Delete <code>supabase/functions/ingest-news/</code>, <code>supabase/functions/calculate-news-trends/</code>, <code>supabase/functions/_shared/</code> (verify <code>search-steam-app</code> imports nothing from _shared first: <code>grep -rn "_shared" supabase/functions/search-steam-app/</code>).</li>
+        <li>Remove the <code>[functions.ingest-news]</code> / <code>[functions.calculate-news-trends]</code> blocks from <code>supabase/config.toml</code> (around lines 398-402).</li>
+        <li>New migration <code>&lt;timestamp&gt;_remove_news_subsystem.sql</code>: drop tables <code>news_game_match_candidates</code>, <code>news_article_games</code> (or actual join-table names per <code>20260604000001</code> / <code>20260604000006</code>), <code>news_story_cluster_articles</code>, <code>news_story_clusters</code>, <code>news_game_trends</code>, <code>news_articles</code>, <code>news_sources</code> — in FK-dependency order; drop any news-only functions/triggers created in <code>20260604000001</code>.</li>
+        <li>Remove <code>docs/external/news/</code> (7 feed docs) and the "trending game news" claim from <code>README.md</code>.</li>
+        <li>Delete deployed functions from the Supabase project (owner action: <code>supabase functions delete ingest-news calculate-news-trends</code>).</li>
+        <li><code>pnpm run db:reset</code> (replay incl. new drop migration), <code>pnpm run typecheck</code>, <code>pnpm run test</code>.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v">~15 files deleted under <code>supabase/functions/</code>; <code>supabase/config.toml</code>; one new migration; <code>README.md</code>; <code>docs/external/news/*</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">None to add; deletes the 3 Deno test files with their subjects (adjust TEST-002's CI step accordingly — after deletion no Deno tests remain unless search-steam-app gains some).</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run db:reset</code> clean; app smoke: News tab still renders ARPG events; Steam lookup on a game detail page still works.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Medium — table drops are destructive in production. Mitigate: owner exports <code>news_*</code> data first (or archives to a branch/dump) before applying.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Owner decision + production data export. Everything else is mechanical.</div></div>
+    </div>
+  </article>
+
+  <!-- PERF-001 -->
+  <article class="finding s-High" id="PERF-001">
+    <div class="head"><span class="fid">PERF-001</span><span class="ftitle">Library grid fires one RAWG detail request per entry, per cold launch — quota burn with prior incident history</span>
+      <span class="chips"><span class="chip cat">Performance</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: M</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>mobile/components/GameDisplayCards.tsx:247-248</code> (LargeGameCard) and <code>:361-363</code> (GameListCard): each card calls <code>useGameDetail(entry.rawg_game_id)</code> when no cached detail is passed. Library grid is the default view; the React Query cache is memory-only, so every app launch re-fetches <code>/games/{id}</code> for every entry. <code>library.tsx:1134-1149</code> reads cache non-reactively via <code>queryClient.getQueryData</code>, so cards also don't re-render when details arrive. Prior incident: migration <code>20260606000001_reduce_rawg_api_usage.sql:3-7</code> documents 542k RAWG calls in one month. Compounding: <code>useProfileStats.ts:31-37</code> and <code>useRecommendations.ts:15-21</code> fan out up to 10 detail calls each with a conflicting 30-min staleTime (see BUG-006); <code>useNotificationSync.ts:73-99</code> serially fetches details for stale TBP entries every session.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">RAWG free tier is the app's core data source and the key ships in the client (see SEC-003 note in Quick Wins). A 60-game library = 60 detail calls per launch per user. Quota exhaustion degrades the whole app for everyone at once — and it has already happened once.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Persist the React Query cache to disk so the 1-day staleTime actually spans app launches. This is the smallest change that kills the per-launch refetch storm without touching card logic. (Follow-up, separate: store the 1–2 display fields cards actually need on <code>library_entries</code> at add/sync time and drop per-card detail fetches entirely.)</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Add deps in <code>mobile/</code>: <code>@tanstack/react-query-persist-client</code>, <code>@tanstack/query-async-storage-persister</code>, <code>@react-native-async-storage/async-storage</code> (use <code>npx expo install</code> for the last one).</li>
+        <li>In <code>mobile/app/_layout.tsx</code> (QueryClient created ~line 26): wrap the tree in <code>PersistQueryClientProvider</code> with an AsyncStorage persister; set <code>maxAge</code> = 24h; use <code>dehydrateOptions.shouldDehydrateQuery</code> to persist only <code>['rawg', ...]</code> keys (keep user library fresh from Supabase).</li>
+        <li>Set <code>gcTime</code> ≥ 24h on RAWG queries in <code>mobile/hooks/useRawg.ts</code> (persisted entries are dropped if gcTime &lt; maxAge).</li>
+        <li>Fix the non-reactive cache read: in <code>library.tsx:1134-1149</code> pass <code>entry.rawg_game_id</code> down and let cards' own <code>useGameDetail</code> subscribe (they already do) — delete the <code>getQueryData</code> pre-read rather than adding more plumbing.</li>
+        <li>Add one console/log line counting RAWG fetches per session in dev (dev-only) to verify the drop.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>mobile/app/_layout.tsx</code>, <code>mobile/hooks/useRawg.ts</code>, <code>mobile/app/(tabs)/library.tsx</code>, <code>mobile/package.json</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual: launch app twice with a populated library; second launch must issue ~0 RAWG detail requests (observe dev log/network). Existing 48 tests must still pass.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code>, <code>pnpm run test</code>, then the two-launch manual check on web (<code>pnpm run web</code>, browser devtools network tab filtered to <code>api.rawg.io</code>).</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low-medium — persistence bugs surface as stale UI; mitigated by the 24h maxAge and a persister <code>buster</code> string that can be bumped to invalidate.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">BUG-006 should land first (staleTime consolidation), else Profile visits keep re-marking details stale. New deps require owner OK per AGENTS.md library policy (well-maintained, official TanStack packages).</div></div>
+    </div>
+  </article>
+
+  <!-- BUG-002 -->
+  <article class="finding s-High" id="BUG-002">
+    <div class="head"><span class="fid">BUG-002</span><span class="ftitle">Alert.alert is a no-op on web: sign-out impossible, all auth errors invisible</span>
+      <span class="chips"><span class="chip cat">Bug</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>mobile/app/(tabs)/profile.tsx:80-98</code> — sign-out is gated behind an <code>Alert.alert</code> confirm; react-native-web renders Alert as a no-op, so the button does nothing on web. Same silent-no-op pattern for every login error and the sign-up "check your email" message (<code>mobile/app/(auth)/login.tsx:26,34,43,60,66</code>) and display-name save errors (<code>profile.tsx:76</code>). The codebase already knows about this: <code>library.tsx:953-962</code> special-cases <code>Platform.OS === 'web'</code> for delete.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">On web: a user cannot sign out at all, and a failed login shows nothing (button just stops spinning). This blocks the stated plan to re-enable the Vercel web frontend.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">One tiny platform wrapper: <code>mobile/lib/dialogs.ts</code> exporting <code>showAlert(title, message)</code> and <code>confirm(title, message): Promise&lt;boolean&gt;</code> — native uses <code>Alert.alert</code>, web uses <code>window.alert</code>/<code>window.confirm</code>. Replace all call sites, including the existing web special-case in library.tsx (consolidation, UX-002 rides along).</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Create <code>mobile/lib/dialogs.ts</code> with the two functions above; <code>Platform.OS === 'web'</code> branches to window.confirm/alert wrapped in <code>Promise.resolve</code>.</li>
+        <li><code>grep -rn "Alert.alert" mobile/app mobile/components</code> — replace every call site: profile sign-out + error (profile.tsx:80-98, 76), all five login.tsx sites, and the delete confirm in library.tsx:953-962 (delete its inline web branch).</li>
+        <li>Sign-out flow becomes: <code>if (await confirm('Sign out', '…')) { … }</code>.</li>
+        <li>Remove now-unused <code>Alert</code> imports.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>mobile/lib/dialogs.ts</code> (new), <code>mobile/app/(tabs)/profile.tsx</code>, <code>mobile/app/(auth)/login.tsx</code>, <code>mobile/app/(tabs)/library.tsx</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Optional pure test not meaningful (thin platform shim). Manual matrix below is the real check.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run web</code>: sign out (confirm dialog appears, session ends → login screen); enter a wrong password (alert appears); delete a library game (confirm appears once, not twice). <code>pnpm run typecheck</code> + <code>lint</code>.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None. Supersedes UX-002.</div></div>
+    </div>
+  </article>
+
+  <!-- BUG-003 -->
+  <article class="finding s-High" id="BUG-003">
+    <div class="head"><span class="fid">BUG-003</span><span class="ftitle">Personal notes silently lost when leaving the game screen within the 500 ms debounce</span>
+      <span class="chips"><span class="chip cat">Bug</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>mobile/app/game/[id].tsx:401-410</code> — <code>handleNotesChange</code> debounces the save by 500 ms; the unmount cleanup at <code>:373-376</code> only <code>clearTimeout</code>s the pending timer without flushing the save.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Data loss in the core logging flow: type a note, tap back → last keystrokes (or the whole note, if typed quickly) discarded with no error. Notes are one of the product's stated reasons to return (<code>PRODUCT.md</code> design principle 5).</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Flush instead of discard on unmount: keep the latest pending text in a ref; in the cleanup, if a timer is pending, clear it and fire the mutation immediately with the ref value. Also flush on input blur for good measure.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>In <code>game/[id].tsx</code>, add <code>const pendingNotesRef = useRef&lt;string | null&gt;(null)</code>.</li>
+        <li>In <code>handleNotesChange</code> (:401): set <code>pendingNotesRef.current = text</code> before scheduling; in the timeout callback, clear the ref after mutating.</li>
+        <li>Extract a <code>flushPendingNotes()</code> that: clears the timer, reads the ref, and if non-null calls <code>updateMutation.mutate({ id: entry.id, personal_notes: trimmedOrNull })</code>. Note: capture <code>entry.id</code> in a ref too, or guard on it — the cleanup closure must not use a stale nullable entry.</li>
+        <li>Call <code>flushPendingNotes()</code> from the unmount cleanup (:373-376) and from the notes input's <code>onBlur</code>.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>mobile/app/game/[id].tsx</code> only.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">No component harness exists; verify manually (below). If desired, extract the debounce-flush logic into <code>mobile/lib/</code> as a pure helper with a node test — optional.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Manual: open a library game → type in notes → immediately press back → reopen → text is present. Repeat with fast typing + blur. <code>pnpm run typecheck</code>.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low — worst case is a duplicate save (idempotent UPDATE).</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None.</div></div>
+    </div>
+  </article>
+
+  <!-- UX-001 -->
+  <article class="finding s-High" id="UX-001">
+    <div class="head"><span class="fid">UX-001</span><span class="ftitle">Every fetch failure renders as a misleading empty state ("No games found", "No games yet", blank rails)</span>
+      <span class="chips"><span class="chip cat">UX</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: M</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v">Search: <code>mobile/app/(tabs)/search.tsx:54-58</code> — <code>hasNoResults</code> ignores <code>isError</code>, error shows "No games found for X" (:111-117). Library: query error falls through to the "No games yet" EmptyState (<code>library.tsx:1185-1195</code>). Release calendar: error → "RAWG does not have…" (<code>release-calendar.tsx:182-192</code>). ARPG events: error → "No upcoming events" (<code>arpg-events.tsx:130-137</code>; <code>components/ArpgEvents.tsx:104-114</code>). Home rails render blank on error (<code>index.tsx:382-394, 408-420</code>). Profile renders placeholder data on error (<code>profile.tsx:44,112</code>). Only <code>game/[id].tsx</code> does this correctly (:547-560, :299-304).</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">"Your library is empty" on a network blip tells a user their collection is gone. Combined with zero offline handling (no NetInfo/persister), any connectivity issue looks like data loss. Directly contradicts PRODUCT.md's "trusted personal library".</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Add an error variant to the existing <code>components/ui/EmptyState.tsx</code> (title, message, "Try again" button calling <code>refetch</code>), then branch on <code>isError</code> before the empty branch on each listed screen. Pattern to copy is already in <code>game/[id].tsx:547-560</code>.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Extend <code>EmptyState</code> with optional <code>actionLabel</code>/<code>onAction</code> props (Button already exists in <code>ui/</code>).</li>
+        <li>Search: include <code>searchResult.isError</code> in the branch at search.tsx:54-58; render error EmptyState with retry = <code>refetch</code>.</li>
+        <li>Library: <code>useLibrary()</code> already exposes error state via React Query — branch before :1185; retry = <code>refetch</code>.</li>
+        <li>Release calendar + arpg-events + ArpgEvents component: same pattern at cited lines.</li>
+        <li>Home rails: when a rail query errors, render a one-line inline "Couldn't load — retry" row instead of an empty FlatList (keep it quiet; it's a secondary surface).</li>
+        <li>Profile: if profile query errors, show error EmptyState instead of placeholder stats (profile.tsx:112 area).</li>
+        <li>Use design tokens throughout (<code>Colors</code>, <code>Spacing</code>) — no new colors.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>components/ui/EmptyState.tsx</code>, <code>app/(tabs)/search.tsx</code>, <code>app/(tabs)/library.tsx</code>, <code>app/(tabs)/index.tsx</code>, <code>app/(tabs)/profile.tsx</code>, <code>app/release-calendar.tsx</code>, <code>app/arpg-events.tsx</code>, <code>components/ArpgEvents.tsx</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual per screen with network disabled (devtools offline on web) — each screen must show the error state, and "Try again" must recover after re-enabling network.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code>, <code>pnpm run lint</code>, offline/online manual matrix on web + one native check.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low — purely additive branches.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None. Pairs well with the offline-cache feature (FEAT-001).</div></div>
+    </div>
+  </article>
+
+  <!-- PROD-001 -->
+  <article class="finding s-High" id="PROD-001">
+    <div class="head"><span class="fid">PROD-001</span><span class="ftitle">RAWG attribution footer missing on Library and Profile — violates RAWG TOS and the repo's own hard rule</span>
+      <span class="chips"><span class="chip cat">Product</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: XS</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>AGENTS.md</code>: "Every screen/page that uses RAWG data must render this footer… This is a legal requirement." <code>app/(tabs)/library.tsx</code> renders RAWG metacritic/ratings/developer data via LargeGameCard/GameListCard (:1132-1154) — zero <code>RawgFooter</code> occurrences in the file (grep-verified). <code>app/(tabs)/profile.tsx</code> shows RAWG-derived Top Genres (:270-285), also no footer. Compliant screens: index, search, game detail, release calendar.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">TOS compliance for the app's core data provider, on the two screens users see most. Trivial to fix.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Render <code>&lt;RawgFooter /&gt;</code> as the list footer on Library (both FlatList view modes) and below Top Genres on Profile.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>In <code>library.tsx</code>, import <code>RawgFooter</code>; add <code>ListFooterComponent={&lt;RawgFooter /&gt;}</code> to each FlatList (grid ~:1099-1160 and list mode ~:1240-1296; check the minimalist view too).</li>
+        <li>In <code>profile.tsx</code>, render <code>&lt;RawgFooter /&gt;</code> after the Top Genres section (:285), inside the ScrollView.</li>
+        <li>Copy placement/props from the existing usage at <code>index.tsx:423</code>.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>app/(tabs)/library.tsx</code>, <code>app/(tabs)/profile.tsx</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Visual check in all three library view modes + profile.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code>; footer visible at the bottom of Library (each view mode) and Profile.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">None.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None.</div></div>
+    </div>
+  </article>
+
+  <!-- BUG-001 -->
+  <article class="finding s-Medium" id="BUG-001">
+    <div class="head"><span class="fid">BUG-001</span><span class="ftitle">Home "Playing" stat pill navigates to a library filter that doesn't exist; 'next' filter is dead code</span>
+      <span class="chips"><span class="chip cat">Bug</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>app/(tabs)/index.tsx:229-238</code> — HeroStatPill pushes <code>/(tabs)/library?filter=playing</code> (param built at :128). But <code>library.tsx:45</code> defines <code>FilterStatus = Exclude&lt;LibraryStatus,'playing'&gt; | 'all' | 'next'</code>, FILTER_OPTIONS (:63-68) contain only all/want_to_play/done/did_not_finish, and <code>isFilterStatus</code> (:94-96) rejects <code>'playing'</code>, so the param effect (:894-899) no-ops. Meanwhile <code>'next'</code> is in the type but reachable from nowhere — dead branches at :932-933, :1035-1036, :1042-1044.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Tapping "Playing: 3" lands on the default TBP filter showing unrelated games — the user's currently-playing list is the single most important view in the product and there is no way to filter to it.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Add a real "Playing" filter chip: change <code>FilterStatus</code> to include <code>'playing'</code>, add <code>{ key: 'playing', label: 'Playing', compactLabel: 'Playing' }</code> to FILTER_OPTIONS, and delete the unreachable <code>'next'</code> member + its dead branches.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>In <code>library.tsx:45</code>: <code>type FilterStatus = LibraryStatus | 'all'</code> (removes both the Exclude and 'next').</li>
+        <li>Insert the Playing option into FILTER_OPTIONS (:63-68) between All and TBP.</li>
+        <li>Delete the <code>'next'</code> branches at :932-933, :1035-1036, :1042-1044 and any 'next' references (grep <code>'next'</code> within the file).</li>
+        <li>Confirm the filter predicate switch handles <code>'playing'</code> like other statuses (it filters by <code>entry.status === filter</code> for status values — verify around :930-945).</li>
+        <li>Check chip row overflow with 5 chips at 320 px width (the row is horizontal — confirm it scrolls or use compactLabel).</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>app/(tabs)/library.tsx</code> only (index.tsx already sends the right param).</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual: tap Playing pill on Home → Library opens filtered to playing games; tap each chip; deep-link <code>/library?filter=playing</code> on web.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code> (the type change will surface every switch that must handle 'playing'), <code>pnpm run lint</code>, manual flow above.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None.</div></div>
+    </div>
+  </article>
+
+  <!-- BUG-004 -->
+  <article class="finding s-Medium" id="BUG-004">
+    <div class="head"><span class="fid">BUG-004</span><span class="ftitle">Mutations race against optimistic entries: fake "optimistic-…" ids sent to Supabase as UUIDs</span>
+      <span class="chips"><span class="chip cat">Bug</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>hooks/useLibrary.ts:116</code> — optimistic add uses <code>id: `optimistic-${Date.now()}`</code>. <code>components/AddToLibraryButton.tsx:41-48</code> and <code>library.tsx:964-976</code> pass <code>entry.id</code> straight into update/remove mutations. Add a game and change its status before the insert settles → <code>UPDATE … WHERE id='optimistic-…'</code> → invalid-uuid error → rollback flash.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Fast taps in the primary add-and-classify flow produce a visible error/flash and a lost status change.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Generate a real UUID client-side and send it with the INSERT, so the optimistic id <em>is</em> the final id and follow-up mutations are valid regardless of timing. (<code>library_entries.id</code> has a uuid default — supplying an explicit uuid works.)</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>In <code>useLibrary.ts</code> add mutation: create <code>const id = crypto.randomUUID()</code> (available in RN ≥ 0.81 Hermes and web; verify once on device — fallback: <code>expo-crypto</code>'s randomUUID, already transitively available via expo).</li>
+        <li>Use that id in both the optimistic entry (:116) and the actual insert payload sent to Supabase.</li>
+        <li>On success, keep the server row as source of truth (existing onSuccess/invalidate logic unchanged).</li>
+        <li>Remove any now-dead reconciliation of optimistic→server ids if present.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>mobile/hooks/useLibrary.ts</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual race: add a game and immediately tap the status chip repeatedly — no error, final status persists after refresh.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code>, manual race test on web (throttle network to make the window obvious).</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None.</div></div>
+    </div>
+  </article>
+
+  <!-- BUG-005 -->
+  <article class="finding s-Medium" id="BUG-005">
+    <div class="head"><span class="fid">BUG-005</span><span class="ftitle">Metadata-sync failure rollback clobbers concurrent user edits and permanently blocks retry until restart</span>
+      <span class="chips"><span class="chip cat">Bug</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>hooks/useLibrary.ts:287-332</code> — <code>syncLibraryRawgMetadata</code> snapshots <code>previousEntries</code> (:290), then on failure restores the <em>entire</em> snapshot (:330), wiping any optimistic status/rating change made while the sync was in flight. The module-level <code>rawgMetadataSyncAttempts</code> Set (:20) gets the id added (:287) but never removed on failure (only the InFlight set is, :332) — so the sync never retries in-session. Both Sets also survive sign-out.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">A background metadata refresh failing (flaky network) can visually revert a user's just-made edit, and stale RAWG metadata then persists for the whole session.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">On failure: don't restore the snapshot — just <code>invalidateQueries</code> for the library key (server state is untouched by a failed update, so refetch is the correct, conflict-free rollback). Remove the id from <code>rawgMetadataSyncAttempts</code> on failure so a later mount retries. Clear both Sets on sign-out (see Quick Win QW-3).</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>In the failure path (~:325-333): delete the <code>setQueryData(previousEntries)</code> restore; call <code>queryClient.invalidateQueries({ queryKey: ['library', …] })</code> (match the exact key used elsewhere in the file).</li>
+        <li>Add <code>rawgMetadataSyncAttempts.delete(entryId)</code> alongside the InFlight delete (:332).</li>
+        <li>Remove the now-unused <code>previousEntries</code> snapshot if nothing else reads it.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>mobile/hooks/useLibrary.ts</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual: block <code>api.rawg.io</code> (devtools), open library (sync fails), change a game's status during the failure window → status change survives; unblock → detail refetch works on next mount.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code>, manual scenario above.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None; complements PERF-001.</div></div>
+    </div>
+  </article>
+
+  <!-- BUG-006 -->
+  <article class="finding s-Medium" id="BUG-006">
+    <div class="head"><span class="fid">BUG-006</span><span class="ftitle">Same query key registered with three different staleTimes — Profile/Home visits defeat the 1-day RAWG cache</span>
+      <span class="chips"><span class="chip cat">Bug</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: XS</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>['rawg','game',id]</code> uses staleTime = 1 day in <code>hooks/useRawg.ts:16,56</code>, but 30 min in <code>hooks/useProfileStats.ts:22,35</code> and <code>hooks/useRecommendations.ts:6,19</code>. Visiting Profile 30+ min after browsing marks up to 20 cached game details stale and refetches them.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Redundant RAWG traffic (quota, see PERF-001) and a violation of the repo's own rule that staleness is configured per endpoint type in useRawg.ts using <code>lib/time.ts</code> constants.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Export a single <code>gameDetailQueryOptions(id)</code> (key + fetcher + staleTime/gcTime) from <code>useRawg.ts</code>; consume it in useProfileStats and useRecommendations. Delete their local staleTime constants.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>In <code>useRawg.ts</code>, factor the options object used by <code>useGameDetail</code> (:56 area) into an exported function.</li>
+        <li>Replace the inline options in <code>useProfileStats.ts:31-37</code> and <code>useRecommendations.ts:15-21</code> with the shared function.</li>
+        <li>Move the magic numbers to <code>lib/time.ts</code> constants while there (overlaps QW-5).</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>hooks/useRawg.ts</code>, <code>hooks/useProfileStats.ts</code>, <code>hooks/useRecommendations.ts</code>, <code>lib/time.ts</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Existing suite; manual: browse a game, wait, open Profile — network tab shows no <code>/games/{id}</code> refetches within 24h.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code>, <code>pnpm run test</code>, network-tab check.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Land before PERF-001.</div></div>
+    </div>
+  </article>
+
+  <!-- PERF-002 -->
+  <article class="finding s-Medium" id="PERF-002">
+    <div class="head"><span class="fid">PERF-002</span><span class="ftitle">Drag-reorder issues one UPDATE per library entry, unbatched and non-transactional</span>
+      <span class="chips"><span class="chip cat">Performance</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: M</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>hooks/useLibrary.ts:163-173</code> — reorder maps over every entry id and fires an individual Supabase UPDATE; partial failure leaves the DB half-reordered (onError restores the client cache but not the server).</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">A 100-game library = 100 sequential round-trips per drag; a mid-sequence network drop corrupts the persisted custom order.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">One SQL RPC: <code>reorder_library_entries(entry_ids uuid[])</code> that updates <code>custom_order</code> from <code>unnest(... WITH ORDINALITY)</code> scoped to <code>auth.uid()</code> — single request, atomic.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Migration <code>&lt;timestamp&gt;_add_reorder_rpc.sql</code>: <code>CREATE FUNCTION reorder_library_entries(entry_ids uuid[]) RETURNS void LANGUAGE sql SECURITY INVOKER AS $$ UPDATE library_entries le SET custom_order = t.ord FROM unnest(entry_ids) WITH ORDINALITY AS t(id, ord) WHERE le.id = t.id AND le.user_id = auth.uid() $$;</code> + <code>GRANT EXECUTE … TO authenticated;</code></li>
+        <li>Regenerate types: <code>pnpm run db:types:local</code>.</li>
+        <li>Replace the loop at useLibrary.ts:163-173 with <code>supabase.rpc('reorder_library_entries', { entry_ids })</code>.</li>
+        <li>Keep the optimistic cache update; on error, invalidate instead of manual restore.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v">New migration, <code>mobile/hooks/useLibrary.ts</code>, <code>mobile/types/supabase.ts</code> (regenerated).</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Local-stack SQL test: call RPC with a permuted id array, assert custom_order matches ordinality and other users' rows untouched.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run db:reset</code>, drag-reorder in app against local stack, refresh → order persists.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low — old code path can be restored; RPC is additive.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Local Supabase stack; owner applies migration to prod.</div></div>
+    </div>
+  </article>
+
+  <!-- TEST-001 -->
+  <article class="finding s-High" id="TEST-001">
+    <div class="head"><span class="fid">TEST-001</span><span class="ftitle">No CI: typecheck, lint, and tests all pass but are enforced nowhere</span>
+      <span class="chips"><span class="chip cat">Test Gap</span><span class="chip sev-High">High</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>.github/workflows/</code> exists and is empty (created 2026-05-24, never populated). PRs merge to master (repo history shows PR merges #8, #9) with no checks.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Every fix in this report can silently regress. The repo already has fast, deterministic checks — they just don't run automatically. Also the AGENTS.md discipline rule ("only claim done backed by fresh command output") has no mechanical backstop.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">One GitHub Actions workflow running typecheck, lint, and the node test suite on push/PR. Add Deno tests if ARCH-001 keeps any function tests.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Create <code>.github/workflows/ci.yml</code>: trigger on <code>pull_request</code> + <code>push: branches [master]</code>.</li>
+        <li>Steps: checkout → <code>pnpm/action-setup</code> (version 10) → <code>actions/setup-node</code> (Node 22, cache: pnpm, cache-dependency-path includes <code>mobile/pnpm-lock.yaml</code> if separate; the repo root has pnpm-lock.yaml) → <code>pnpm install --frozen-lockfile</code> at root and <code>pnpm --dir mobile install --frozen-lockfile</code> → <code>pnpm run typecheck</code> → <code>pnpm run lint</code> → <code>pnpm run test</code>.</li>
+        <li>If Deno tests remain post-ARCH-001: add <code>denoland/setup-deno@v2</code> + <code>deno test supabase/functions/</code> as a separate job.</li>
+        <li>Enable branch protection on master requiring the workflow (owner action in GitHub settings).</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>.github/workflows/ci.yml</code> (new).</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">The workflow is the test. Open a scratch PR to see it run.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Green check on a test PR; intentionally break a type in a scratch branch to confirm it fails.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">None.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None. Do this first.</div></div>
+    </div>
+  </article>
+
+  <!-- TEST-002 -->
+  <article class="finding s-Medium" id="TEST-002">
+    <div class="head"><span class="fid">TEST-002</span><span class="ftitle">Edge-function tests (Deno) are not wired into any script and can't run on this machine</span>
+      <span class="chips"><span class="chip cat">Test Gap</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: XS</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>supabase/functions/ingest-news/clusterer.test.ts</code>, <code>gameMatcher.test.ts</code>, <code>_shared/errorAlert.test.ts</code> exist; <code>mobile/package.json:12</code> test script compiles only <code>lib/*.test.ts</code>; no root script mentions deno; <code>deno</code> CLI not installed locally (verified during this audit — tests could not be executed).</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">"pnpm run test" green ≠ backend logic tested. The clusterer's two confirmed bugs live precisely in the functions its test file doesn't cover.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">If ARCH-001 deletes the news functions, this shrinks to: add a <code>test:functions</code> script + CI job only if/when <code>search-steam-app</code> gains tests. If news is kept instead: wire <code>deno test supabase/functions/</code> into root package.json and CI now.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Root <code>package.json</code>: add <code>"test:functions": "deno test supabase/functions/"</code>.</li>
+        <li>Document deno install in README's Development section (<code>curl -fsSL https://deno.land/install.sh | sh</code> or brew).</li>
+        <li>Add the Deno job to <code>.github/workflows/ci.yml</code> (TEST-001 step 3).</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>package.json</code>, <code>README.md</code>, <code>.github/workflows/ci.yml</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">n/a (wiring).</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run test:functions</code> passes locally with deno installed; CI job green.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">None.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Sequence after the ARCH-001 decision.</div></div>
+    </div>
+  </article>
+
+  <!-- ARCH-002 -->
+  <article class="finding s-Medium" id="ARCH-002">
+    <div class="head"><span class="fid">ARCH-002</span><span class="ftitle">library.tsx is a 1,397-line monolith embedding 5 components and untestable pure logic</span>
+      <span class="chips"><span class="chip cat">Architecture</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: M</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>app/(tabs)/library.tsx</code>: 1,397 lines; embeds SortPicker (:356-465), GameContextMenu (:467-589) and 4 StyleSheets; pure functions <code>fuzzyMatch</code>, <code>mergeOrder</code>, <code>swapItems</code>, <code>orderEntriesByIds</code>, <code>getCustomOrderedIds</code> (:98-165) are unreachable by the node test harness (tsconfig.test.json only compiles lib/). SortPicker/GameContextMenu/StatusPicker triplicate the bottom-sheet overlay/handle styles. Dual bookkeeping <code>customOrderIds</code> state + <code>customOrderIdsRef</code> (:881-882, :914-925) is desync-prone.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">The most-edited screen is the hardest to edit safely; ordering logic (the subtlest code in the app) has zero tests purely because of where it lives.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Mechanical extraction, no behavior change: pure functions → <code>lib/libraryOrder.ts</code> + tests; the two embedded modals → <code>components/</code>, sharing one BottomSheet base with StatusPicker.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Move :98-165 pure functions to <code>mobile/lib/libraryOrder.ts</code> (export; no logic edits). Update imports in library.tsx.</li>
+        <li>Add <code>lib/libraryOrder.test.ts</code>: mergeOrder with ids added/removed/reordered; swapItems bounds; orderEntriesByIds with unknown/missing ids; fuzzyMatch case/partial behavior. Register both files in <code>tsconfig.test.json</code> include list and the test glob picks them up (<code>package.json:12</code> already globs <code>.test-build/lib/*.test.js</code>).</li>
+        <li>Extract SortPicker → <code>components/SortPicker.tsx</code>, GameContextMenu → <code>components/GameContextMenu.tsx</code>; factor shared sheet styles into <code>components/ui/BottomSheet.tsx</code> used by all three pickers.</li>
+        <li>Run full checks after each extraction step, not just at the end.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>app/(tabs)/library.tsx</code>, new <code>lib/libraryOrder.ts</code> + test, new <code>components/SortPicker.tsx</code>, <code>components/GameContextMenu.tsx</code>, <code>components/ui/BottomSheet.tsx</code>, <code>components/StatusPicker.tsx</code>, <code>tsconfig.test.json</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">New libraryOrder.test.ts (≥10 cases). Existing 48 must stay green.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code>, <code>lint</code>, <code>test</code>; manual: sort, reorder, context menu, status change in all 3 view modes.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Medium — pure moves are safe but the file is dense; do it in 3 separate commits (lib move / tests / component extraction).</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Best after Phase-1 bug fixes to avoid conflicts (BUG-001 touches the same file).</div></div>
+    </div>
+  </article>
+
+  <!-- ARCH-003 -->
+  <article class="finding s-Medium" id="ARCH-003">
+    <div class="head"><span class="fid">ARCH-003</span><span class="ftitle">Migration replay likely fails on a fresh environment: pg_cron / pg_net never created by any migration</span>
+      <span class="chips"><span class="chip cat">Architecture</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: Medium</span><span class="chip cat">Effort: XS</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>supabase/migrations/20260508000004_schedule_fetch_reddit_threads.sql</code> and later cron migrations call <code>cron.schedule</code> / <code>net.http_post</code>; no migration contains <code>CREATE EXTENSION</code> for pg_cron or pg_net (grep-verified). Hosted Supabase had them enabled via dashboard; a fresh <code>supabase db reset</code> has no guarantee. Also <code>20260529000001</code> calls <code>cron.unschedule('fetch-reddit-threads')</code> unguarded. Marked Medium confidence: not executed locally during this audit (no Docker run).</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Blocks the documented local workflow (<code>pnpm run db:reset</code>) for any new contributor/machine, i.e. exactly the "cheaper model executes tasks" workflow this report proposes — several findings above depend on a working local stack.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">First verify by running <code>pnpm run db:reset</code>. If it fails: since ARCH-001 removes the news cron migrations' purpose anyway, the pragmatic fix is a guard — prepend <code>CREATE EXTENSION IF NOT EXISTS pg_cron; CREATE EXTENSION IF NOT EXISTS pg_net;</code> to the earliest migration that uses them (history edit is safe here because prod already has the extensions, making the added lines no-ops — but flag it to the owner per repo migration rules).</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Run <code>pnpm run db:start</code> + <code>pnpm run db:reset</code>; capture output.</li>
+        <li>If replay fails at 20260508000004: add the two CREATE EXTENSION IF NOT EXISTS lines at the top of that file (and <code>schema "cron"</code> errors may also need <code>GRANT USAGE ON SCHEMA cron TO postgres</code> — follow the actual error).</li>
+        <li>Guard <code>20260529000001</code>'s unschedule with the same IF EXISTS pattern used in <code>20260619000002</code>.</li>
+        <li>Re-run <code>pnpm run db:reset</code> until clean; then <code>pnpm run db:types:local</code> and confirm no type drift (git diff of mobile/types/supabase.ts should be empty).</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>supabase/migrations/20260508000004_…​.sql</code>, <code>20260529000001_…​.sql</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v"><code>pnpm run db:reset</code> is the test.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Clean replay on a fresh stack; empty diff on regenerated types.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low — IF NOT EXISTS lines are no-ops in prod.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Docker. Owner sign-off on editing historical migrations.</div></div>
+    </div>
+  </article>
+
+  <!-- UX-002 -->
+  <article class="finding s-Medium" id="UX-002">
+    <div class="head"><span class="fid">UX-002</span><span class="ftitle">Web delete removes a game instantly with no confirmation (native gets one)</span>
+      <span class="chips"><span class="chip cat">UX</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: XS</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>app/(tabs)/library.tsx:953-962</code> — <code>Platform.OS === 'web'</code> branch deletes immediately; native branch shows an Alert confirm.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Destructive single-tap with no undo, on the surface where a mis-click is easiest (mouse hover reveals the delete icon).</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Absorbed by BUG-002's <code>confirm()</code> wrapper — the web branch calls <code>window.confirm</code> before mutating.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol><li>Implement as step 2 of BUG-002 (same call site).</li></ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>app/(tabs)/library.tsx</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual: delete on web prompts; Cancel keeps the entry.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Manual on <code>pnpm run web</code>.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">None.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">BUG-002.</div></div>
+    </div>
+  </article>
+
+  <!-- UX-003 -->
+  <article class="finding s-Medium" id="UX-003">
+    <div class="head"><span class="fid">UX-003</span><span class="ftitle">Accessibility labels/roles are inconsistent — most touchables have none, despite PRODUCT.md's WCAG AA commitment</span>
+      <span class="chips"><span class="chip cat">UX</span><span class="chip sev-Medium">Medium</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: M</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v">Missing <code>accessibilityRole</code>/<code>accessibilityLabel</code>: tab bar items (<code>(tabs)/_layout.tsx:57-66, 84-98</code>), game cards (<code>GameDisplayCards.tsx:200, 257, 372</code>) and delete icon (:421), library rows/sheets (<code>library.tsx:302, 384, 507-527</code>), StatusPicker rows (<code>StatusPicker.tsx:53,84</code>), "See all" (<code>index.tsx:48</code>), search inputs (<code>search.tsx:87</code>, <code>library.tsx:1068</code>), notes/playtime inputs (<code>[id].tsx:449,494</code>), screenshots (:312), back button (:575), <code>ui/Button.tsx:23</code>. Good examples already exist in the codebase (HeroStatPill <code>index.tsx:118-119</code>, library view toggles :624-664, DateField, RatingInput) — so this is drift, not absence of convention. <code>PRODUCT.md</code> explicitly commits to AA + screen-reader navigation.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Screen-reader users can't operate the tab bar or any game card; the product doc names this a requirement.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Sweep, using the existing HeroStatPill pattern: every Pressable/Touchable gets <code>accessibilityRole="button"</code> (or "tab"/"link" as appropriate) and a meaningful label (e.g. game cards: <code>`${game.name}, ${statusLabel}`</code>). <code>ui/Button.tsx</code> gets role + label from its text prop by default, fixing many sites at once.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Fix <code>ui/Button.tsx:23</code> first (role="button", accessibilityLabel default = children text, accessibilityState.disabled).</li>
+        <li>Tab bar: role="tab" + accessibilityState.selected + label per TABS entry ((tabs)/_layout.tsx:57-98).</li>
+        <li>Cards in GameDisplayCards.tsx: role="button", label from entry/game name + status; delete icon (:421): role="button", label "Remove {name} from library".</li>
+        <li>Inputs: accessibilityLabel on search (search.tsx:87, library.tsx:1068), notes/playtime ([id].tsx:449,494).</li>
+        <li>Sheet rows (SortPicker/GameContextMenu/StatusPicker): role="button" + label = option label; selected state via accessibilityState.</li>
+        <li>Screenshots ([id].tsx:312): role="imagebutton", label "Screenshot {n} of {total}"; back button (:575): label "Back".</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v">~10 files listed in evidence.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual with a screen reader (TalkBack on Android, or web tab-through with VoiceOver): tab bar, one card, one sheet, one input.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v"><code>pnpm run typecheck</code> + screen-reader pass on the four surfaces above.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">None (props only).</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None. Do after ARCH-002 extraction to avoid churn in library.tsx, or before — coordinate.</div></div>
+    </div>
+  </article>
+
+  <!-- UX-004 -->
+  <article class="finding s-Low" id="UX-004">
+    <div class="head"><span class="fid">UX-004</span><span class="ftitle">OS notification-permission dialog can fire at app launch, without a user gesture</span>
+      <span class="chips"><span class="chip cat">UX</span><span class="chip sev-Low">Low</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: S</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>hooks/useNotificationSync.ts:113</code> → <code>lib/notifications.ts:38</code>: on every library load, if any TBP entry has a future release date, <code>requestNotificationPermission()</code> runs — the OS dialog can appear the moment the app opens.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">Permission prompts without context get denied, and Android remembers the denial; the release-notification feature then silently never works.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Split check from request: sync uses <code>getPermissionsAsync()</code> only; the request moves behind an explicit user action (e.g. when the user sets a TBP game's release-date notification, or a "Notify me about releases" row on Profile).</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>In <code>lib/notifications.ts</code>, add <code>hasNotificationPermission()</code> (get, don't request).</li>
+        <li><code>useNotificationSync.ts:113</code>: replace the request call with the check; skip sync silently if not granted.</li>
+        <li>Add the request at one explicit gesture point — simplest: when a game's status becomes <code>want_to_play</code> with a known future release date (inside the status-change flow), request once with context.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>mobile/lib/notifications.ts</code>, <code>mobile/hooks/useNotificationSync.ts</code>, status-change call site (AddToLibraryButton or StatusPicker flow).</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Manual on Android device/emulator: fresh install → no prompt at launch; prompt appears on first TBP-with-date action.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Manual matrix above + <code>pnpm run typecheck</code>.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">None.</div></div>
+    </div>
+  </article>
+
+  <!-- SEC-003 -->
+  <article class="finding s-Low" id="SEC-003">
+    <div class="head"><span class="fid">SEC-003</span><span class="ftitle">RAWG API key ships in the public web bundle (dormant risk while Vercel is disabled)</span>
+      <span class="chips"><span class="chip cat">Security</span><span class="chip sev-Low">Low</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: L</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>EXPO_PUBLIC_RAWG_API_KEY</code> is embedded in every client bundle by design (<code>mobile/lib/rawg.ts:12-16</code>). README: web deployment intentionally disabled for now. Historical quota incident: <code>supabase/migrations/20260606000001:3-7</code> (542k calls/month). A local file <code>RAWG_API_KEY_JUNE</code> at repo root holds a real key noted "limit exceeded in June 6th" — it is gitignored and absent from git history (verified), so no leak; keep it out of any future commit.</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">The moment the web app goes public, anyone can extract the key and burn the shared quota. Severity is Low today only because web is unpublished and Android extraction requires more effort.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Before re-enabling the Vercel frontend: proxy RAWG calls through a Supabase Edge Function (key server-side in Vault, function enforces auth + basic per-user rate limit). Don't build it before then — PERF-001/BUG-006 reduce the burn rate meanwhile.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>(When web ships) New edge function <code>rawg-proxy</code>: authenticated-only, whitelists the endpoints <code>lib/rawg.ts</code> uses (search, game detail, screenshots, lists), forwards with the Vault-stored key, passes through cache headers.</li>
+        <li>Point <code>lib/rawg.ts</code> base URL at the function on web (<code>Platform.OS === 'web'</code>), keep direct calls on native if desired.</li>
+        <li>Rotate the RAWG key after cutover.</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v">New <code>supabase/functions/rawg-proxy/</code>, <code>mobile/lib/rawg.ts</code>, <code>supabase/config.toml</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">Function test: unauthenticated request → 401; endpoint whitelist enforced.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Web search/detail flows work through the proxy; RAWG dashboard shows traffic from one origin.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">Low (base-URL switch).</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">Gate on the web-launch decision (Residual Question Q2).</div></div>
+    </div>
+  </article>
+
+  <!-- DOC-001 -->
+  <article class="finding s-Low" id="DOC-001">
+    <div class="head"><span class="fid">DOC-001</span><span class="ftitle">README advertises removed features and omits the deno prerequisite</span>
+      <span class="chips"><span class="chip cat">Documentation</span><span class="chip sev-Low">Low</span><span class="chip cat">Confidence: High</span><span class="chip cat">Effort: XS</span></span></div>
+    <div class="body">
+      <div class="frow"><div class="k">Evidence</div><div class="v"><code>README.md</code> Product section: "View recommendations, trending game news, ARPG calendar events…" — trending news is dead (ARCH-001); Reddit threads were removed twice. No mention that function tests need deno. <code>supabase/.gitignore:6-8</code> doesn't cover plain <code>.env</code> (root .gitignore does — fragile double coverage).</div></div>
+      <div class="frow"><div class="k">Why it matters</div><div class="v">This repo is being "prepared for public review" (README's own words); stale claims and missing prerequisites are the first thing reviewers hit.</div></div>
+      <div class="frow"><div class="k">Recommended fix</div><div class="v">Trim the feature list to reality after the ARCH-001 decision; add deno to Development prerequisites (if any Deno tests remain); add <code>.env</code> to <code>supabase/.gitignore</code>.</div></div>
+      <div class="frow"><div class="k">Execution plan</div><div class="v"><ol>
+        <li>Edit README Product bullet: drop "trending game news" (or rewrite per decision).</li>
+        <li>Add <code>.env</code> line to <code>supabase/.gitignore</code>.</li>
+        <li>Add a Prerequisites note (Node 22+, pnpm 10, Docker for local Supabase, deno if applicable).</li>
+      </ol></div></div>
+      <div class="frow"><div class="k">Files likely touched</div><div class="v"><code>README.md</code>, <code>supabase/.gitignore</code>.</div></div>
+      <div class="frow"><div class="k">Tests</div><div class="v">n/a.</div></div>
+      <div class="frow"><div class="k">Verification</div><div class="v">Read-through; <code>git check-ignore supabase/.env</code> returns a match.</div></div>
+      <div class="frow"><div class="k">Rollback risk</div><div class="v">None.</div></div>
+      <div class="frow"><div class="k">Dependencies</div><div class="v">After ARCH-001 decision.</div></div>
+    </div>
+  </article>
+</section>
+
+<!-- ============================ 5. QUICK WINS ============================ -->
+<section id="s5">
+  <h2><span class="num">5</span>Quick Wins</h2>
+  <p class="section-sub">Small, safe, verified-in-audit improvements. Each is a standalone ≤1-hour change.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th style="width:44px">#</th><th>Change</th><th>Files</th><th>Verification</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">QW-1</td><td>Fix <code>formatRatingCount</code> above 1M (currently 1,500,000 → "1500.0K"): add an <code>M</code> tier. Add <code>lib/rating.test.ts</code> (999 / 1,000 / 999,999 / 1,000,000 / 1,500,000) and register in <code>tsconfig.test.json</code>.</td><td><code>mobile/lib/rating.ts:2</code>, new test, <code>tsconfig.test.json</code></td><td><code>pnpm run test</code></td></tr>
+      <tr><td class="mono">QW-2</td><td>Kill the white flash on web: <code>+html.tsx</code> hardcodes body <code>#fff</code> (light scheme) while the app is always dark — set <code>#0a0b0d</code> unconditionally. Align splash <code>#0D0D0F</code> → <code>#0a0b0d</code> to match <code>Colors.background</code>.</td><td><code>mobile/app/+html.tsx:31-33</code>, <code>mobile/app.json:14,22</code></td><td><code>pnpm run web</code> hard-reload with light OS theme — no white flash</td></tr>
+      <tr><td class="mono">QW-3</td><td>Clear cached user data on sign-out: in the <code>onAuthStateChange</code> handler, when session becomes null call <code>queryClient.clear()</code> and reset <code>rawgMetadataSyncAttempts</code>/<code>InFlight</code> Sets (export a <code>resetLibrarySyncState()</code> from useLibrary.ts).</td><td><code>mobile/app/_layout.tsx:58-62</code>, <code>mobile/hooks/useLibrary.ts:20-21</code></td><td>Sign out → sign in as another account on web; devtools: no stale profile/library flashes</td></tr>
+      <tr><td class="mono">QW-4</td><td>Route <code>RawgFooter</code>'s link through the existing safe helper: replace bare <code>Linking.openURL</code> (unhandled promise) with <code>openExternalLink</code> from <code>lib/links.ts</code>.</td><td><code>mobile/components/RawgFooter.tsx:9</code></td><td><code>pnpm run lint</code>; tap footer link</td></tr>
+      <tr><td class="mono">QW-5</td><td>Sweep magic staleTime numbers into <code>lib/time.ts</code> constants (repo rule): <code>useProfile.ts:21</code>, <code>useProfileStats.ts:22</code>, <code>useRecommendations.ts:6</code>, <code>useSteam.ts:7-8</code>, <code>useArpgTimeline.ts:127-128</code>, <code>useLibrary.ts:79</code>, <code>useUserPreferences.ts:33</code>, <code>_layout.tsx:29-30</code>. (Overlaps BUG-006 — do together.)</td><td>8 hooks + <code>lib/time.ts</code></td><td><code>pnpm run typecheck</code>; grep for bare <code>1000 * 60</code> returns none</td></tr>
+      <tr><td class="mono">QW-6</td><td>Delete dead <code>lib/htmlEntities.ts</code> (zero callers — grep-verified this audit) or, if kept for the future, add the missing named-before-numeric decode test. Prefer delete.</td><td><code>mobile/lib/htmlEntities.ts</code></td><td><code>pnpm run typecheck</code></td></tr>
+      <tr><td class="mono">QW-7</td><td>Add pull-to-refresh to Library and Search (RefreshControl already used on Home <code>index.tsx:315-322</code> — copy the pattern, invalidate <code>['library']</code> / current search key).</td><td><code>app/(tabs)/library.tsx</code>, <code>app/(tabs)/search.tsx</code></td><td>Manual pull gesture refreshes both screens</td></tr>
+      <tr><td class="mono">QW-8</td><td>Replace hardcoded colors with tokens: <code>'#0A0B0D'</code> (<code>GameDisplayCards.tsx:491</code>) → <code>Colors.background</code>; <code>'#fff'</code> (<code>library.tsx:1216,1264</code>) → <code>Colors.textPrimary</code>; document or tokenize the <code>Colors.primary + '20'</code> alpha hack (<code>library.tsx:819</code>).</td><td>2 files</td><td><code>pnpm run typecheck</code>; visual spot-check</td></tr>
+      <tr><td class="mono">QW-9</td><td><code>search-steam-app</code>: return 400 (not 500) on malformed JSON body — wrap the <code>req.json()</code> at <code>index.ts:78</code> in its own try/catch.</td><td><code>supabase/functions/search-steam-app/index.ts</code></td><td>curl with bad body → 400; app lookup still works</td></tr>
+      <tr><td class="mono">QW-10</td><td>Deduplicate copy-pasted helpers: <code>metacriticColor</code> (<code>game/[id].tsx:72-76</code> ≈ <code>GameDisplayCards.tsx:86-90</code>) and <code>MONTH_NAMES</code> (<code>game/[id].tsx:42-55</code> ≈ <code>DateField.tsx:9-22</code>) → single exports in <code>lib/</code>/<code>constants/</code>.</td><td>4 files</td><td><code>pnpm run typecheck</code>, <code>test</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============================ 6. NEXT FEATURES ============================ -->
+<section id="s6">
+  <h2><span class="num">6</span>Next Feature Ideas</h2>
+  <p class="section-sub">Chosen to fit PRODUCT.md's direction (trusted personal library, low-friction logging) and the existing stack. Ordered by leverage.</p>
+
+  <h3>FEAT-001 · Offline-capable library (persisted cache + offline indicator)</h3>
+  <dl class="kv">
+    <dt>User problem</dt><dd>Open the app on the couch with flaky Wi-Fi → skeletons, then "No games yet". The library — the user's own data — should always render.</dd>
+    <dt>Why now</dt><dd>Shares 80% of its implementation with PERF-001 (the persister); fixes the scariest failure mode (library looks deleted) and cuts RAWG quota simultaneously.</dd>
+    <dt>Scope v1</dt><dd>Persist React Query cache (library + RAWG detail keys) to AsyncStorage; wire <code>onlineManager</code> to NetInfo; show a quiet "Offline — showing saved library" banner; mutations disabled (not queued) while offline.</dd>
+    <dt>Out of scope</dt><dd>Offline mutation queue / conflict resolution; image caching beyond what expo-image already does.</dd>
+    <dt>Data/API requirements</dt><dd>Deps from PERF-001 plus <code>@react-native-community/netinfo</code>. No schema changes.</dd>
+    <dt>Implementation steps</dt><dd>1) Land PERF-001. 2) Extend <code>shouldDehydrateQuery</code> to include <code>['library']</code> keys. 3) <code>onlineManager.setEventListener</code> with NetInfo in <code>_layout.tsx</code>. 4) Small <code>OfflineBanner</code> component (tokens only) rendered in the tabs layout when offline. 5) Disable mutation triggers (status chips, delete) with a tooltip/toast while offline.</dd>
+    <dt>Tests</dt><dd>Manual: airplane mode → relaunch → library renders from disk with banner; reconnect → banner clears, refetch fires. Unit-test any pure "is entry stale" helpers added.</dd>
+    <dt>Risks</dt><dd>Stale-forever cache if maxAge/buster mishandled; keep library maxAge short (e.g. 7 days) and rely on refetch-on-reconnect.</dd>
+    <dt>How to know it worked</dt><dd>Airplane-mode cold start shows the full library; RAWG request count per session drops to near zero (PERF-001 metric).</dd>
+  </dl>
+
+  <h3>FEAT-002 · Steam library import</h3>
+  <dl class="kv">
+    <dt>User problem</dt><dd>Seeding a backlog by hand-searching dozens of owned games is the biggest onboarding friction; most target users' collections live in Steam.</dd>
+    <dt>Why now</dt><dd>The plumbing half-exists: <code>game_external_ids</code> maps rawg↔steam, and <code>search-steam-app</code> shows the edge-function pattern. Biggest single retention lever for the friend-circle audience.</dd>
+    <dt>Scope v1</dt><dd>Profile → "Import from Steam": user pastes their Steam ID/vanity URL (public profile required) → new edge function <code>steam-import</code> calls <code>IPlayerService/GetOwnedGames</code> (Steam Web API key in Vault) → match titles to RAWG via existing search → present a review list (matched / ambiguous / unmatched) → bulk-insert selected as <code>want_to_play</code> (or "done" if playtime &gt; N hours, user-toggleable).</dd>
+    <dt>Out of scope</dt><dd>OAuth via Steam OpenID; ongoing playtime sync; non-Steam launchers; automatic re-import.</dd>
+    <dt>Data/API requirements</dt><dd>Steam Web API key (free) stored in Vault; new edge function; batched RAWG search (mind quota — throttle + reuse <code>game_external_ids</code> hits before searching); bulk insert path in <code>useLibrary</code> (single <code>.insert(rows)</code> call).</dd>
+    <dt>Implementation steps</dt><dd>1) Edge function: verify JWT, fetch owned games, return [{appid, name, playtime}]. 2) Client screen: input → review list with checkboxes (reuse GameListCard). 3) Matching: check <code>game_external_ids</code> by steam appid first; else RAWG search top hit with name-similarity guard (reuse the normalization logic pattern from the steam function). 4) Bulk insert + invalidate library. 5) Write matched pairs back to <code>game_external_ids</code>.</dd>
+    <dt>Tests</dt><dd>Function test with a mocked Steam response (empty library, private profile error, 200-game library). Unit test the title-match guard. Manual end-to-end with a real public profile.</dd>
+    <dt>Risks</dt><dd>RAWG quota burst on large libraries (throttle: ~1 search/300ms, show progress); false matches (mitigate with the review step — never silent-import).</dd>
+    <dt>How to know it worked</dt><dd>A 100-game Steam library imports in under 2 minutes with ≥90% auto-matched correctly in the review list.</dd>
+  </dl>
+
+  <h3>FEAT-003 · Library export / backup (JSON + CSV)</h3>
+  <dl class="kv">
+    <dt>User problem</dt><dd>Years of ratings/notes locked in one hobby app = trust problem. PRODUCT.md's "trusted personal library" implies the data is the user's to take.</dd>
+    <dt>Why now</dt><dd>Tiny scope, disproportionate trust payoff before inviting friends; also a safety net ahead of destructive ops like ARCH-001.</dd>
+    <dt>Scope v1</dt><dd>Profile → "Export library": fetch all entries via existing hook, serialize to JSON and CSV, hand off via <code>expo-sharing</code>/Share API on native and a Blob download on web.</dd>
+    <dt>Out of scope</dt><dd>Import/restore; scheduled backups; cloud storage.</dd>
+    <dt>Data/API requirements</dt><dd>None new — data is already client-side. Maybe <code>expo-sharing</code> + <code>expo-file-system</code> (both Expo SDK modules).</dd>
+    <dt>Implementation steps</dt><dd>1) <code>lib/exportLibrary.ts</code>: pure functions <code>toCSV(entries)</code>, <code>toJSON(entries)</code> (escape commas/quotes/newlines). 2) Profile row triggering share/download per platform. 3) Include all personal fields: status, rating, playtime, dates, notes, platforms, custom order.</dd>
+    <dt>Tests</dt><dd><code>lib/exportLibrary.test.ts</code>: CSV escaping (notes with commas, quotes, newlines, unicode), null fields, empty library.</dd>
+    <dt>Risks</dt><dd>Minimal. CSV injection if opened in Excel — prefix <code>=+-@</code> cells with <code>'</code>.</dd>
+    <dt>How to know it worked</dt><dd>Exported CSV round-trips visually in a spreadsheet; JSON parses; notes with punctuation intact.</dd>
+  </dl>
+
+  <h3>FEAT-004 · Search filters (platform / genre / sort)</h3>
+  <dl class="kv">
+    <dt>User problem</dt><dd>Search is a single text box; "good co-op games on PS5" requires external research first, breaking the add-flow.</dd>
+    <dt>Why now</dt><dd>RAWG's <code>/games</code> endpoint already accepts <code>platforms</code>, <code>genres</code>, <code>ordering</code> params; the platform-chip UI pattern already exists in library.tsx.</dd>
+    <dt>Scope v1</dt><dd>Filter row under the search input: platform (reuse the slug map in <code>useRawg.ts:20-24</code>), genre (static list of RAWG's ~20 genres), ordering (relevance / released / rating). Filters compose with the text query into the existing infinite query key.</dd>
+    <dt>Out of scope</dt><dd>Tag/store/metacritic filters; saved searches.</dd>
+    <dt>Data/API requirements</dt><dd>Extend <code>lib/rawg.ts</code> search params + the search hook's query key. No backend changes. Note: each filter change is a new query → mild quota increase; keep search staleTime as-is and debounce filter taps.</dd>
+    <dt>Implementation steps</dt><dd>1) Extend <code>searchGames</code> signature in <code>lib/rawg.ts</code>. 2) Add filter state + chips in <code>search.tsx</code> (copy library chip styles → shared component). 3) Include filters in the infinite query key. 4) Show active-filter count badge; "clear filters" affordance in the empty state.</dd>
+    <dt>Tests</dt><dd>Unit test the param-builder (filters → RAWG query string). Manual: platform+genre+ordering combinations.</dd>
+    <dt>Risks</dt><dd>Quota (each combination caches separately) — acceptable with existing 30-min search staleTime.</dd>
+    <dt>How to know it worked</dt><dd>"PS5 + RPG + top rated" returns a sensible list without leaving the app; add-to-library works from filtered results.</dd>
+  </dl>
+</section>
+
+<!-- ============================ 7. EXECUTION ORDER ============================ -->
+<section id="s7">
+  <h2><span class="num">7</span>Suggested Execution Order</h2>
+  <p class="section-sub">Sequenced for a cheaper model: each phase's items are independent unless noted; verify with the commands in each finding before moving on. Supabase migrations are <em>authored</em> in-phase but applied to production only by the owner.</p>
+
+  <div class="phase">
+    <h4>Phase 0 — Safety net (half a day)</h4>
+    <p class="ids">TEST-001 → ARCH-003 → TEST-002</p>
+    <p>CI first so every later change is guarded; then prove the local DB replays (several later tasks need it); then wire whatever Deno tests survive the ARCH-001 decision.</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 1 — Safest correctness fixes (1–2 days)</h4>
+    <p class="ids">PROD-001 → BUG-002 (+UX-002) → BUG-001 → BUG-003 → BUG-004 → BUG-005 → QW-1 … QW-10</p>
+    <p>All client-side, small diffs, no schema changes. PROD-001 first (legal, 10 minutes). BUG-002 unblocks the whole web build. Quick wins can interleave anywhere.</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 2 — Security &amp; data layer (1 day of authoring + owner review)</h4>
+    <p class="ids">SEC-002 → SEC-001 → PERF-002</p>
+    <p>Three migrations, one review bundle for the owner. Verify each against the local stack (<code>pnpm run db:reset</code> + app smoke) before handing over.</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 3 — Product/UX quality (2–3 days)</h4>
+    <p class="ids">UX-001 → BUG-006 → PERF-001 → UX-003 → UX-004</p>
+    <p>Error states first (touches many screens — land before the a11y sweep to avoid double-editing). BUG-006 must precede PERF-001.</p>
+  </div>
+  <div class="phase">
+    <h4>Phase 4 — Larger structural + feature work (1–2 weeks, owner-gated)</h4>
+    <p class="ids">ARCH-001 → ARCH-002 → DOC-001 → FEAT-001 → FEAT-003 → FEAT-002 → FEAT-004 · (SEC-003 when web launches)</p>
+    <p>ARCH-001 needs the owner's delete-vs-revive decision and a prod data export first. ARCH-002 after the library.tsx bug fixes have merged. FEAT-001 builds directly on PERF-001; FEAT-003 before FEAT-002 (backup before bulk import).</p>
+  </div>
+</section>
+
+<!-- ============================ 8. TASK PACKETS ============================ -->
+<section id="s8">
+  <h2><span class="num">8</span>Cheap-Model Task Packets</h2>
+  <p class="section-sub">Copy-paste prompts. Each is self-contained: context, objective, constraints, plan, done criteria. Give the model repo access at <code>/Users/davidguay/git/goodgame</code> (or repo root) and one packet at a time.</p>
+
+  <details class="packet" open><summary><span class="tid">TP-1</span> Add RAWG attribution to Library and Profile (PROD-001)</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- AGENTS.md section "RAWG Attribution (REQUIRED BY TOS)"
+- mobile/components/RawgFooter.tsx (the component to use)
+- mobile/app/(tabs)/index.tsx line ~423 (reference usage)
+
+OBJECTIVE
+Render &lt;RawgFooter /&gt; on every screen that displays RAWG data but currently
+lacks it: the Library tab and the Profile tab.
+
+FILES TO INSPECT: mobile/app/(tabs)/library.tsx, mobile/app/(tabs)/profile.tsx
+FILES TO EDIT:    the same two files only.
+
+CONSTRAINTS
+- Do not restyle the footer or touch any other screen.
+- Library has multiple view modes (grid / list / minimalist), each with its own
+  FlatList — the footer must appear in ALL of them. Use ListFooterComponent.
+- Profile: place the footer after the "Top Genres" section (~line 285),
+  inside the existing ScrollView, using existing Spacing tokens for margin.
+
+STEP-BY-STEP
+1. Import RawgFooter in library.tsx; add ListFooterComponent={&lt;RawgFooter /&gt;}
+   to each FlatList that renders game cards (search around lines 1099-1296).
+2. Import and render it in profile.tsx after Top Genres.
+3. Run: pnpm run typecheck && pnpm run lint
+
+DONE CRITERIA
+- typecheck and lint pass.
+- Footer visible at the bottom of Library in every view mode and on Profile
+  (verify via pnpm run web).</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-2</span> Platform-safe dialogs: fix web sign-out, auth errors, delete confirm (BUG-002 + UX-002)</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- mobile/app/(tabs)/profile.tsx lines 70-100 (Alert-gated sign-out)
+- mobile/app/(auth)/login.tsx (all Alert.alert call sites: ~26,34,43,60,66)
+- mobile/app/(tabs)/library.tsx lines 950-980 (existing web special-case delete)
+- AGENTS.md "Mandatory Rules" (error handling, Platform.OS checks)
+
+OBJECTIVE
+Alert.alert is a silent no-op on react-native-web, so on web sign-out is
+impossible and auth errors are invisible. Create one platform wrapper and
+migrate every Alert.alert call site to it.
+
+FILES TO EDIT
+- NEW mobile/lib/dialogs.ts
+- mobile/app/(tabs)/profile.tsx
+- mobile/app/(auth)/login.tsx
+- mobile/app/(tabs)/library.tsx
+
+CONSTRAINTS
+- No new dependencies. No custom modal components — window.confirm/alert on
+  web is acceptable and intended.
+- Keep native behavior identical (Alert.alert with the same titles/buttons).
+- Delete the now-redundant inline Platform.OS === 'web' branch in library.tsx.
+
+STEP-BY-STEP
+1. Create mobile/lib/dialogs.ts exporting:
+   showAlert(title: string, message?: string): void
+   confirm(title: string, message?: string, confirmLabel?: string): Promise&lt;boolean&gt;
+   Web: window.alert / window.confirm. Native: Alert.alert (confirm resolves
+   true on the destructive/confirm button, false on cancel).
+2. grep -rn "Alert.alert" mobile/app mobile/components — migrate every hit.
+3. Sign-out flow: if (await confirm('Sign out', 'Are you sure…', 'Sign out')) { … }.
+4. Remove unused Alert imports.
+5. Run: pnpm run typecheck && pnpm run lint
+
+DONE CRITERIA
+- On pnpm run web: sign-out shows a confirm and works; wrong-password login
+  shows an alert; deleting a library game asks exactly once.
+- Native behavior unchanged. typecheck + lint pass.</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-3</span> Real "Playing" filter in Library; remove dead 'next' filter (BUG-001)</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- mobile/app/(tabs)/index.tsx lines 105-135 and 225-240 (HeroStatPill → router.push)
+- mobile/app/(tabs)/library.tsx lines 40-100 (FilterStatus, FILTER_OPTIONS,
+  isFilterStatus) and 870-945 (param effect + filter predicate)
+- mobile/types/database.ts (LibraryStatus union)
+
+OBJECTIVE
+Home's "Playing" stat pill pushes /library?filter=playing but the library
+rejects that value. Add a working Playing filter chip and delete the
+unreachable 'next' filter branches.
+
+FILES TO EDIT: mobile/app/(tabs)/library.tsx only.
+
+CONSTRAINTS
+- Do not change index.tsx (it already sends the right param).
+- Do not change default filter behavior for users without a param.
+- Surgical diff: no refactors of unrelated library.tsx code.
+
+STEP-BY-STEP
+1. Line ~45: change
+   type FilterStatus = Exclude&lt;LibraryStatus,'playing'&gt; | 'all' | 'next'
+   to: type FilterStatus = LibraryStatus | 'all'
+2. Add { key: 'playing', label: 'Playing', compactLabel: 'Playing' } to
+   FILTER_OPTIONS between 'all' and 'want_to_play'.
+3. Let the compiler find every switch/branch on FilterStatus; handle
+   'playing' like other statuses (entry.status === filter) and DELETE the
+   dead 'next' branches (~lines 932-933, 1035-1036, 1042-1044).
+4. Check the chip row at narrow width (320px web) — labels must not clip;
+   the row scrolls horizontally or uses compactLabel.
+5. Run: pnpm run typecheck && pnpm run lint && pnpm run test
+
+DONE CRITERIA
+- Tapping "Playing" on Home lands on Library filtered to playing games.
+- All 5 chips work; no 'next' references remain (grep "'next'" in the file).
+- All checks pass.</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-4</span> Flush pending notes on unmount/blur (BUG-003)</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- mobile/app/game/[id].tsx lines 355-415 (notes state, debounce timer,
+  unmount cleanup, updateMutation)
+
+OBJECTIVE
+Notes are saved on a 500ms debounce; navigating back within that window
+clears the timer WITHOUT saving — silent data loss. Flush instead of discard.
+
+FILES TO EDIT: mobile/app/game/[id].tsx only.
+
+CONSTRAINTS
+- Keep the 500ms debounce for normal typing.
+- The unmount cleanup must not reference stale state — use refs.
+- entry can be null (game not in library) — guard the flush.
+
+STEP-BY-STEP
+1. Add: const pendingNotesRef = useRef&lt;string | null&gt;(null)
+   and an entryIdRef kept in sync with the current entry id.
+2. In handleNotesChange: set pendingNotesRef.current = text before
+   scheduling; in the timeout callback, after mutating, set it back to null.
+3. Add flushPendingNotes(): clears the timer; if pendingNotesRef.current is
+   non-null and entryIdRef.current exists, call
+   updateMutation.mutate({ id, personal_notes: trimmedOrNull }) and null the ref.
+4. Call flushPendingNotes() in the unmount cleanup (replacing the bare
+   clearTimeout at ~373-376) and in the notes TextInput onBlur.
+5. Run: pnpm run typecheck
+
+DONE CRITERIA
+- Manual (pnpm run web): open a library game → type a note → immediately
+  navigate back → reopen → note is present.
+- typecheck passes; normal typing still saves once, not per keystroke.</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-5</span> Distinguish error states from empty states on all screens (UX-001)</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- mobile/components/ui/EmptyState.tsx and ui/Button.tsx
+- The CORRECT reference pattern: mobile/app/game/[id].tsx lines 540-565
+- Broken sites: search.tsx:54-58 &amp; 111-117; library.tsx:1185-1195;
+  release-calendar.tsx:182-192; arpg-events.tsx:130-137;
+  components/ArpgEvents.tsx:104-114; index.tsx:382-394 &amp; 408-420;
+  profile.tsx:44 &amp; 112
+- DESIGN.md + mobile/constants/ (use tokens only)
+
+OBJECTIVE
+Every fetch failure currently renders as a misleading empty state
+("No games found", "No games yet", blank rails). Add a reusable error
+presentation with a retry action and branch on isError before the
+empty branch on each listed screen.
+
+FILES TO EDIT
+- mobile/components/ui/EmptyState.tsx (add optional actionLabel/onAction props)
+- the 7 screen/component files listed above
+
+CONSTRAINTS
+- Reuse EmptyState + ui/Button; no new components except (optionally) a tiny
+  inline error row for the Home rails.
+- Copy in tone: short, calm, no exclamation marks (PRODUCT.md brand voice).
+  Suggested: title "Couldn't load" / message "Check your connection and try
+  again." / action "Try again".
+- Retry = the query's refetch(); never window.location.reload().
+- Design tokens only; no inline styles; no new colors.
+
+STEP-BY-STEP
+1. Extend EmptyState with actionLabel?/onAction? rendering a Button below
+   the message.
+2. Screen by screen: include isError in the branch logic BEFORE the empty
+   check; wire refetch. For Home rails render a one-line "Couldn't load —
+   Try again" row instead of an empty FlatList.
+3. Profile: on profile query error show the error EmptyState instead of
+   placeholder stats.
+4. Run: pnpm run typecheck && pnpm run lint
+
+DONE CRITERIA
+- With network blocked (browser devtools offline), each listed screen shows
+  the error state with a working retry after reconnecting; with network fine,
+  genuine empty states still show their original copy.
+- typecheck + lint pass.</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-6</span> CI workflow: typecheck + lint + tests on every PR (TEST-001 + TEST-002)</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- package.json (root) scripts: typecheck, lint, test
+- mobile/package.json test script (tsc -p tsconfig.test.json + node --test)
+- Repo layout: pnpm workspace-less; root package.json proxies via --dir mobile
+- pnpm version pin: "packageManager": "pnpm@10.33.2"
+
+OBJECTIVE
+Create .github/workflows/ci.yml that runs typecheck, lint, and the node test
+suite on pull_request and on push to master.
+
+FILES TO EDIT: NEW .github/workflows/ci.yml only.
+
+CONSTRAINTS
+- Node 22, pnpm 10 via pnpm/action-setup (read version from packageManager).
+- Install must be frozen-lockfile at BOTH root and mobile/ (two lockfiles).
+- Keep it one job unless deno tests are still relevant (check whether
+  supabase/functions/**/**.test.ts still exist at execution time; if yes,
+  add a second job: denoland/setup-deno@v2 + `deno test supabase/functions/`).
+- No caching heroics beyond setup-node's pnpm cache.
+
+STEP-BY-STEP
+1. Write the workflow: checkout → pnpm/action-setup → setup-node (22, cache
+   pnpm) → pnpm install --frozen-lockfile → pnpm --dir mobile install
+   --frozen-lockfile → pnpm run typecheck → pnpm run lint → pnpm run test.
+2. Push a scratch branch and open a draft PR to see it run (or instruct the
+   owner to).
+3. Confirm a deliberate type error in a scratch commit fails the run, then
+   drop that commit.
+
+DONE CRITERIA
+- Workflow green on a clean branch; red on an injected type error.
+- Total runtime under ~5 minutes.</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-7</span> Harden DB grants and shared-cache RLS (SEC-001 + SEC-002) — author only, owner applies</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- supabase/migrations/20260513000002_grant_public_schema_privileges.sql
+- supabase/migrations/20260520000001_add_game_external_ids.sql
+- supabase/migrations/20260607172155_add_pcgamingwiki_ultrawide_cache.sql
+- mobile/hooks/useSteam.ts and mobile/hooks/usePcGamingWiki.ts (which columns
+  the client writes — the new policies must keep these flows working)
+- AGENTS.md Supabase rules ("Never push migrations… without asking")
+
+OBJECTIVE
+Author two migrations that (a) narrow the blanket grants, (b) remove
+UPDATE-anything/DELETE rights on the shared cache tables, without breaking
+client cache-fill flows. DO NOT apply to production.
+
+FILES TO EDIT (new files only)
+- supabase/migrations/&lt;ts1&gt;_narrow_public_grants.sql
+- supabase/migrations/&lt;ts2&gt;_tighten_shared_cache_policies.sql
+
+CONSTRAINTS
+- anon: SELECT only (current + default privileges). authenticated: keep
+  SELECT/INSERT/UPDATE; DELETE only on library_entries and user_preferences.
+- game_external_ids / pcgamingwiki_features: replace the FOR ALL policy with
+  separate INSERT and UPDATE policies (auth.uid() IS NOT NULL); NO delete
+  policy; REVOKE DELETE from authenticated on both.
+- Before finalizing, grep the app for .delete() calls to confirm the DELETE
+  allowlist: grep -rn "\.delete()" mobile/hooks mobile/lib
+- Migrations must be replayable: use IF EXISTS guards on DROP POLICY.
+
+STEP-BY-STEP
+1. Write &lt;ts1&gt;: REVOKE INSERT/UPDATE/DELETE from anon on all tables; REVOKE
+   DELETE from authenticated on all tables; GRANT DELETE on library_entries,
+   user_preferences TO authenticated; replace both ALTER DEFAULT PRIVILEGES
+   statements accordingly (SELECT for anon; SELECT/INSERT/UPDATE for authenticated).
+2. Write &lt;ts2&gt;: per cache table — DROP POLICY IF EXISTS "…can manage…";
+   CREATE POLICY insert…; CREATE POLICY update…; REVOKE DELETE.
+3. Verify: pnpm run db:start && pnpm run db:reset (must replay cleanly).
+4. Smoke against local stack: sign in, add game (Steam lookup fires), open a
+   PC game detail (PCGW cache fills), change status, delete an entry, edit
+   display name and preferences — all must succeed.
+5. SQL probes on local: as anon, INSERT into profiles → expect permission
+   denied; as an authenticated test user, DELETE FROM game_external_ids →
+   expect permission denied.
+
+DONE CRITERIA
+- db reset replays; all smoke flows pass; both negative probes fail with
+  permission errors. Hand the migration files to the owner for production.</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-8</span> Remove the dead news subsystem (ARCH-001) — REQUIRES OWNER GO-AHEAD + PROD DATA EXPORT FIRST</summary><div class="pbody"><pre>PRECONDITIONS (do not start without them)
+- Owner has confirmed "delete" over "revive".
+- Owner has exported/archived production news_* data.
+
+CONTEXT TO READ FIRST
+- supabase/migrations/20260619000002_disable_news_cron_jobs.sql (declares the
+  pipeline legacy)
+- supabase/migrations/20260604000001_add_news_aggregator_schema.sql and
+  20260604000006 (exact table/function/trigger names to drop)
+- mobile/lib/steam.ts (proves search-steam-app is the only function the app
+  uses)
+- supabase/functions/search-steam-app/ (must NOT import from _shared —
+  verify: grep -rn "_shared" supabase/functions/search-steam-app/)
+
+OBJECTIVE
+Delete the unused news pipeline end-to-end: edge functions, config entries,
+tables, docs, README claim.
+
+FILES TO DELETE/EDIT
+- DELETE supabase/functions/ingest-news/, supabase/functions/
+  calculate-news-trends/, supabase/functions/_shared/ (if step-check passes)
+- EDIT supabase/config.toml (remove both [functions.*] blocks, ~lines 395-402)
+- NEW migration &lt;ts&gt;_remove_news_subsystem.sql dropping all news_* tables in
+  FK order + any news-only functions/triggers/indexes from 20260604000001/6
+- DELETE docs/external/news/
+- EDIT README.md (drop "trending game news" from the Product bullets)
+
+CONSTRAINTS
+- Do NOT touch supabase/functions/search-steam-app/ or ARPG/calendar code —
+  the News tab keeps working via useArpgTimeline (client-side ICS).
+- Migration must use DROP TABLE IF EXISTS … CASCADE thoughtfully: prefer
+  explicit FK-ordered drops; CASCADE only where a view/trigger depends.
+- Do not deploy anything; owner runs supabase functions delete + db push.
+
+STEP-BY-STEP
+1. Run the _shared import check; if search-steam-app imports from _shared,
+   keep only the imported file(s) and delete the rest.
+2. Delete function directories; strip config.toml blocks.
+3. Enumerate news objects by reading 20260604000001 and 20260604000006 top to
+   bottom; write the drop migration mirroring them in reverse order.
+4. Remove docs/external/news/ and update README.
+5. Verify: pnpm run db:reset (clean replay including the new migration),
+   pnpm run typecheck, pnpm run lint, pnpm run test.
+6. App smoke: News tab renders ARPG events; game detail Steam lookup works.
+
+DONE CRITERIA
+- Repo contains no references to news_ tables or ingest-news outside
+  migration history (grep -rn "news_" mobile/ supabase/functions/ returns
+  nothing; migrations keep their history untouched).
+- All checks + db reset pass; News tab and Steam lookup verified working.</pre></div></details>
+
+  <details class="packet"><summary><span class="tid">TP-9</span> Kill redundant RAWG refetches: single query options + persisted cache (BUG-006 + PERF-001)</summary><div class="pbody"><pre>CONTEXT TO READ FIRST
+- mobile/hooks/useRawg.ts (staleness policy home; useGameDetail ~line 56)
+- mobile/hooks/useProfileStats.ts:22-37 and useRecommendations.ts:6-21
+  (conflicting 30-min staleTime on the SAME ['rawg','game',id] key)
+- mobile/components/GameDisplayCards.tsx:247-248, 361-363 (per-card
+  useGameDetail)
+- mobile/app/(tabs)/library.tsx:1134-1149 (non-reactive getQueryData pre-read)
+- mobile/app/_layout.tsx (~line 26, QueryClient)
+- mobile/lib/time.ts and AGENTS.md Data Fetching rules
+- supabase/migrations/20260606000001_reduce_rawg_api_usage.sql (history:
+  542k calls/month incident — the stakes)
+
+OBJECTIVE
+(1) One source of truth for game-detail query options. (2) Persist the React
+Query cache so the 1-day staleTime survives app restarts. Result: a second
+cold launch of a populated library issues ~zero RAWG detail requests.
+
+FILES TO EDIT
+- mobile/hooks/useRawg.ts, useProfileStats.ts, useRecommendations.ts
+- mobile/app/_layout.tsx, mobile/app/(tabs)/library.tsx
+- mobile/lib/time.ts, mobile/package.json (new deps)
+
+CONSTRAINTS
+- New deps allowed (official TanStack): @tanstack/react-query-persist-client,
+  @tanstack/query-async-storage-persister, and
+  @react-native-async-storage/async-storage via `npx expo install`.
+- Persist ONLY ['rawg', …] query keys (dehydrateOptions.shouldDehydrateQuery);
+  library/profile data stays network-first.
+- RAWG queries need gcTime ≥ persister maxAge (24h) or entries are dropped.
+- Add a `buster` string constant so cache shape changes can invalidate.
+- Per AGENTS.md: this changes RAWG usage patterns — note the expected effect
+  in the PR description (fewer requests, none added).
+
+STEP-BY-STEP
+1. In useRawg.ts export gameDetailQueryOptions(id) = { queryKey, queryFn,
+   staleTime: ONE_DAY, gcTime: ONE_DAY * 2 } using lib/time.ts constants
+   (add ONE_DAY there if missing). Use it in useGameDetail.
+2. Replace inline options in useProfileStats.ts and useRecommendations.ts
+   with gameDetailQueryOptions; delete their local staleTime constants.
+3. _layout.tsx: swap QueryClientProvider for PersistQueryClientProvider with
+   an AsyncStorage persister, maxAge 24h, buster 'v1', shouldDehydrateQuery
+   filtering to key[0] === 'rawg' && query.state.status === 'success'.
+4. library.tsx: delete the getQueryData pre-read block (~1134-1149) and pass
+   entries to cards without a pre-resolved detail — cards already subscribe
+   via useGameDetail.
+5. Run: pnpm run typecheck && pnpm run lint && pnpm run test
+
+DONE CRITERIA
+- pnpm run web: first launch populates; hard reload → network tab filtered to
+  api.rawg.io shows no /games/{id} refetches for cached entries.
+- Profile visit 30+ min later triggers no detail refetches.
+- All checks pass; cards still render developer/metacritic data.</pre></div></details>
+</section>
+
+<!-- ============================ 9. RESIDUAL QUESTIONS ============================ -->
+<section id="s9">
+  <h2><span class="num">9</span>Residual Questions</h2>
+  <p class="section-sub">Decisions the repo cannot answer — owner input needed before the gated items proceed.</p>
+  <ol>
+    <li><strong>Q1 — News subsystem: delete or revive?</strong> Migration <code>20260619000002</code> calls it legacy and the app no longer consumes it, but README still advertises it. TP-8 assumes delete. If revive: the clusterer/pagination/alert-dedup bugs in the backend audit become active work items and TEST-002 becomes mandatory first.</li>
+    <li><strong>Q2 — Web launch timeline?</strong> README says the Vercel frontend is intentionally disabled "while this repository is prepared for public review." SEC-003 (RAWG key proxy + rotation) should land <em>before</em> that flip; Phase-1 web fixes (BUG-002) matter either way for local web use.</li>
+    <li><strong>Q3 — Is the app single-user-circle for the foreseeable future?</strong> SEC-001/SEC-002 severity assumes sign-ups could open. If the Supabase project restricts sign-ups (e.g. Google OAuth allowlist — not visible in the repo), the cache-poisoning window is smaller and Phase 2 can slide later. Confirm what the hosted project's auth settings actually are (dashboard, not in repo).</li>
+    <li><strong>Q4 — Intended semantics of <code>library_entries.custom_order</code> NULL?</strong> The 2026-05-07 backfill ranked existing rows; new rows insert NULL (client sets it via <code>getNextCustomOrder</code>, but rows created by future paths — e.g. FEAT-002 bulk import — could be NULL). Define: NULL = "end of list" (and codify in <code>librarySort.ts</code> + a test), or make the column NOT NULL with a trigger default.</li>
+    <li><strong>Q5 — Should PCGamingWiki fetching move server-side?</strong> Today all PCGW scraping is client-side (<code>lib/pcgamingwiki.ts</code>), so a PCGW HTML/API change breaks every installed APK until users update. A small edge-function proxy (same pattern as search-steam-app) would make it patchable server-side. Worth it only if PCGW churn is observed — owner's call.</li>
+    <li><strong>Q6 — Deployed edge-function flag drift.</strong> <code>config.toml</code> governs local; whether production <code>ingest-news</code>/<code>calculate-news-trends</code> are still deployed (and with which verify_jwt flags) is only visible in the dashboard. If TP-8 proceeds, owner should also delete the deployed functions, not just the repo code.</li>
+  </ol>
+</section>
+
+<footer class="report">
+  Audit performed 2026-07-10 against commit a8f3cd3 (master, clean tree). Checks executed this session: tsc --noEmit (pass), eslint (pass), node --test via pnpm run test (48/48 pass). Deno function tests present but not executable locally (no deno CLI). All file:line citations re-verified at audit time for load-bearing findings; line numbers drift as the code changes — treat IDs and file paths as stable, line numbers as hints.
+</footer>
+</main>
