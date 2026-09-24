@@ -15,6 +15,9 @@ For browser/web requests, include `origin=*` so MediaWiki returns CORS headers:
 origin=*
 ```
 
+Cargo queries require a logged-in bot. Goodgame performs that login only in the
+`pcgamingwiki-features` edge function. See [Setup](#setup).
+
 ## Cargo Query
 
 Use `action=cargoquery` for structured fields.
@@ -24,10 +27,10 @@ Common parameters:
 ```txt
 action=cargoquery
 format=json
-tables=Infobox_game,Video,Input
-fields=Infobox_game._pageID=PageID,Infobox_game._pageName=PageName,Video.60_FPS=SixtyFps,Video.120_FPS=OneTwentyFps,Video.Ultrawidescreen,Input.Controller_support=ControllerSupport,Infobox_game.Perspectives=Perspectives
-join_on=Infobox_game._pageID=Video._pageID,Infobox_game._pageID=Input._pageID
-where=Infobox_game.Steam_AppID HOLDS "1245620"
+tables=Game,Video,Input
+fields=Game._pageID=PageID,Game._pageName=PageName,Video.4K_Ultra_HD=FourKUltraHd,Video.60_FPS=SixtyFps,Video.120_FPS=OneTwentyFps,Video.Ultrawidescreen,Input.Controller_support=ControllerSupport,Game.Perspectives=Perspectives
+join_on=Game._pageID=Video._pageID,Game._pageID=Input._pageID
+where=Game.Steam_AppID HOLDS "1245620"
 limit=1
 origin=*
 ```
@@ -35,7 +38,7 @@ origin=*
 Example request:
 
 ```txt
-https://www.pcgamingwiki.com/w/api.php?origin=*&action=cargoquery&format=json&tables=Infobox_game,Video,Input&fields=Infobox_game._pageID=PageID,Infobox_game._pageName=PageName,Video.60_FPS=SixtyFps,Video.120_FPS=OneTwentyFps,Video.Ultrawidescreen,Input.Controller_support=ControllerSupport,Infobox_game.Perspectives=Perspectives&join_on=Infobox_game._pageID=Video._pageID,Infobox_game._pageID=Input._pageID&where=Infobox_game.Steam_AppID%20HOLDS%20%221245620%22&limit=1
+https://www.pcgamingwiki.com/w/api.php?action=cargoquery&format=json&tables=Game,Video,Input&fields=Game._pageID=PageID,Game._pageName=PageName,Video.4K_Ultra_HD=FourKUltraHd,Video.60_FPS=SixtyFps,Video.120_FPS=OneTwentyFps,Video.Ultrawidescreen,Input.Controller_support=ControllerSupport,Game.Perspectives=Perspectives&join_on=Game._pageID=Video._pageID,Game._pageID=Input._pageID&where=Game.Steam_AppID%20HOLDS%20%221245620%22&limit=1
 ```
 
 Verified response for Elden Ring / Steam AppID `1245620`:
@@ -151,7 +154,8 @@ community troubleshooting links, mod links, or other unofficial references.
 Structured Cargo tables worth exploring:
 
 ```txt
-Infobox_game       Game identity, developers, publishers, release dates, genres, Steam AppID, GOG ID
+Game               Game identity, developers, publishers, release dates, genres, Steam AppID, GOG ID
+StoreFeature       Subscription flags, including Xbox_Game_Pass
 Video              Ultrawide, HDR, ray tracing, borderless windowed, FOV, upscaling
 Input              Controller support, prompts, Steam Input, DualSense features
 Multiplayer        Local/LAN/online support, player counts, crossplay
@@ -166,8 +170,46 @@ Tags               Data quality and feature-section flags
 ```
 
 Most per-game tables can be joined by `_pageID`. Association-style tables such
-as `L10n` and `Infobox_game_engine` may return multiple rows and are better
+as `L10n` and `GameEngine` may return multiple rows and are better
 queried separately when needed.
+
+## Setup
+
+PCGamingWiki requires a [bot password](https://www.mediawiki.org/wiki/Manual:Bot_passwords)
+and [`action=login`](https://www.mediawiki.org/wiki/API:Login#Using_action=login)
+before `cargoquery` will succeed. Anonymous Cargo queries return `permissiondenied`.
+
+Create a bot password whose grants include **Create, query and delete data through the Cargo extension**. The login name is `Username@bot-password-name`.
+
+Store these as Supabase edge function secrets. Do not put them in Expo, `EXPO_PUBLIC_*`, or the git repository. Do not deploy the function or push the secrets until that has been approved.
+
+```txt
+PCGW_BOT_USERNAME   Username@bot-password-name
+PCGW_BOT_PASSWORD   the bot password
+PCGW_CONTACT        optional contact used in the user agent; defaults to https://github.com/dguay/goodgame
+```
+
+```bash
+supabase secrets set PCGW_BOT_USERNAME=Username@bot-password-name PCGW_BOT_PASSWORD=... PCGW_CONTACT=you@example.com
+```
+
+The user agent sent with every request is `Goodgame/1.0 (<contact>)`.
+
+PCGamingWiki's current limit is **60 requests per minute**. A game lookup logs in, runs the Cargo query, then reads the page source and the `StoreFeature` row. HTTP 429 blocks the caller for 60 seconds. Cache hits avoid that traffic.
+
+Local checks, with no live call:
+
+```bash
+deno test supabase/functions/pcgamingwiki-features/lookup.test.ts
+```
+
+Live smoke for Elden Ring, Steam AppID `1245620`. It exits with an error when the secrets are absent, and prints the page name plus a documented-feature count when they are set:
+
+```bash
+PCGW_BOT_USERNAME=Username@bot-password-name PCGW_BOT_PASSWORD=... deno run --allow-net --allow-env scripts/pcgamingwiki-features-smoke.ts
+```
+
+`Xbox_Game_Pass` now lives on `StoreFeature`, not `Availability`. The feature query uses `Game`, `Video`, and `Input`.
 
 ## Current Goodgame Integration
 
@@ -182,8 +224,8 @@ RAWG game detail
   -> check platforms for slug "pc"
   -> resolve/cache Steam AppID
   -> read pcgamingwiki_features cache by rawg_game_id
-  -> if missing, stale, or cached before the feature-field migration, query PCGamingWiki by Steam AppID
-  -> fetch page source by PageName to extract official Discord URL
+  -> if missing, stale, or cached before the feature-field migration, call the pcgamingwiki-features edge function
+  -> the function logs in with the bot password, queries Cargo, and reads the page source for the official Discord URL
   -> upsert cache with refreshed_at
   -> render PC feature rows
 ```

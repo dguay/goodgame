@@ -1,4 +1,8 @@
-import { resolvePcGamingWikiFeatures, type PcGamingWikiFeatureStore } from './pcgamingwikiCache'
+import {
+  resolvePcGamingWikiFeatures,
+  type PcGamingWikiFeatureStore,
+  type PcGamingWikiLiveLookup,
+} from './pcgamingwikiCache'
 import type { PcGamingWikiFeatures } from '../types/database'
 
 declare const require: (module: string) => unknown
@@ -9,20 +13,6 @@ const assert = require('node:assert/strict') as {
   rejects: (block: () => Promise<unknown>, error?: RegExp) => Promise<void>
 }
 const test = require('node:test') as (name: string, fn: () => void | Promise<void>) => void
-
-const PERMISSION_DENIED = {
-  error: {
-    code: 'permissiondenied',
-    info: 'The action you have requested is limited to users in the group: user',
-  },
-}
-
-function jsonResponse(body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  })
-}
 
 function cachedRow(overrides: Partial<PcGamingWikiFeatures> = {}): PcGamingWikiFeatures {
   return {
@@ -59,47 +49,49 @@ function storeWith(row: PcGamingWikiFeatures | null): PcGamingWikiFeatureStore &
   }
 }
 
-async function withFetch(body: unknown, run: () => Promise<void>): Promise<void> {
-  const original = globalThis.fetch
-  globalThis.fetch = (async () => jsonResponse(body)) as typeof fetch
-  try {
-    await run()
-  } finally {
-    globalThis.fetch = original
+function lookupThat(result: 'permissiondenied' | null): PcGamingWikiLiveLookup {
+  return {
+    bySteamAppId: async () => {
+      if (result === 'permissiondenied') {
+        throw new Error('PCGamingWiki permissiondenied: cargo')
+      }
+      return null
+    },
+    byGameName: async () => null,
   }
 }
 
 test('a permissiondenied refresh keeps a documented cache row unchanged', async () => {
   const row = cachedRow()
   const store = storeWith(row)
-  await withFetch(PERMISSION_DENIED, async () => {
-    const result = await resolvePcGamingWikiFeatures(row.rawg_game_id, row.steam_app_id, 'Elden Ring', store)
-    assert.equal(result.pageName, 'Elden Ring')
-    assert.equal(result.fourKUltraHd, 'limited')
-    assert.equal(result.officialDiscordUrl, 'https://discord.gg/eldenring')
-    assert.equal(result.isDocumented, true)
-    assert.deepEqual(store.writes, [])
-    assert.equal(row.refreshed_at, '2026-06-01T00:00:00.000Z')
-  })
+  const result = await resolvePcGamingWikiFeatures(
+    row.rawg_game_id,
+    row.steam_app_id,
+    'Elden Ring',
+    store,
+    lookupThat('permissiondenied'),
+  )
+  assert.equal(result.pageName, 'Elden Ring')
+  assert.equal(result.fourKUltraHd, 'limited')
+  assert.equal(result.officialDiscordUrl, 'https://discord.gg/eldenring')
+  assert.equal(result.isDocumented, true)
+  assert.deepEqual(store.writes, [])
+  assert.equal(row.refreshed_at, '2026-06-01T00:00:00.000Z')
 })
 
 test('a permissiondenied lookup with no cache stays an error and inserts nothing', async () => {
   const store = storeWith(null)
-  await withFetch(PERMISSION_DENIED, async () => {
-    await assert.rejects(
-      () => resolvePcGamingWikiFeatures(326243, 1245620, 'Elden Ring', store),
-      /permissiondenied/,
-    )
-    assert.deepEqual(store.writes, [])
-  })
+  await assert.rejects(
+    () => resolvePcGamingWikiFeatures(326243, 1245620, 'Elden Ring', store, lookupThat('permissiondenied')),
+    /permissiondenied/,
+  )
+  assert.deepEqual(store.writes, [])
 })
 
 test('a successful empty Cargo result is still cached as an undocumented game', async () => {
   const store = storeWith(null)
-  await withFetch({ cargoquery: [] }, async () => {
-    const result = await resolvePcGamingWikiFeatures(326243, 1245620, 'Missing Game', store)
-    assert.equal(result.isDocumented, false)
-    assert.equal(result.pageName, null)
-    assert.deepEqual(store.writes, [[326243, 1245620, null]])
-  })
+  const result = await resolvePcGamingWikiFeatures(326243, 1245620, 'Missing Game', store, lookupThat(null))
+  assert.equal(result.isDocumented, false)
+  assert.equal(result.pageName, null)
+  assert.deepEqual(store.writes, [[326243, 1245620, null]])
 })

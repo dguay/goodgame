@@ -1,9 +1,4 @@
-import {
-  getPcgwFeaturesByGameName,
-  getPcgwFeaturesBySteamAppId,
-  type PcgwFeatureResult,
-  type PcgwSupportState,
-} from './pcgamingwiki'
+import type { PcgwFeatureResult, PcgwSupportState } from './pcgamingwiki'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from './time'
 import type { PcGamingWikiFeatures } from '../types/database'
 
@@ -25,6 +20,11 @@ export interface PcGamingWikiFeaturesResult {
   sixtyFps: PcgwSupportState | null
   xboxGamePass: PcgwSupportState | null
   isDocumented: boolean
+}
+
+export interface PcGamingWikiLiveLookup {
+  byGameName(gameName: string): Promise<PcgwFeatureResult | null>
+  bySteamAppId(steamAppId: number): Promise<PcgwFeatureResult | null>
 }
 
 export interface PcGamingWikiFeatureStore {
@@ -90,6 +90,7 @@ export async function resolvePcGamingWikiFeatures(
   steamAppId: number | null,
   gameName: string | null,
   store: PcGamingWikiFeatureStore,
+  lookup: PcGamingWikiLiveLookup,
 ): Promise<PcGamingWikiFeaturesResult> {
   let cached: PcGamingWikiFeatures | null = null
   try {
@@ -109,9 +110,9 @@ export async function resolvePcGamingWikiFeatures(
 
   try {
     const pcgwResult = steamAppId != null
-      ? await getPcgwFeaturesBySteamAppId(steamAppId)
+      ? await lookup.bySteamAppId(steamAppId)
       : gameName != null
-        ? await getPcgwFeaturesByGameName(gameName)
+        ? await lookup.byGameName(gameName)
         : null
     try {
       const stored = await store.write(rawgGameId, steamAppId, pcgwResult)
