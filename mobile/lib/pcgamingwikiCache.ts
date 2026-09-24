@@ -119,6 +119,7 @@ export async function resolvePcGamingWikiFeatures(
     }
     try {
       const stored = await store.write(rawgGameId, steamAppId, pcgwResult)
+      if (stored == null) return toLiveResult(pcgwResult, cached)
       return toResult(stored)
     } catch (error) {
       console.warn('Could not cache PCGamingWiki features; using live data', error)

@@ -116,6 +116,34 @@ test('a page-source transport failure is shown live and is not stored as a fresh
   assert.deepEqual(store.writes, [])
 })
 
+test('a live lookup stays visible when the cache write returns no row', async () => {
+  const store = storeWith(null)
+  const live: PcgwFeatureResult = {
+    controllerSupport: 'true',
+    fourKUltraHd: 'limited',
+    officialDiscordUrl: 'https://discord.gg/eldenring',
+    pageSourceFetchFailed: false,
+    oneTwentyFps: 'true',
+    pageId: 146683,
+    pageName: 'Elden Ring',
+    perspectives: ['Third-person'],
+    sixtyFps: 'true',
+    ultrawidescreen: 'hackable',
+    xboxGamePass: null,
+    xboxGamePassFetchFailed: false,
+  }
+  const lookup: PcGamingWikiLiveLookup = {
+    bySteamAppId: async () => live,
+    byGameName: async () => null,
+  }
+  const result = await resolvePcGamingWikiFeatures(326243, 1245620, 'Elden Ring', store, lookup)
+  assert.equal(result.pageName, 'Elden Ring')
+  assert.equal(result.sixtyFps, 'true')
+  assert.equal(result.officialDiscordUrl, 'https://discord.gg/eldenring')
+  assert.equal(result.isDocumented, true)
+  assert.deepEqual(store.writes, [[326243, 1245620, live]])
+})
+
 test('a successful empty Cargo result is still cached as an undocumented game', async () => {
   const store = storeWith(null)
   const result = await resolvePcGamingWikiFeatures(326243, 1245620, 'Missing Game', store, lookupThat(null))
