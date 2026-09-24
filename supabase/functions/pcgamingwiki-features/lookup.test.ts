@@ -299,6 +299,21 @@ Deno.test('a Cargo row without page identity is a schema error, not a cached no-
   })
 })
 
+Deno.test('a nameless Cargo row on the name lookup is a schema error, not a no-match', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('action') === 'cargoquery' && url.searchParams.get('tables')?.includes('Game')) {
+      return jsonResponse({ cargoquery: [{ title: {} }] })
+    }
+    return route(request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesByGameName('Elden Ring', { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'schema')
+  })
+})
+
 Deno.test('malformed name search and page resolution are schema errors', async () => {
   await withFetch((request, url) => {
     if (url.searchParams.get('list') === 'search' || url.searchParams.get('redirects') === '1') {

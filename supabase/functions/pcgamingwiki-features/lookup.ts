@@ -429,13 +429,18 @@ async function lookupXboxGamePass(session: PcgwSession, pageId: number): Promise
   return best
 }
 
-async function featuresFromTitle(session: PcgwSession, title: CargoTitle | undefined): Promise<PcgwFeatureResult | null> {
-  if (title == null) return null
+function requirePageIdentity(title: CargoTitle): { pageId: number; pageName: string } {
   const pageId = parsePageId(title.PageID)
   const pageName = typeof title.PageName === 'string' && title.PageName.trim() !== '' ? title.PageName : null
   if (pageId == null || pageName == null) {
     throw new PcgwLookupError('schema', 'PCGamingWiki schema error: cargo row missing page identity')
   }
+  return { pageId, pageName }
+}
+
+async function featuresFromTitle(session: PcgwSession, title: CargoTitle | undefined): Promise<PcgwFeatureResult | null> {
+  if (title == null) return null
+  const { pageId, pageName } = requirePageIdentity(title)
   const [pageSourceResult, xboxGamePassResult] = await Promise.allSettled([
     pageName != null ? getPageSource(session, pageName) : Promise.resolve(null),
     pageId != null ? lookupXboxGamePass(session, pageId) : Promise.resolve(null),
@@ -548,6 +553,7 @@ export async function lookupFeaturesByGameName(
     `Game._pageName IN (${quoted})`,
     candidatePageNames.length.toString(),
   )
+  for (const title of titles) requirePageIdentity(title)
   const rowByPageName = new Map(titles.flatMap((title) =>
     title.PageName != null ? [[title.PageName, title] as const] : []
   ))
