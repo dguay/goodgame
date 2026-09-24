@@ -302,10 +302,18 @@ class PcgwSession {
       throw new PcgwLookupError('authentication', 'PCGamingWiki authentication failed: HTTP 401')
     }
     if (!response.ok) {
-      const text = (await response.text()).slice(0, 160)
+      const text = await response.text()
+      let parsed: unknown = null
+      try {
+        parsed = JSON.parse(text.slice(0, 8000)) as unknown
+      } catch {
+        parsed = null
+      }
+      const failure = classifyMediaWikiBody(parsed)
+      if (failure != null) throw failure
       throw new PcgwLookupError(
         'transport',
-        `PCGamingWiki request failed: ${response.status} ${response.statusText} ${text}`,
+        `PCGamingWiki request failed: ${response.status} ${response.statusText} ${text.slice(0, 160)}`,
       )
     }
     const raw = await response.text()

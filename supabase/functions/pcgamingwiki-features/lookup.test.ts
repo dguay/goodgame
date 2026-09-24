@@ -204,6 +204,38 @@ Deno.test('permissiondenied stays a permission failure for Steam and name lookup
   })
 })
 
+Deno.test('HTTP 403 with permissiondenied is a permission failure', async () => {
+  await withFetch((_request, url) => {
+    if (url.searchParams.get('action') === 'cargoquery') {
+      return jsonResponse({
+        error: { code: 'permissiondenied', info: 'The action you have requested is limited to users in the group: user' },
+      }, 403)
+    }
+    return route(_request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesBySteamAppId(1245620, { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'permission')
+  })
+})
+
+Deno.test('HTTP 403 without a MediaWiki error stays a transport failure', async () => {
+  await withFetch((_request, url) => {
+    if (url.searchParams.get('action') === 'cargoquery') {
+      return new Response('blocked', { status: 403, statusText: 'Forbidden' })
+    }
+    return route(_request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesBySteamAppId(1245620, { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'transport')
+  })
+})
+
 Deno.test('HTTP 429 is a rate limit', async () => {
   await withFetch((_request, url) => {
     if (url.searchParams.get('action') === 'cargoquery') return jsonResponse({ error: 'slow down' }, 429)
