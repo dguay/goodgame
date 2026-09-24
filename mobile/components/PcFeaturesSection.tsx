@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons'
 
 import { Text } from '@/components/ui/Text'
 import { Colors, Radius, Spacing } from '@/constants'
+import { shouldShowPcFeaturesSection } from '@/lib/pcFeaturesVisibility'
 import {
   getPcgwPageUrl,
   type PcgwSupportState,
@@ -86,19 +87,20 @@ export function PcFeaturesSection({
   ultrawidescreen,
   xboxGamePass,
 }: Props) {
-  if (
-    steamAppId == null &&
-    !steamLoading &&
-    !isLoading &&
-    sixtyFps == null &&
-    oneTwentyFps == null &&
-    fourKUltraHd == null &&
-    ultrawidescreen == null &&
-    controllerSupport == null &&
-    perspectives.length === 0 &&
-    officialDiscordUrl == null &&
-    xboxGamePass == null
-  ) return null
+  if (!shouldShowPcFeaturesSection({
+    controllerSupport,
+    fourKUltraHd,
+    isError,
+    isLoading,
+    officialDiscordUrl,
+    oneTwentyFps,
+    perspectives,
+    sixtyFps,
+    steamAppId,
+    steamLoading,
+    ultrawidescreen,
+    xboxGamePass,
+  })) return null
 
   const pcgwUrl = pageName != null ? getPcgwPageUrl(pageName) : null
   const steamUrl = steamAppId != null ? getSteamStoreUrl(steamAppId) : null

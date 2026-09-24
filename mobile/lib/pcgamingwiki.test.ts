@@ -1,4 +1,6 @@
 import {
+  getPcgwFeaturesByGameName,
+  getPcgwFeaturesBySteamAppId,
   getUniquePcgwPageNames,
   parseOfficialDiscordUrl,
   parsePcgwFeatureSupport,
@@ -11,8 +13,33 @@ declare const require: (module: string) => unknown
 const assert = require('node:assert/strict') as {
   deepEqual: (actual: unknown, expected: unknown) => void
   equal: (actual: unknown, expected: unknown) => void
+  rejects: (block: () => Promise<unknown>, error?: RegExp) => Promise<void>
 }
-const test = require('node:test') as (name: string, fn: () => void) => void
+const test = require('node:test') as (name: string, fn: () => void | Promise<void>) => void
+
+const PERMISSION_DENIED = {
+  error: {
+    code: 'permissiondenied',
+    info: 'The action you have requested is limited to users in the group: user',
+  },
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  })
+}
+
+async function withFetch(responseBody: unknown, run: () => Promise<void>): Promise<void> {
+  const original = globalThis.fetch
+  globalThis.fetch = (async () => jsonResponse(responseBody)) as typeof fetch
+  try {
+    await run()
+  } finally {
+    globalThis.fetch = original
+  }
+}
 
 test('parsePcgwFeatureSupport accepts all PCGamingWiki tickcross values', () => {
   assert.equal(parsePcgwFeatureSupport('always on'), 'always on')
@@ -80,6 +107,39 @@ test('parseOfficialDiscordUrl returns the official Discord link from General inf
   ].join('\n')
 
   assert.equal(parseOfficialDiscordUrl(source), 'https://discord.gg/cyberpunkgame')
+})
+
+test('getPcgwFeaturesBySteamAppId rejects an HTTP 200 permissiondenied envelope', async () => {
+  await withFetch(PERMISSION_DENIED, async () => {
+    await assert.rejects(
+      () => getPcgwFeaturesBySteamAppId(1245620),
+      /permissiondenied/,
+    )
+  })
+})
+
+test('getPcgwFeaturesBySteamAppId rejects a MediaWiki errors array', async () => {
+  await withFetch({ errors: [{ code: 'permissiondenied', info: 'readapidenied' }] }, async () => {
+    await assert.rejects(
+      () => getPcgwFeaturesBySteamAppId(1245620),
+      /permissiondenied/,
+    )
+  })
+})
+
+test('getPcgwFeaturesByGameName rejects an HTTP 200 permissiondenied envelope', async () => {
+  await withFetch(PERMISSION_DENIED, async () => {
+    await assert.rejects(
+      () => getPcgwFeaturesByGameName('Elden Ring'),
+      /permissiondenied/,
+    )
+  })
+})
+
+test('getPcgwFeaturesBySteamAppId still returns null for a successful empty Cargo result', async () => {
+  await withFetch({ cargoquery: [] }, async () => {
+    assert.equal(await getPcgwFeaturesBySteamAppId(1245620), null)
+  })
 })
 
 test('parseOfficialDiscordUrl ignores Discord links outside General information', () => {

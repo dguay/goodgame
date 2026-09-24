@@ -77,6 +77,17 @@ interface PageSourceResponse {
   }
 }
 
+interface MediaWikiFailureBody {
+  error?: {
+    code?: string
+    info?: string
+  } | string
+  errors?: {
+    code?: string
+    info?: string
+  }[]
+}
+
 const PCGW_API_URL = 'https://www.pcgamingwiki.com/w/api.php'
 const PCGW_USER_AGENT = 'Goodgame/1.0'
 const PCGW_TITLE_SEARCH_LIMIT = 5
@@ -183,6 +194,24 @@ function escapeCargoString(value: string): string {
   return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')
 }
 
+function pcgwApiFailureMessage(body: unknown): string | null {
+  if (body == null || typeof body !== 'object') return null
+  const record = body as MediaWikiFailureBody
+  if (typeof record.error === 'string' && record.error.trim() !== '') {
+    return `PCGamingWiki API error: ${record.error}`
+  }
+  if (record.error != null && typeof record.error === 'object') {
+    const code = record.error.code ?? 'error'
+    const info = record.error.info?.trim()
+    return `PCGamingWiki API error: ${code}${info ? ` ${info}` : ''}`
+  }
+  const firstError = record.errors?.[0]
+  if (firstError == null) return null
+  const code = firstError.code ?? 'error'
+  const info = firstError.info?.trim()
+  return `PCGamingWiki API error: ${code}${info ? ` ${info}` : ''}`
+}
+
 async function fetchPcgwJson<T>(params: URLSearchParams): Promise<T> {
   const response = await fetch(`${PCGW_API_URL}?${params.toString()}`, {
     headers: {
@@ -197,7 +226,10 @@ async function fetchPcgwJson<T>(params: URLSearchParams): Promise<T> {
     )
   }
 
-  return (await response.json()) as T
+  const body = (await response.json()) as T
+  const failure = pcgwApiFailureMessage(body)
+  if (failure != null) throw new Error(failure)
+  return body
 }
 
 async function getPcgwPageSource(pageName: string): Promise<string | null> {
