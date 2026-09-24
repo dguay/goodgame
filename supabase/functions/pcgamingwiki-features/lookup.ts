@@ -402,13 +402,18 @@ async function getPageSource(session: PcgwSession, pageName: string): Promise<st
     rvslots: 'main',
     titles: pageName,
   }, 'GET')
-  if (!isRecord(body) || !isRecord(body.query) || !isRecord(body.query.pages)) return null
+  if (!isRecord(body) || !isRecord(body.query) || !isRecord(body.query.pages)) {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page source missing')
+  }
   const page = Object.values(body.query.pages)[0]
-  if (!isRecord(page) || !Array.isArray(page.revisions)) return null
+  if (!isRecord(page)) throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page source missing')
+  if (page.missing != null) return null
+  if (!Array.isArray(page.revisions) || page.revisions.length === 0) return null
   const revision = page.revisions[0]
-  if (!isRecord(revision) || !isRecord(revision.slots) || !isRecord(revision.slots.main)) return null
-  const content = revision.slots.main['*']
-  return typeof content === 'string' ? content : null
+  if (!isRecord(revision) || !isRecord(revision.slots) || !isRecord(revision.slots.main) || typeof revision.slots.main['*'] !== 'string') {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page source missing')
+  }
+  return revision.slots.main['*']
 }
 
 async function lookupXboxGamePass(session: PcgwSession, pageId: number): Promise<PcgwSupportState | null> {
@@ -429,6 +434,12 @@ async function lookupXboxGamePass(session: PcgwSession, pageId: number): Promise
   return best
 }
 
+function secondaryFailed(result: PromiseSettledResult<unknown>): boolean {
+  if (result.status === 'fulfilled') return false
+  if (result.reason instanceof PcgwLookupError && result.reason.kind !== 'transport') throw result.reason
+  return true
+}
+
 function requirePageIdentity(title: CargoTitle): { pageId: number; pageName: string } {
   const pageId = parsePageId(title.PageID)
   const pageName = typeof title.PageName === 'string' && title.PageName.trim() !== '' ? title.PageName : null
@@ -445,13 +456,15 @@ async function featuresFromTitle(session: PcgwSession, title: CargoTitle | undef
     pageName != null ? getPageSource(session, pageName) : Promise.resolve(null),
     pageId != null ? lookupXboxGamePass(session, pageId) : Promise.resolve(null),
   ])
+  const pageSourceFetchFailed = secondaryFailed(pageSourceResult)
+  const xboxGamePassFetchFailed = secondaryFailed(xboxGamePassResult)
   const pageSource = pageSourceResult.status === 'fulfilled' ? pageSourceResult.value : null
   const xboxGamePass = xboxGamePassResult.status === 'fulfilled' ? xboxGamePassResult.value : null
   return {
     controllerSupport: parsePcgwFeatureSupport(title.ControllerSupport),
     fourKUltraHd: parsePcgwFeatureSupport(title.FourKUltraHd),
     officialDiscordUrl: pageSource != null ? parseOfficialDiscordUrl(pageSource) : null,
-    pageSourceFetchFailed: pageSourceResult.status === 'rejected',
+    pageSourceFetchFailed,
     oneTwentyFps: parsePcgwFeatureSupport(title.OneTwentyFps),
     pageId,
     pageName,
@@ -459,7 +472,7 @@ async function featuresFromTitle(session: PcgwSession, title: CargoTitle | undef
     sixtyFps: parsePcgwFeatureSupport(title.SixtyFps),
     ultrawidescreen: parsePcgwFeatureSupport(title.Ultrawidescreen),
     xboxGamePass,
-    xboxGamePassFetchFailed: xboxGamePassResult.status === 'rejected',
+    xboxGamePassFetchFailed,
   }
 }
 
@@ -497,18 +510,30 @@ async function resolvePageNames(session: PcgwSession, pageNames: string[]): Prom
   if (!isRecord(body) || !isRecord(body.query) || !isRecord(body.query.pages)) {
     throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page resolution missing')
   }
-  const pages = Object.values(body.query.pages)
-  const resolved = pages
-    .filter((page): page is Record<string, unknown> => isRecord(page))
-    .filter((page) => page.missing == null && page.ns === 0 && typeof page.pageid === 'number')
-    .map((page) => page.title)
-    .filter((title): title is string => typeof title === 'string')
-  const redirects = Array.isArray(body.query.redirects)
-    ? body.query.redirects.filter(isRecord).map((redirect) => ({
-      from: typeof redirect.from === 'string' ? redirect.from : undefined,
-      to: typeof redirect.to === 'string' ? redirect.to : undefined,
-    }))
-    : []
+  const resolved: string[] = []
+  for (const page of Object.values(body.query.pages)) {
+    if (!isRecord(page)) {
+      throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page resolution missing fields')
+    }
+    if (page.missing != null) continue
+    if (typeof page.ns !== 'number') {
+      throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page resolution missing fields')
+    }
+    if (page.ns !== 0) continue
+    if (typeof page.pageid !== 'number' || typeof page.title !== 'string' || page.title.trim() === '') {
+      throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page resolution missing fields')
+    }
+    resolved.push(page.title)
+  }
+  if (body.query.redirects != null && !Array.isArray(body.query.redirects)) {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page resolution missing fields')
+  }
+  const redirects = (Array.isArray(body.query.redirects) ? body.query.redirects : []).map((redirect) => {
+    if (!isRecord(redirect) || typeof redirect.from !== 'string' || typeof redirect.to !== 'string') {
+      throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page resolution missing fields')
+    }
+    return { from: redirect.from, to: redirect.to }
+  })
   return sortPcgwResolvedPageNamesByInput(resolved, uniquePageNames, redirects)
 }
 
@@ -523,12 +548,14 @@ async function searchPageNames(session: PcgwSession, gameName: string): Promise<
   if (!isRecord(body) || !isRecord(body.query) || !Array.isArray(body.query.search)) {
     throw new PcgwLookupError('schema', 'PCGamingWiki schema error: search results missing')
   }
-  return getUniquePcgwPageNames(
-    body.query.search
-      .filter(isRecord)
-      .filter((result) => result.ns === 0 && typeof result.title === 'string')
-      .map((result) => result.title as string),
-  )
+  const titles: string[] = []
+  for (const result of body.query.search) {
+    if (!isRecord(result) || typeof result.ns !== 'number' || typeof result.title !== 'string' || result.title.trim() === '') {
+      throw new PcgwLookupError('schema', 'PCGamingWiki schema error: search result missing fields')
+    }
+    if (result.ns === 0) titles.push(result.title)
+  }
+  return getUniquePcgwPageNames(titles)
 }
 
 export async function lookupFeaturesByGameName(

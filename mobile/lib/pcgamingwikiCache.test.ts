@@ -3,6 +3,7 @@ import {
   type PcGamingWikiFeatureStore,
   type PcGamingWikiLiveLookup,
 } from './pcgamingwikiCache'
+import type { PcgwFeatureResult } from './pcgamingwiki'
 import type { PcGamingWikiFeatures } from '../types/database'
 
 declare const require: (module: string) => unknown
@@ -85,6 +86,33 @@ test('a permissiondenied lookup with no cache stays an error and inserts nothing
     () => resolvePcGamingWikiFeatures(326243, 1245620, 'Elden Ring', store, lookupThat('permissiondenied')),
     /permissiondenied/,
   )
+  assert.deepEqual(store.writes, [])
+})
+
+test('a page-source transport failure is shown live and is not stored as a fresh cache row', async () => {
+  const row = cachedRow()
+  const store = storeWith(row)
+  const live: PcgwFeatureResult = {
+    controllerSupport: 'true',
+    fourKUltraHd: 'limited',
+    officialDiscordUrl: null,
+    pageSourceFetchFailed: true,
+    oneTwentyFps: 'false',
+    pageId: 146683,
+    pageName: 'Elden Ring',
+    perspectives: ['Third-person'],
+    sixtyFps: 'true',
+    ultrawidescreen: 'hackable',
+    xboxGamePass: 'true',
+    xboxGamePassFetchFailed: false,
+  }
+  const lookup: PcGamingWikiLiveLookup = {
+    bySteamAppId: async () => live,
+    byGameName: async () => null,
+  }
+  const result = await resolvePcGamingWikiFeatures(row.rawg_game_id, row.steam_app_id, 'Elden Ring', store, lookup)
+  assert.equal(result.officialDiscordUrl, 'https://discord.gg/eldenring')
+  assert.equal(result.pageName, 'Elden Ring')
   assert.deepEqual(store.writes, [])
 })
 

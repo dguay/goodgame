@@ -329,6 +329,48 @@ Deno.test('malformed name search and page resolution are schema errors', async (
   })
 })
 
+Deno.test('a search hit without a title is a schema error', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('list') === 'search') return jsonResponse({ query: { search: [{}] } })
+    return route(request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesByGameName('Elden Ring', { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'schema')
+  })
+})
+
+Deno.test('a resolved page without an id is a schema error', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('redirects') === '1') {
+      return jsonResponse({ query: { pages: { '1': { ns: 0 } } } })
+    }
+    if (url.searchParams.get('list') === 'search') return jsonResponse({ query: { search: [] } })
+    return route(request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesByGameName('Elden Ring', { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'schema')
+  })
+})
+
+Deno.test('a malformed page source fails the lookup instead of caching an absent Discord link', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('prop') === 'revisions') return jsonResponse({ query: {} })
+    return route(request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesBySteamAppId(1245620, { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'schema')
+  })
+})
+
 Deno.test('an authenticated name search with no pages is still a no-match', async () => {
   await withFetch((request, url) => {
     if (url.searchParams.get('list') === 'search') return jsonResponse({ query: { search: [] } })

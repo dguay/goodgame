@@ -114,6 +114,9 @@ export async function resolvePcGamingWikiFeatures(
       : gameName != null
         ? await lookup.byGameName(gameName)
         : null
+    if (pcgwResult?.pageSourceFetchFailed || pcgwResult?.xboxGamePassFetchFailed) {
+      return toLiveResult(pcgwResult, cached)
+    }
     try {
       const stored = await store.write(rawgGameId, steamAppId, pcgwResult)
       return toResult(stored)
