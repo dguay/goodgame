@@ -89,6 +89,16 @@ export function compareFeatureRecovery(
   return { affected, preserved, refreshed, stillFailing }
 }
 
+export function featureRecoveryReport(
+  before: readonly PcGamingWikiFeatures[] | null,
+  after: readonly PcGamingWikiFeatures[],
+): string {
+  if (before == null) {
+    throw new Error('PCGW_RECOVERY_BEFORE is required')
+  }
+  return formatFeatureRecoveryReport(compareFeatureRecovery(before, after))
+}
+
 export function formatFeatureRecoveryReport(counts: FeatureRecoveryCounts): string {
   return [
     `affected ${counts.affected}`,

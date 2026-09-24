@@ -1,4 +1,4 @@
-import { compareFeatureRecovery, formatFeatureRecoveryReport } from './pcFeaturesRecovery'
+import { featureRecoveryReport } from './pcFeaturesRecovery'
 import type { PcGamingWikiFeatures } from '../types/database'
 
 declare const process: {
@@ -8,9 +8,7 @@ declare const process: {
 declare const require: (module: string) => unknown
 
 // Prints affected, preserved, refreshed, and still-failing counts.
-// Pass PCGW_RECOVERY_BEFORE as a JSON snapshot from before invalidation.
-// Without it, the current table is both sides, so rows that are still empty
-// count as still-failing.
+// PCGW_RECOVERY_BEFORE is the JSON snapshot taken before invalidation.
 export async function reportProductionFeatureRecovery(
   env: Record<string, string | undefined>,
 ): Promise<string> {
@@ -30,8 +28,7 @@ export async function reportProductionFeatureRecovery(
     throw new Error(`feature cache read failed: ${response.status}`)
   }
   const after = (await response.json()) as PcGamingWikiFeatures[]
-  const before = beforeRowsFromEnv(env) ?? after
-  return formatFeatureRecoveryReport(compareFeatureRecovery(before, after))
+  return featureRecoveryReport(beforeRowsFromEnv(env), after)
 }
 
 function beforeRowsFromEnv(env: Record<string, string | undefined>): PcGamingWikiFeatures[] | null {

@@ -29,6 +29,7 @@ import {
 } from '@/hooks/useRawg'
 import { useLibraryEntry, useUpdateLibraryEntry } from '@/hooks/useLibrary'
 import { usePcGamingWikiFeatures } from '@/hooks/usePcGamingWiki'
+import { pcFeatureQueryInput } from '@/lib/pcgamingwikiCache'
 import { useSteamAppId } from '@/hooks/useSteam'
 
 import { Colors, Radius, Spacing } from '@/constants'
@@ -524,11 +525,18 @@ export default function GameDetailScreen() {
   )
   const steamAppId = steamQuery.data ?? null
   const steamLookupComplete = steamQuery.isFetched || steamQuery.isError
-  const pcgwQuery = usePcGamingWikiFeatures(
-    isPcGame ? game?.id ?? null : null,
+  const featureQuery = pcFeatureQueryInput({
+    isPcGame,
+    gameId: game?.id ?? null,
+    gameName: game?.name ?? null,
     steamAppId,
-    isPcGame ? game?.name ?? null : null,
     steamLookupComplete,
+  })
+  const pcgwQuery = usePcGamingWikiFeatures(
+    featureQuery.rawgGameId,
+    featureQuery.steamAppId,
+    featureQuery.gameName,
+    featureQuery.enabled,
   )
   const actionBarBottomPadding =
     Platform.OS === 'android'

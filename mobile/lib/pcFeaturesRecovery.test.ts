@@ -2,12 +2,19 @@ import {
   PCGW_API_CHANGE_AT_MS,
   PCGW_POISON_REFRESH_BEFORE_MS,
   compareFeatureRecovery,
+  featureRecoveryReport,
   formatFeatureRecoveryReport,
   isPoisonedPcFeaturesRow,
   recoverPcFeaturesCache,
 } from './pcFeaturesRecovery'
 import { pcFeatureSupportLabel, shouldShowPcFeaturesSection } from './pcFeaturesVisibility'
-import { resolvePcGamingWikiFeatures, type PcGamingWikiFeatureStore, type PcGamingWikiLiveLookup } from './pcgamingwikiCache'
+import {
+  pcFeatureCacheWrite,
+  pcFeatureQueryInput,
+  resolvePcGamingWikiFeatures,
+  type PcGamingWikiFeatureStore,
+  type PcGamingWikiLiveLookup,
+} from './pcgamingwikiCache'
 import {
   getPcgwFeaturesByGameName,
   getPcgwFeaturesBySteamAppId,
@@ -23,6 +30,7 @@ const assert = require('node:assert/strict') as {
   deepEqual: (actual: unknown, expected: unknown) => void
   equal: (actual: unknown, expected: unknown) => void
   rejects: (block: () => Promise<unknown>, error?: RegExp) => Promise<void>
+  throws: (block: () => unknown, error?: RegExp) => void
 }
 const test = require('node:test') as (name: string, fn: () => void | Promise<void>) => void
 
@@ -125,6 +133,37 @@ test('running the recovery again removes nothing further', () => {
   assert.equal(once.some((item) => item.rawg_game_id === 10533), false)
 })
 
+test('the captured production snapshot is required and scores persisted rows', () => {
+  assert.throws(
+    () => featureRecoveryReport(null, []),
+    /PCGW_RECOVERY_BEFORE is required/,
+  )
+  const before = JSON.parse(fsRead(
+    pathJoin(__dirname, '../../fixtures/pcgw-features-before-2026-09-24.json'),
+  )) as PcGamingWikiFeatures[]
+  const affected = before.filter(isPoisonedPcFeaturesRow)
+  assert.equal(affected.length, 9)
+  const target = affected.find((item) => item.rawg_game_id === 10533)
+  assert.equal(target?.steam_app_id, 238960)
+  const refreshed = row({
+    ...pcFeatureCacheWrite(10533, 238960, RECOVERED, '2026-09-24T18:00:00.000Z'),
+    created_at: '2026-09-24T18:00:00.000Z',
+    updated_at: '2026-09-24T18:00:00.000Z',
+  })
+  const after = [...before.filter((item) => !isPoisonedPcFeaturesRow(item)), refreshed]
+  const counts = compareFeatureRecovery(before, after)
+  assert.deepEqual(counts, { affected: 9, preserved: 31, refreshed: 1, stillFailing: 8 })
+  assert.equal(featureRecoveryReport(before, after), formatFeatureRecoveryReport(counts))
+})
+
+function fsRead(path: string): string {
+  return (require('node:fs') as { readFileSync: (path: string, encoding: string) => string }).readFileSync(path, 'utf8')
+}
+
+function pathJoin(...parts: string[]): string {
+  return (require('node:path') as { join: (...parts: string[]) => string }).join(...parts)
+}
+
 test('the before snapshot still reports refreshed and still-failing after those rows are gone', () => {
   const refreshed = row({ rawg_game_id: 10533 })
   const failed = row({ rawg_game_id: 17126 })
@@ -146,6 +185,19 @@ test('the before snapshot still reports refreshed and still-failing after those 
 })
 
 test('game 10533 stays cached until recovery, then the feature client stores and displays it', async () => {
+  const request = pcFeatureQueryInput({
+    isPcGame: true,
+    gameId: 10533,
+    gameName: 'Poisoned',
+    steamAppId: 238960,
+    steamLookupComplete: true,
+  })
+  assert.deepEqual(request, {
+    rawgGameId: 10533,
+    steamAppId: 238960,
+    gameName: 'Poisoned',
+    enabled: true,
+  })
   const poisoned = row({ rawg_game_id: 10533, steam_app_id: 238960 })
   const kept = documented()
   const rows = new Map<number, PcGamingWikiFeatures>([
@@ -268,7 +320,17 @@ function persistingStore(rows: Map<number, PcGamingWikiFeatures>): PcGamingWikiF
   return {
     read: async (rawgGameId) => rows.get(rawgGameId) ?? null,
     write: async (rawgGameId, steamAppId, result) => {
-      const saved = storedFromLookup(rawgGameId, steamAppId, result, '2026-09-24T18:00:00.000Z')
+      const write = pcFeatureCacheWrite(rawgGameId, steamAppId, result, '2026-09-24T18:00:00.000Z') as Partial<PcGamingWikiFeatures> & {
+        refreshed_at: string
+      }
+      const saved = row({
+        ...write,
+        created_at: write.refreshed_at,
+        updated_at: write.refreshed_at,
+        official_discord_url: write.official_discord_url ?? null,
+        xbox_game_pass: write.xbox_game_pass ?? null,
+        xbox_game_pass_checked_at: write.xbox_game_pass_checked_at ?? null,
+      })
       rows.set(rawgGameId, saved)
       return saved
     },
