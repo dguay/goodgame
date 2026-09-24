@@ -22,6 +22,9 @@
     "lib/pcgamingwiki.test.ts",
     "lib/pcgamingwikiCache.ts",
     "lib/pcgamingwikiCache.test.ts",
+    "lib/pcFeaturesRecovery.ts",
+    "lib/pcFeaturesRecovery.test.ts",
+    "lib/pcFeaturesRecoveryCli.ts",
     "lib/time.ts",
     "types/**/*.ts"
   ]
