@@ -6,7 +6,10 @@ import {
   type PcGamingWikiFeaturesResult,
 } from '@/lib/pcgamingwikiCache'
 import {
+  getPcgwFeaturesByGameName,
+  getPcgwFeaturesBySteamAppId,
   getPcgwXboxGamePassByPageId,
+  type PcGamingWikiInvoke,
   type PcgwFeatureResult,
 } from '@/lib/pcgamingwiki'
 import { supabase } from '@/lib/supabase'
@@ -102,7 +105,7 @@ async function upsertFeatures(
 
 async function refreshXboxGamePass(row: PcGamingWikiFeatures): Promise<PcGamingWikiFeatures> {
   try {
-    const xboxGamePass = await getPcgwXboxGamePassByPageId(row.pcgw_page_id!)
+    const xboxGamePass = await getPcgwXboxGamePassByPageId(row.pcgw_page_id!, invokePcGamingWiki)
     const now = new Date().toISOString()
     const { data, error } = await supabase
       .from('pcgamingwiki_features')
@@ -123,6 +126,14 @@ async function refreshXboxGamePass(row: PcGamingWikiFeatures): Promise<PcGamingW
   }
 }
 
+const invokePcGamingWiki: PcGamingWikiInvoke = (body) =>
+  supabase.functions.invoke('pcgamingwiki-features', { body })
+
+const featureLookup = {
+  bySteamAppId: (steamAppId: number) => getPcgwFeaturesBySteamAppId(steamAppId, invokePcGamingWiki),
+  byGameName: (gameName: string) => getPcgwFeaturesByGameName(gameName, invokePcGamingWiki),
+}
+
 const featureStore = {
   read: getStoredFeatures,
   write: upsertFeatures,
@@ -137,7 +148,7 @@ export function usePcGamingWikiFeatures(
 ) {
   return useQuery({
     queryKey: ['pcgamingwiki', 'features', rawgGameId, steamAppId, gameName] as const,
-    queryFn: () => resolvePcGamingWikiFeatures(rawgGameId!, steamAppId, gameName, featureStore),
+    queryFn: () => resolvePcGamingWikiFeatures(rawgGameId!, steamAppId, gameName, featureStore, featureLookup),
     enabled: rawgGameId != null && steamLookupComplete,
     staleTime: PCGW_FEATURES_STALE_MS,
     gcTime: PCGW_FEATURES_GC_MS,

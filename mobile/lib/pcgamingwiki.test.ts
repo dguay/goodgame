@@ -1,11 +1,11 @@
 import {
   getPcgwFeaturesByGameName,
   getPcgwFeaturesBySteamAppId,
-  getUniquePcgwPageNames,
-  parseOfficialDiscordUrl,
-  parsePcgwFeatureSupport,
-  parsePcgwList,
-  sortPcgwResolvedPageNamesByInput,
+  getPcgwXboxGamePassByPageId,
+  type PcGamingWikiFunctionCall,
+  type PcGamingWikiInvoke,
+  type PcGamingWikiLookupBody,
+  type PcgwFeatureResult,
 } from './pcgamingwiki'
 
 declare const require: (module: string) => unknown
@@ -17,136 +17,64 @@ const assert = require('node:assert/strict') as {
 }
 const test = require('node:test') as (name: string, fn: () => void | Promise<void>) => void
 
-const PERMISSION_DENIED = {
-  error: {
-    code: 'permissiondenied',
-    info: 'The action you have requested is limited to users in the group: user',
-  },
+const FEATURE: PcgwFeatureResult = {
+  controllerSupport: 'true',
+  fourKUltraHd: 'limited',
+  officialDiscordUrl: 'https://discord.gg/eldenring',
+  pageSourceFetchFailed: false,
+  oneTwentyFps: 'true',
+  pageId: 146683,
+  pageName: 'Elden Ring',
+  perspectives: ['Third-person'],
+  sixtyFps: 'true',
+  ultrawidescreen: 'hackable',
+  xboxGamePass: 'true',
+  xboxGamePassFetchFailed: false,
 }
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  })
+function invokeWith(response: PcGamingWikiFunctionCall): PcGamingWikiInvoke & { bodies: PcGamingWikiLookupBody[] } {
+  const bodies: PcGamingWikiLookupBody[] = []
+  const invoke = (async (body: PcGamingWikiLookupBody) => {
+    bodies.push(body)
+    return response
+  }) as PcGamingWikiInvoke & { bodies: PcGamingWikiLookupBody[] }
+  invoke.bodies = bodies
+  return invoke
 }
 
-async function withFetch(responseBody: unknown, run: () => Promise<void>): Promise<void> {
-  const original = globalThis.fetch
-  globalThis.fetch = (async () => jsonResponse(responseBody)) as typeof fetch
-  try {
-    await run()
-  } finally {
-    globalThis.fetch = original
+test('Steam lookup asks the function for the app id and returns its typed result', async () => {
+  const invoke = invokeWith({ data: { result: FEATURE }, error: null })
+  assert.deepEqual(await getPcgwFeaturesBySteamAppId(1245620, invoke), FEATURE)
+  assert.deepEqual(invoke.bodies, [{ steamAppId: 1245620 }])
+})
+
+test('an authenticated no-match stays null instead of an error', async () => {
+  const invoke = invokeWith({ data: { result: null }, error: null })
+  assert.equal(await getPcgwFeaturesBySteamAppId(1245620, invoke), null)
+})
+
+test('permission, authentication, and rate-limit responses reject and are not cached as no-match', async () => {
+  for (const message of [
+    'PCGamingWiki permissiondenied: cargo',
+    'PCGamingWiki authentication failed: assertuserfailed',
+    'PCGamingWiki rate limit: HTTP 429',
+  ]) {
+    const invoke = invokeWith({
+      data: null,
+      error: { message: 'Edge Function returned a non-2xx status code', context: { json: async () => ({ error: { kind: 'permission', message } }) } },
+    })
+    await assert.rejects(() => getPcgwFeaturesByGameName('Elden Ring', invoke), new RegExp(message.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+    assert.deepEqual(invoke.bodies, [{ gameName: 'Elden Ring' }])
   }
-}
-
-test('parsePcgwFeatureSupport accepts all PCGamingWiki tickcross values', () => {
-  assert.equal(parsePcgwFeatureSupport('always on'), 'always on')
-  assert.equal(parsePcgwFeatureSupport('false'), 'false')
-  assert.equal(parsePcgwFeatureSupport('hackable'), 'hackable')
-  assert.equal(parsePcgwFeatureSupport('limited'), 'limited')
-  assert.equal(parsePcgwFeatureSupport('true'), 'true')
-  assert.equal(parsePcgwFeatureSupport('unknown'), 'unknown')
 })
 
-test('parsePcgwFeatureSupport normalizes casing and whitespace', () => {
-  assert.equal(parsePcgwFeatureSupport(' TRUE '), 'true')
-  assert.equal(parsePcgwFeatureSupport(' Always On '), 'always on')
+test('a malformed feature payload is a schema error', async () => {
+  const invoke = invokeWith({ data: { result: { pageName: 'Elden Ring' } }, error: null })
+  await assert.rejects(() => getPcgwFeaturesBySteamAppId(1245620, invoke), /schema error/)
 })
 
-test('parsePcgwFeatureSupport handles missing and unrecognized values', () => {
-  assert.equal(parsePcgwFeatureSupport(null), null)
-  assert.equal(parsePcgwFeatureSupport(undefined), null)
-  assert.equal(parsePcgwFeatureSupport(''), null)
-  assert.equal(parsePcgwFeatureSupport('unsupported'), 'unknown')
-})
-
-test('parsePcgwList removes empty entries from comma-separated Cargo lists', () => {
-  assert.deepEqual(parsePcgwList('First-person, Third-person,'), [
-    'First-person',
-    'Third-person',
-  ])
-  assert.deepEqual(parsePcgwList(null), [])
-})
-
-test('getUniquePcgwPageNames trims, deduplicates, and drops title delimiters', () => {
-  assert.deepEqual(getUniquePcgwPageNames([
-    ' Diablo III ',
-    'Diablo III',
-    'Diablo II: Resurrected',
-    'Invalid|Title',
-    '',
-  ]), [
-    'Diablo III',
-    'Diablo II: Resurrected',
-  ])
-})
-
-test('sortPcgwResolvedPageNamesByInput preserves input priority after redirects', () => {
-  assert.deepEqual(
-    sortPcgwResolvedPageNamesByInput(
-      ['Diablo II: Resurrected', 'Diablo III'],
-      ['Diablo 3', 'Diablo 2: Resurrected'],
-      [
-        { from: 'Diablo 3', to: 'Diablo III' },
-        { from: 'Diablo 2: Resurrected', to: 'Diablo II: Resurrected' },
-      ],
-    ),
-    ['Diablo III', 'Diablo II: Resurrected'],
-  )
-})
-
-test('parseOfficialDiscordUrl returns the official Discord link from General information', () => {
-  const source = [
-    "'''General information'''",
-    '{{mm}} [https://discord.gg/cyberpunkgame Official Discord server]',
-    '{{mm}} [https://steamcommunity.com/app/1091500/discussions/ Steam Community Discussions]',
-    '',
-    '==Availability==',
-  ].join('\n')
-
-  assert.equal(parseOfficialDiscordUrl(source), 'https://discord.gg/cyberpunkgame')
-})
-
-test('getPcgwFeaturesBySteamAppId rejects an HTTP 200 permissiondenied envelope', async () => {
-  await withFetch(PERMISSION_DENIED, async () => {
-    await assert.rejects(
-      () => getPcgwFeaturesBySteamAppId(1245620),
-      /permissiondenied/,
-    )
-  })
-})
-
-test('getPcgwFeaturesBySteamAppId rejects a MediaWiki errors array', async () => {
-  await withFetch({ errors: [{ code: 'permissiondenied', info: 'readapidenied' }] }, async () => {
-    await assert.rejects(
-      () => getPcgwFeaturesBySteamAppId(1245620),
-      /permissiondenied/,
-    )
-  })
-})
-
-test('getPcgwFeaturesByGameName rejects an HTTP 200 permissiondenied envelope', async () => {
-  await withFetch(PERMISSION_DENIED, async () => {
-    await assert.rejects(
-      () => getPcgwFeaturesByGameName('Elden Ring'),
-      /permissiondenied/,
-    )
-  })
-})
-
-test('getPcgwFeaturesBySteamAppId still returns null for a successful empty Cargo result', async () => {
-  await withFetch({ cargoquery: [] }, async () => {
-    assert.equal(await getPcgwFeaturesBySteamAppId(1245620), null)
-  })
-})
-
-test('parseOfficialDiscordUrl ignores Discord links outside General information', () => {
-  const source = [
-    '==Issues fixed==',
-    '{{ii}} Join [https://discord.gg/not-official Discord] for troubleshooting.',
-  ].join('\n')
-
-  assert.equal(parseOfficialDiscordUrl(source), null)
+test('Xbox Game Pass refresh asks the function for the page id only', async () => {
+  const invoke = invokeWith({ data: { xboxGamePass: 'limited' }, error: null })
+  assert.equal(await getPcgwXboxGamePassByPageId(146683, invoke), 'limited')
+  assert.deepEqual(invoke.bodies, [{ pageId: 146683 }])
 })

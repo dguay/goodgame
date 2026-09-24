@@ -68,6 +68,8 @@ EXPO_PUBLIC_RAWG_API_KEY=your-rawg-api-key
 
 For Android builds with Google sign-in, keep `mobile/google-services.json` local. It is intentionally ignored and should not be committed.
 
+PC feature lookup uses the `pcgamingwiki-features` edge function. Bot credentials stay server-side. The required secrets, the 60 request/minute limit, and the local smoke command are in [docs/external/pcgamingwiki/api.md](docs/external/pcgamingwiki/api.md#setup).
+
 ## Development
 
 Run the app:
