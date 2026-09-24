@@ -406,6 +406,35 @@ Deno.test('an authenticated name search with no pages is still a no-match', asyn
   })
 })
 
+Deno.test('a non-string Cargo field is a schema error for Steam and name lookup', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('tables')?.includes('Game')) {
+      return jsonResponse({ cargoquery: [{ title: { ...ELDEN_RING_TITLE, FourKUltraHd: 1 } }] })
+    }
+    return route(request, url)
+  }, async () => {
+    const steam = await assertRejects(
+      () => lookupFeaturesBySteamAppId(1245620, { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    const name = await assertRejects(
+      () => lookupFeaturesByGameName('Elden Ring', { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(steam.kind, 'schema')
+    assertEquals(name.kind, 'schema')
+    const response = await handlePcGamingWikiFeaturesRequest(
+      new Request('https://example.test/pcgamingwiki-features', {
+        method: 'POST',
+        body: JSON.stringify({ steamAppId: 1245620 }),
+      }),
+      { credentials: CREDENTIALS },
+    )
+    const body = await response.json()
+    assertEquals(body.error.kind, 'schema')
+  })
+})
+
 Deno.test('the function response hides the bot password and classifies permission denial', async () => {
   const original = globalThis.fetch
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {

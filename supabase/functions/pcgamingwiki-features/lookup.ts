@@ -126,8 +126,11 @@ export function credentialsFromEnv(env: { get(name: string): string | undefined 
   return { username, password, contact: contact || undefined }
 }
 
-export function parsePcgwFeatureSupport(value: string | null | undefined): PcgwSupportState | null {
+export function parsePcgwFeatureSupport(value: unknown): PcgwSupportState | null {
   if (value == null) return null
+  if (typeof value !== 'string') {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: support value is not a string')
+  }
   const normalized = value.trim().toLowerCase()
   if (normalized.length === 0) return null
   return FEATURE_SUPPORT_VALUES.has(normalized as PcgwSupportState)
@@ -135,8 +138,11 @@ export function parsePcgwFeatureSupport(value: string | null | undefined): PcgwS
     : 'unknown'
 }
 
-export function parsePcgwList(value: string | null | undefined): string[] {
+export function parsePcgwList(value: unknown): string[] {
   if (value == null) return []
+  if (typeof value !== 'string') {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: list value is not a string')
+  }
   return value.split(',').map((item) => item.trim()).filter((item) => item.length > 0)
 }
 
