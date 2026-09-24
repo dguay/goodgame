@@ -408,7 +408,9 @@ async function getPageSource(session: PcgwSession, pageName: string): Promise<st
   const page = Object.values(body.query.pages)[0]
   if (!isRecord(page)) throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page source missing')
   if (page.missing != null) return null
-  if (!Array.isArray(page.revisions) || page.revisions.length === 0) return null
+  if (!Array.isArray(page.revisions) || page.revisions.length === 0) {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page source missing revisions')
+  }
   const revision = page.revisions[0]
   if (!isRecord(revision) || !isRecord(revision.slots) || !isRecord(revision.slots.main) || typeof revision.slots.main['*'] !== 'string') {
     throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page source missing')

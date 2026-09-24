@@ -358,6 +358,26 @@ Deno.test('a resolved page without an id is a schema error', async () => {
   })
 })
 
+Deno.test('a page with no revisions is a schema error, not an absent Discord link', async () => {
+  for (const pages of [
+    { '146683': { pageid: 146683, ns: 0, title: 'Elden Ring' } },
+    { '146683': { pageid: 146683, ns: 0, title: 'Elden Ring', revisions: [] } },
+  ]) {
+    await withFetch((request, url) => {
+      if (url.searchParams.get('prop') === 'revisions') {
+        return jsonResponse({ query: { pages } })
+      }
+      return route(request, url)
+    }, async () => {
+      const error = await assertRejects(
+        () => lookupFeaturesBySteamAppId(1245620, { credentials: CREDENTIALS }),
+        PcgwLookupError,
+      )
+      assertEquals(error.kind, 'schema')
+    })
+  }
+})
+
 Deno.test('a malformed page source fails the lookup instead of caching an absent Discord link', async () => {
   await withFetch((request, url) => {
     if (url.searchParams.get('prop') === 'revisions') return jsonResponse({ query: {} })
