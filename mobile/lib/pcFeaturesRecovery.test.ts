@@ -1,15 +1,19 @@
 import {
   PCGW_API_CHANGE_AT_MS,
   PCGW_POISON_REFRESH_BEFORE_MS,
-  featureRecoveryCounts,
+  compareFeatureRecovery,
   formatFeatureRecoveryReport,
   isPoisonedPcFeaturesRow,
   recoverPcFeaturesCache,
-  refreshRecoveredGameDetails,
-  type FeatureRefreshOutcome,
 } from './pcFeaturesRecovery'
-import type { PcGamingWikiFeatureStore, PcGamingWikiLiveLookup } from './pcgamingwikiCache'
-import type { PcgwFeatureResult } from './pcgamingwiki'
+import { pcFeatureSupportLabel, shouldShowPcFeaturesSection } from './pcFeaturesVisibility'
+import { resolvePcGamingWikiFeatures, type PcGamingWikiFeatureStore, type PcGamingWikiLiveLookup } from './pcgamingwikiCache'
+import {
+  getPcgwFeaturesByGameName,
+  getPcgwFeaturesBySteamAppId,
+  type PcGamingWikiInvoke,
+  type PcgwFeatureResult,
+} from './pcgamingwiki'
 import type { PcGamingWikiFeatures } from '../types/database'
 
 declare const require: (module: string) => unknown
@@ -18,6 +22,7 @@ declare const __dirname: string
 const assert = require('node:assert/strict') as {
   deepEqual: (actual: unknown, expected: unknown) => void
   equal: (actual: unknown, expected: unknown) => void
+  rejects: (block: () => Promise<unknown>, error?: RegExp) => Promise<void>
 }
 const test = require('node:test') as (name: string, fn: () => void | Promise<void>) => void
 
@@ -58,9 +63,9 @@ function documented(): PcGamingWikiFeatures {
   })
 }
 
-const live: PcgwFeatureResult = {
+const RECOVERED: PcgwFeatureResult = {
   controllerSupport: 'true',
-  fourKUltraHd: 'true',
+  fourKUltraHd: 'limited',
   officialDiscordUrl: 'https://discord.gg/example',
   oneTwentyFps: 'false',
   pageId: 99,
@@ -120,153 +125,152 @@ test('running the recovery again removes nothing further', () => {
   assert.equal(once.some((item) => item.rawg_game_id === 10533), false)
 })
 
-test('the report counts affected, preserved, refreshed, and still-failing rows', () => {
-  const rows = [
-    row({ rawg_game_id: 11 }),
-    row({ rawg_game_id: 12 }),
-    documented(),
-    row({ rawg_game_id: 13, refreshed_at: '2026-08-22T23:00:00.000Z' }),
+test('the before snapshot still reports refreshed and still-failing after those rows are gone', () => {
+  const refreshed = row({ rawg_game_id: 10533 })
+  const failed = row({ rawg_game_id: 17126 })
+  const kept = documented()
+  const historical = row({ rawg_game_id: 13, refreshed_at: '2026-08-22T23:00:00.000Z' })
+  const after = [
+    kept,
+    historical,
+    storedFromLookup(10533, 238960, RECOVERED, '2026-09-24T18:00:00.000Z'),
   ]
-  const outcomes = new Map<number, FeatureRefreshOutcome>([
-    [11, 'refreshed'],
-    [12, 'still-failing'],
-  ])
-  const counts = featureRecoveryCounts(rows, outcomes)
+  const counts = compareFeatureRecovery([refreshed, failed, kept, historical], after)
   assert.deepEqual(counts, { affected: 2, preserved: 2, refreshed: 1, stillFailing: 1 })
   assert.equal(
     formatFeatureRecoveryReport(counts),
     'affected 2\npreserved 2\nrefreshed 1\nstill-failing 1',
   )
+  const changed = compareFeatureRecovery([kept], [{ ...kept, sixty_fps: 'false' }])
+  assert.deepEqual(changed, { affected: 0, preserved: 0, refreshed: 0, stillFailing: 0 })
 })
 
-test('a poisoned row inside the freshness window is served from cache until recovery removes it', async () => {
-  let lookups = 0
+test('game 10533 stays cached until recovery, then the feature client stores and displays it', async () => {
+  const poisoned = row({ rawg_game_id: 10533, steam_app_id: 238960 })
+  const kept = documented()
+  const rows = new Map<number, PcGamingWikiFeatures>([
+    [poisoned.rawg_game_id, poisoned],
+    [kept.rawg_game_id, kept],
+  ])
+  const invoke = invokeWith({ data: { result: RECOVERED }, error: null })
   const lookup: PcGamingWikiLiveLookup = {
-    bySteamAppId: async () => {
-      lookups += 1
-      return live
-    },
-    byGameName: async () => null,
+    bySteamAppId: (steamAppId) => getPcgwFeaturesBySteamAppId(steamAppId, invoke),
+    byGameName: (gameName) => getPcgwFeaturesByGameName(gameName, invoke),
   }
-  const cached = storeReturning(row())
-  const blocked = await refreshRecoveredGameDetails({
-    rawgGameId: 10533,
-    steamAppId: 238960,
-    gameName: 'Poisoned',
-    isPcGame: true,
-    steamLookupComplete: true,
-    store: cached,
-    lookup,
-  })
-  assert.equal(blocked, 'still-cached')
-  assert.equal(lookups, 0)
-  assert.deepEqual(cached.writes, [])
+  const store = persistingStore(rows)
 
-  const recovered = storeReturning(null)
-  const opened = await refreshRecoveredGameDetails({
-    rawgGameId: 10533,
+  const blocked = await resolvePcGamingWikiFeatures(10533, 238960, 'Poisoned', store, lookup)
+  assert.equal(blocked.pageName, null)
+  assert.equal(blocked.sixtyFps, null)
+  assert.deepEqual(invoke.bodies, [])
+  assert.equal(rows.get(10533)?.refreshed_at, poisoned.refreshed_at)
+
+  rows.delete(10533)
+  const opened = await resolvePcGamingWikiFeatures(10533, 238960, 'Poisoned', store, lookup)
+  assert.equal(opened.pageName, 'Recovered Game')
+  assert.equal(opened.sixtyFps, 'true')
+  assert.deepEqual(invoke.bodies, [{ steamAppId: 238960 }])
+  const saved = rows.get(10533)
+  assert.equal(saved != null && !isPoisonedPcFeaturesRow(saved), true)
+  assert.equal(shouldShowPcFeaturesSection({
+    controllerSupport: opened.controllerSupport,
+    fourKUltraHd: opened.fourKUltraHd,
+    isError: false,
+    isLoading: false,
+    officialDiscordUrl: opened.officialDiscordUrl,
+    oneTwentyFps: opened.oneTwentyFps,
+    perspectives: opened.perspectives,
+    sixtyFps: opened.sixtyFps,
     steamAppId: 238960,
-    gameName: 'Poisoned',
-    isPcGame: true,
-    steamLookupComplete: true,
-    store: recovered,
-    lookup,
-  })
-  assert.equal(opened, 'refreshed')
-  assert.equal(lookups, 1)
-  assert.equal(recovered.writes.length, 1)
+    steamLoading: false,
+    ultrawidescreen: opened.ultrawidescreen,
+    xboxGamePass: opened.xboxGamePass,
+  }), true)
+  assert.equal(pcFeatureSupportLabel(opened.sixtyFps), 'Supported')
+  assert.equal(pcFeatureSupportLabel(opened.fourKUltraHd), 'Limited')
+  assert.deepEqual(
+    compareFeatureRecovery([poisoned, kept], [saved!, kept]),
+    { affected: 1, preserved: 1, refreshed: 1, stillFailing: 0 },
+  )
 })
 
 test('a failed refresh of a recovered game does not write a cache row', async () => {
-  const store = storeReturning(null)
+  const poisoned = row()
+  const rows = new Map<number, PcGamingWikiFeatures>()
+  const store = persistingStore(rows)
   const lookup: PcGamingWikiLiveLookup = {
     bySteamAppId: async () => {
       throw new Error('PCGamingWiki permissiondenied: cargo')
     },
     byGameName: async () => null,
   }
-  const outcome = await refreshRecoveredGameDetails({
-    rawgGameId: 10533,
-    steamAppId: 238960,
-    gameName: 'Poisoned',
-    isPcGame: true,
-    steamLookupComplete: true,
-    store,
-    lookup,
-  })
-  assert.equal(outcome, 'still-failing')
-  assert.deepEqual(store.writes, [])
+  await assert.rejects(
+    () => resolvePcGamingWikiFeatures(10533, 238960, 'Poisoned', store, lookup),
+    /permissiondenied/,
+  )
+  assert.equal(rows.has(10533), false)
+  assert.deepEqual(
+    compareFeatureRecovery([poisoned], []),
+    { affected: 1, preserved: 0, refreshed: 0, stillFailing: 1 },
+  )
 })
 
 test('a successful no-match cached after the repaired lookup survives another recovery', async () => {
-  const stored: PcGamingWikiFeatures[] = []
-  const store: PcGamingWikiFeatureStore & { writes: unknown[][] } = {
-    writes: [],
-    read: async () => null,
-    write: async (rawgGameId, steamAppId, result) => {
-      store.writes.push([rawgGameId, steamAppId, result])
-      const saved = row({
-        rawg_game_id: rawgGameId,
-        steam_app_id: steamAppId,
-        refreshed_at: '2026-09-24T18:00:00.000Z',
-        updated_at: '2026-09-24T18:00:00.000Z',
-      })
-      stored.push(saved)
-      return saved
-    },
-    refreshXboxGamePass: async (current) => current,
-  }
+  const rows = new Map<number, PcGamingWikiFeatures>()
+  const store = persistingStore(rows)
   const lookup: PcGamingWikiLiveLookup = {
     byGameName: async () => null,
     bySteamAppId: async () => null,
   }
-  const outcome = await refreshRecoveredGameDetails({
-    rawgGameId: 1019778,
-    steamAppId: null,
-    gameName: 'No Page',
-    isPcGame: true,
-    steamLookupComplete: true,
-    store,
-    lookup,
+  const opened = await resolvePcGamingWikiFeatures(1019778, null, 'No Page', store, lookup)
+  assert.equal(opened.isDocumented, false)
+  const saved = rows.get(1019778)
+  assert.equal(saved != null && isPoisonedPcFeaturesRow(saved), false)
+  assert.deepEqual(recoverPcFeaturesCache([documented(), saved!]), [documented(), saved!])
+})
+
+function invokeWith(response: { data: unknown; error: null }): PcGamingWikiInvoke & { bodies: unknown[] } {
+  const bodies: unknown[] = []
+  const invoke = (async (body: unknown) => {
+    bodies.push(body)
+    return response
+  }) as PcGamingWikiInvoke & { bodies: unknown[] }
+  invoke.bodies = bodies
+  return invoke
+}
+
+function storedFromLookup(
+  rawgGameId: number,
+  steamAppId: number | null,
+  result: PcgwFeatureResult | null,
+  refreshedAt: string,
+): PcGamingWikiFeatures {
+  return row({
+    controller_support: result?.controllerSupport ?? null,
+    four_k_ultra_hd: result?.fourKUltraHd ?? null,
+    official_discord_url: result?.officialDiscordUrl ?? null,
+    one_twenty_fps: result?.oneTwentyFps ?? null,
+    pcgw_page_id: result?.pageId ?? null,
+    pcgw_page_name: result?.pageName ?? null,
+    perspectives: result?.perspectives ?? [],
+    rawg_game_id: rawgGameId,
+    refreshed_at: refreshedAt,
+    sixty_fps: result?.sixtyFps ?? null,
+    steam_app_id: steamAppId,
+    ultrawidescreen: result?.ultrawidescreen ?? null,
+    updated_at: refreshedAt,
+    xbox_game_pass: result?.xboxGamePass ?? null,
+    xbox_game_pass_checked_at: result == null ? null : refreshedAt,
   })
-  assert.equal(outcome, 'refreshed')
-  assert.equal(store.writes.length, 1)
-  assert.equal(isPoisonedPcFeaturesRow(stored[0]), false)
-  assert.deepEqual(recoverPcFeaturesCache([documented(), stored[0]]), [documented(), stored[0]])
-})
+}
 
-test('a non-PC game and an unfinished Steam lookup do not refresh features', async () => {
-  const store = storeReturning(null)
-  const lookup: PcGamingWikiLiveLookup = {
-    bySteamAppId: async () => live,
-    byGameName: async () => live,
-  }
-  const shared = {
-    rawgGameId: 10533,
-    steamAppId: 238960,
-    gameName: 'Poisoned',
-    store,
-    lookup,
-  }
-  assert.equal(
-    await refreshRecoveredGameDetails({ ...shared, isPcGame: false, steamLookupComplete: true }),
-    'skipped',
-  )
-  assert.equal(
-    await refreshRecoveredGameDetails({ ...shared, isPcGame: true, steamLookupComplete: false }),
-    'skipped',
-  )
-  assert.deepEqual(store.writes, [])
-})
-
-function storeReturning(cached: PcGamingWikiFeatures | null): PcGamingWikiFeatureStore & { writes: unknown[][] } {
-  const writes: unknown[][] = []
+function persistingStore(rows: Map<number, PcGamingWikiFeatures>): PcGamingWikiFeatureStore {
   return {
-    writes,
-    read: async () => cached,
-    write: async (...args) => {
-      writes.push(args)
-      return cached
+    read: async (rawgGameId) => rows.get(rawgGameId) ?? null,
+    write: async (rawgGameId, steamAppId, result) => {
+      const saved = storedFromLookup(rawgGameId, steamAppId, result, '2026-09-24T18:00:00.000Z')
+      rows.set(rawgGameId, saved)
+      return saved
     },
     refreshXboxGamePass: async (current) => current,
   }

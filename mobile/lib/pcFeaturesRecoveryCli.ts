@@ -1,13 +1,16 @@
-import { featureRecoveryCounts, formatFeatureRecoveryReport } from './pcFeaturesRecovery'
+import { compareFeatureRecovery, formatFeatureRecoveryReport } from './pcFeaturesRecovery'
 import type { PcGamingWikiFeatures } from '../types/database'
 
 declare const process: {
   env: Record<string, string | undefined>
   exitCode?: number
 }
+declare const require: (module: string) => unknown
 
 // Prints affected, preserved, refreshed, and still-failing counts.
-// Refreshed and still-failing stay zero until a recovered row is opened again.
+// Pass PCGW_RECOVERY_BEFORE as a JSON snapshot from before invalidation.
+// Without it, the current table is both sides, so rows that are still empty
+// count as still-failing.
 export async function reportProductionFeatureRecovery(
   env: Record<string, string | undefined>,
 ): Promise<string> {
@@ -26,8 +29,16 @@ export async function reportProductionFeatureRecovery(
   if (!response.ok) {
     throw new Error(`feature cache read failed: ${response.status}`)
   }
-  const rows = (await response.json()) as PcGamingWikiFeatures[]
-  return formatFeatureRecoveryReport(featureRecoveryCounts(rows))
+  const after = (await response.json()) as PcGamingWikiFeatures[]
+  const before = beforeRowsFromEnv(env) ?? after
+  return formatFeatureRecoveryReport(compareFeatureRecovery(before, after))
+}
+
+function beforeRowsFromEnv(env: Record<string, string | undefined>): PcGamingWikiFeatures[] | null {
+  const path = env.PCGW_RECOVERY_BEFORE
+  if (!path) return null
+  const fs = require('node:fs') as { readFileSync: (path: string, encoding: string) => string }
+  return JSON.parse(fs.readFileSync(path, 'utf8')) as PcGamingWikiFeatures[]
 }
 
 if (process.env.PCGW_RECOVERY_REPORT === '1') {

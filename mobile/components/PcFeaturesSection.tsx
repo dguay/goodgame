@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons'
 
 import { Text } from '@/components/ui/Text'
 import { Colors, Radius, Spacing } from '@/constants'
-import { shouldShowPcFeaturesSection } from '@/lib/pcFeaturesVisibility'
+import { pcFeatureSupportLabel, shouldShowPcFeaturesSection } from '@/lib/pcFeaturesVisibility'
 import {
   getPcgwPageUrl,
   type PcgwSupportState,
@@ -12,15 +12,6 @@ import { openExternalUrl } from '@/lib/links'
 import { getSteamStoreUrl } from '@/lib/steam'
 
 const STEAM_BLUE = '#66c0f4'
-
-const FEATURE_SUPPORT_LABELS: Record<PcgwSupportState, string> = {
-  'always on': 'Always on',
-  'false': 'Unsupported',
-  'hackable': 'Hackable',
-  'limited': 'Limited',
-  'true': 'Supported',
-  'unknown': 'Unknown',
-}
 
 const FEATURE_SUPPORT_COLORS: Record<PcgwSupportState, string> = {
   'always on': Colors.success,
@@ -129,7 +120,7 @@ export function PcFeaturesSection({
           isError={isError}
           isLoading={isLoading}
           label="4K Ultra HD"
-          value={fourKUltraHd != null ? FEATURE_SUPPORT_LABELS[fourKUltraHd] : 'Not documented'}
+          value={pcFeatureSupportLabel(fourKUltraHd)}
         />
         <FeatureRow
           color={ultrawidescreen != null ? FEATURE_SUPPORT_COLORS[ultrawidescreen] : Colors.textMuted}
@@ -137,7 +128,7 @@ export function PcFeaturesSection({
           isError={isError}
           isLoading={isLoading}
           label="Ultrawide"
-          value={ultrawidescreen != null ? FEATURE_SUPPORT_LABELS[ultrawidescreen] : 'Not documented'}
+          value={pcFeatureSupportLabel(ultrawidescreen)}
         />
         <FeatureRow
           color={controllerSupport != null ? FEATURE_SUPPORT_COLORS[controllerSupport] : Colors.textMuted}
@@ -145,7 +136,7 @@ export function PcFeaturesSection({
           isError={isError}
           isLoading={isLoading}
           label="Controller"
-          value={controllerSupport != null ? FEATURE_SUPPORT_LABELS[controllerSupport] : 'Not documented'}
+          value={pcFeatureSupportLabel(controllerSupport)}
         />
         <FeatureRow
           color={sixtyFps != null ? FEATURE_SUPPORT_COLORS[sixtyFps] : Colors.textMuted}
@@ -153,7 +144,7 @@ export function PcFeaturesSection({
           isError={isError}
           isLoading={isLoading}
           label="60 FPS"
-          value={sixtyFps != null ? FEATURE_SUPPORT_LABELS[sixtyFps] : 'Not documented'}
+          value={pcFeatureSupportLabel(sixtyFps)}
         />
         <FeatureRow
           color={oneTwentyFps != null ? FEATURE_SUPPORT_COLORS[oneTwentyFps] : Colors.textMuted}
@@ -161,7 +152,7 @@ export function PcFeaturesSection({
           isError={isError}
           isLoading={isLoading}
           label="120 FPS"
-          value={oneTwentyFps != null ? FEATURE_SUPPORT_LABELS[oneTwentyFps] : 'Not documented'}
+          value={pcFeatureSupportLabel(oneTwentyFps)}
         />
         
         <FeatureRow
@@ -178,7 +169,7 @@ export function PcFeaturesSection({
           isError={isError}
           isLoading={isLoading}
           label="Xbox Game Pass"
-          value={xboxGamePass != null ? FEATURE_SUPPORT_LABELS[xboxGamePass] : 'Not documented'}
+          value={pcFeatureSupportLabel(xboxGamePass)}
         />
 
         {officialDiscordUrl != null && (

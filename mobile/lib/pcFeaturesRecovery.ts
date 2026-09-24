@@ -1,9 +1,4 @@
 import type { PcGamingWikiFeatures } from '../types/database'
-import {
-  resolvePcGamingWikiFeatures,
-  type PcGamingWikiFeatureStore,
-  type PcGamingWikiLiveLookup,
-} from './pcgamingwikiCache'
 
 // Anonymous Cargo access stopped on this date. Empty rows refreshed earlier are
 // successful no-matches from before the outage.
@@ -30,8 +25,6 @@ export interface FeatureRecoveryCounts {
   stillFailing: number
 }
 
-export type FeatureRefreshOutcome = 'refreshed' | 'still-failing' | 'still-cached'
-
 export function isPoisonedPcFeaturesRow(row: PcGamingWikiFeatures): boolean {
   const refreshedAt = Date.parse(row.refreshed_at)
   if (!Number.isFinite(refreshedAt)) return false
@@ -46,26 +39,54 @@ export function recoverPcFeaturesCache<T extends PcGamingWikiFeatures>(rows: rea
   return rows.filter((row) => !isPoisonedPcFeaturesRow(row))
 }
 
-export function featureRecoveryCounts(
-  rows: readonly PcGamingWikiFeatures[],
-  refreshOutcomes: ReadonlyMap<number, FeatureRefreshOutcome> = new Map(),
+function persistedSignature(row: PcGamingWikiFeatures): string {
+  return JSON.stringify([
+    row.rawg_game_id,
+    row.steam_app_id,
+    row.pcgw_page_id,
+    row.pcgw_page_name,
+    row.controller_support,
+    row.four_k_ultra_hd,
+    row.sixty_fps,
+    row.one_twenty_fps,
+    row.ultrawidescreen,
+    row.official_discord_url,
+    row.xbox_game_pass,
+    row.xbox_game_pass_checked_at,
+    row.perspectives,
+    row.refreshed_at,
+  ])
+}
+
+// `before` is the cache read taken before invalidation. Affected ids come from
+// that snapshot, then `after` is the persisted table once recovery has run.
+export function compareFeatureRecovery(
+  before: readonly PcGamingWikiFeatures[],
+  after: readonly PcGamingWikiFeatures[],
 ): FeatureRecoveryCounts {
+  const afterById = new Map(after.map((row) => [row.rawg_game_id, row]))
   let affected = 0
+  let preserved = 0
   let refreshed = 0
   let stillFailing = 0
-  for (const row of rows) {
-    if (!isPoisonedPcFeaturesRow(row)) continue
+  for (const row of before) {
+    const next = afterById.get(row.rawg_game_id)
+    if (!isPoisonedPcFeaturesRow(row)) {
+      if (next != null && persistedSignature(next) === persistedSignature(row)) preserved += 1
+      continue
+    }
     affected += 1
-    const outcome = refreshOutcomes.get(row.rawg_game_id)
-    if (outcome === 'refreshed') refreshed += 1
-    else if (outcome === 'still-failing') stillFailing += 1
+    if (
+      next != null &&
+      !isPoisonedPcFeaturesRow(next) &&
+      Date.parse(next.refreshed_at) > Date.parse(row.refreshed_at)
+    ) {
+      refreshed += 1
+    } else {
+      stillFailing += 1
+    }
   }
-  return {
-    affected,
-    preserved: rows.length - affected,
-    refreshed,
-    stillFailing,
-  }
+  return { affected, preserved, refreshed, stillFailing }
 }
 
 export function formatFeatureRecoveryReport(counts: FeatureRecoveryCounts): string {
@@ -75,46 +96,4 @@ export function formatFeatureRecoveryReport(counts: FeatureRecoveryCounts): stri
     `refreshed ${counts.refreshed}`,
     `still-failing ${counts.stillFailing}`,
   ].join('\n')
-}
-
-export interface RecoveredGameDetailsInput {
-  rawgGameId: number
-  steamAppId: number | null
-  gameName: string | null
-  isPcGame: boolean
-  steamLookupComplete: boolean
-  store: PcGamingWikiFeatureStore
-  lookup: PcGamingWikiLiveLookup
-}
-
-// Same gate as the game details screen: PC platform, then Steam lookup completion,
-// then the feature resolver. A missing cache row is what makes an outage row
-// eligible again inside the 30-day freshness window.
-export async function refreshRecoveredGameDetails(
-  input: RecoveredGameDetailsInput,
-): Promise<FeatureRefreshOutcome | 'skipped'> {
-  if (!input.isPcGame || !input.steamLookupComplete) return 'skipped'
-  let lookedUp = false
-  const lookup: PcGamingWikiLiveLookup = {
-    bySteamAppId: async (steamAppId) => {
-      lookedUp = true
-      return input.lookup.bySteamAppId(steamAppId)
-    },
-    byGameName: async (gameName) => {
-      lookedUp = true
-      return input.lookup.byGameName(gameName)
-    },
-  }
-  try {
-    await resolvePcGamingWikiFeatures(
-      input.rawgGameId,
-      input.steamAppId,
-      input.gameName,
-      input.store,
-      lookup,
-    )
-  } catch {
-    return 'still-failing'
-  }
-  return lookedUp ? 'refreshed' : 'still-cached'
 }
