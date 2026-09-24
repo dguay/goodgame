@@ -18,6 +18,9 @@
     "lib/authHelpers.test.ts",
     "lib/pcgamingwiki.ts",
     "lib/pcgamingwiki.test.ts",
+    "lib/pcgamingwikiCache.ts",
+    "lib/pcgamingwikiCache.test.ts",
+    "lib/time.ts",
     "types/**/*.ts"
   ]
 }
