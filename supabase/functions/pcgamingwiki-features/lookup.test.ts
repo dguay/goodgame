@@ -286,6 +286,49 @@ Deno.test('missing credentials fail before any request', async () => {
   }
 })
 
+Deno.test('a Cargo row without page identity is a schema error, not a cached no-match', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('action') === 'cargoquery') return jsonResponse({ cargoquery: [{ title: {} }] })
+    return route(request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesBySteamAppId(1245620, { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'schema')
+  })
+})
+
+Deno.test('malformed name search and page resolution are schema errors', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('list') === 'search' || url.searchParams.get('redirects') === '1') {
+      return jsonResponse({ query: {} })
+    }
+    return route(request, url)
+  }, async () => {
+    const error = await assertRejects(
+      () => lookupFeaturesByGameName('Elden Ring', { credentials: CREDENTIALS }),
+      PcgwLookupError,
+    )
+    assertEquals(error.kind, 'schema')
+  })
+})
+
+Deno.test('an authenticated name search with no pages is still a no-match', async () => {
+  await withFetch((request, url) => {
+    if (url.searchParams.get('list') === 'search') return jsonResponse({ query: { search: [] } })
+    if (url.searchParams.get('redirects') === '1') {
+      return jsonResponse({ query: { pages: { '-1': { missing: '', ns: 0 } } } })
+    }
+    if (url.searchParams.get('action') === 'cargoquery') {
+      throw new Error('empty name lookup must not query Cargo')
+    }
+    return route(request, url)
+  }, async () => {
+    assertEquals(await lookupFeaturesByGameName('Missing Game', { credentials: CREDENTIALS }), null)
+  })
+})
+
 Deno.test('the function response hides the bot password and classifies permission denial', async () => {
   const original = globalThis.fetch
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {

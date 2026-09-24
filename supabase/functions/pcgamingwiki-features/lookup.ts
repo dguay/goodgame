@@ -432,7 +432,10 @@ async function lookupXboxGamePass(session: PcgwSession, pageId: number): Promise
 async function featuresFromTitle(session: PcgwSession, title: CargoTitle | undefined): Promise<PcgwFeatureResult | null> {
   if (title == null) return null
   const pageId = parsePageId(title.PageID)
-  const pageName = title.PageName ?? null
+  const pageName = typeof title.PageName === 'string' && title.PageName.trim() !== '' ? title.PageName : null
+  if (pageId == null || pageName == null) {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: cargo row missing page identity')
+  }
   const [pageSourceResult, xboxGamePassResult] = await Promise.allSettled([
     pageName != null ? getPageSource(session, pageName) : Promise.resolve(null),
     pageId != null ? lookupXboxGamePass(session, pageId) : Promise.resolve(null),
@@ -486,8 +489,10 @@ async function resolvePageNames(session: PcgwSession, pageNames: string[]): Prom
     redirects: '1',
     titles: uniquePageNames.join('|'),
   }, 'GET')
-  if (!isRecord(body) || !isRecord(body.query)) return []
-  const pages = isRecord(body.query.pages) ? Object.values(body.query.pages) : []
+  if (!isRecord(body) || !isRecord(body.query) || !isRecord(body.query.pages)) {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: page resolution missing')
+  }
+  const pages = Object.values(body.query.pages)
   const resolved = pages
     .filter((page): page is Record<string, unknown> => isRecord(page))
     .filter((page) => page.missing == null && page.ns === 0 && typeof page.pageid === 'number')
@@ -510,7 +515,9 @@ async function searchPageNames(session: PcgwSession, gameName: string): Promise<
     srsearch: gameName,
     srlimit: TITLE_SEARCH_LIMIT.toString(),
   }, 'GET')
-  if (!isRecord(body) || !isRecord(body.query) || !Array.isArray(body.query.search)) return []
+  if (!isRecord(body) || !isRecord(body.query) || !Array.isArray(body.query.search)) {
+    throw new PcgwLookupError('schema', 'PCGamingWiki schema error: search results missing')
+  }
   return getUniquePcgwPageNames(
     body.query.search
       .filter(isRecord)
