@@ -21,6 +21,7 @@ import {
   type PcGamingWikiInvoke,
   type PcgwFeatureResult,
 } from './pcgamingwiki'
+import { reportProductionFeatureRecovery } from './pcFeaturesRecoveryCli'
 import type { PcGamingWikiFeatures } from '../types/database'
 
 declare const require: (module: string) => unknown
@@ -138,22 +139,35 @@ test('the captured production snapshot is required and scores persisted rows', (
     () => featureRecoveryReport(null, []),
     /PCGW_RECOVERY_BEFORE is required/,
   )
-  const before = JSON.parse(fsRead(
-    pathJoin(__dirname, '../../fixtures/pcgw-features-before-2026-09-24.json'),
+  const beforePath = pathJoin(__dirname, '../../fixtures/pcgw-features-before-2026-09-24.json')
+  const before = JSON.parse(fsRead(beforePath)) as PcGamingWikiFeatures[]
+  const after = JSON.parse(fsRead(
+    pathJoin(__dirname, '../../fixtures/pcgw-features-after-one-refresh.json'),
   )) as PcGamingWikiFeatures[]
-  const affected = before.filter(isPoisonedPcFeaturesRow)
-  assert.equal(affected.length, 9)
-  const target = affected.find((item) => item.rawg_game_id === 10533)
-  assert.equal(target?.steam_app_id, 238960)
-  const refreshed = row({
-    ...pcFeatureCacheWrite(10533, 238960, RECOVERED, '2026-09-24T18:00:00.000Z'),
-    created_at: '2026-09-24T18:00:00.000Z',
-    updated_at: '2026-09-24T18:00:00.000Z',
-  })
-  const after = [...before.filter((item) => !isPoisonedPcFeaturesRow(item)), refreshed]
-  const counts = compareFeatureRecovery(before, after)
-  assert.deepEqual(counts, { affected: 9, preserved: 31, refreshed: 1, stillFailing: 8 })
-  assert.equal(featureRecoveryReport(before, after), formatFeatureRecoveryReport(counts))
+  assert.equal(before.filter(isPoisonedPcFeaturesRow).length, 9)
+  assert.equal(featureRecoveryReport(before, after), 'affected 9\npreserved 31\nrefreshed 1\nstill-failing 8')
+})
+
+test('the report command reads persisted after rows against the required snapshot', async () => {
+  const beforePath = pathJoin(__dirname, '../../fixtures/pcgw-features-before-2026-09-24.json')
+  const after = JSON.parse(fsRead(
+    pathJoin(__dirname, '../../fixtures/pcgw-features-after-one-refresh.json'),
+  )) as PcGamingWikiFeatures[]
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = (async () => ({
+    ok: true,
+    json: async () => after,
+  })) as unknown as typeof fetch
+  try {
+    const report = await reportProductionFeatureRecovery({
+      EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
+      PCGW_RECOVERY_BEFORE: beforePath,
+    })
+    assert.equal(report, 'affected 9\npreserved 31\nrefreshed 1\nstill-failing 8')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
 
 function fsRead(path: string): string {
@@ -185,6 +199,9 @@ test('the before snapshot still reports refreshed and still-failing after those 
 })
 
 test('game 10533 stays cached until recovery, then the feature client stores and displays it', async () => {
+  const now = Date.now
+  Date.now = () => Date.parse('2026-09-24T12:00:00.000Z')
+  try {
   const request = pcFeatureQueryInput({
     isPcGame: true,
     gameId: 10533,
@@ -244,6 +261,9 @@ test('game 10533 stays cached until recovery, then the feature client stores and
     compareFeatureRecovery([poisoned, kept], [saved!, kept]),
     { affected: 1, preserved: 1, refreshed: 1, stillFailing: 0 },
   )
+  } finally {
+    Date.now = now
+  }
 })
 
 test('a failed refresh of a recovered game does not write a cache row', async () => {
