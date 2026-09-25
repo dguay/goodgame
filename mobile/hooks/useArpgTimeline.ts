@@ -8,20 +8,20 @@ const GAME_BASE_URL = 'https://www.arpg-timeline.com/game'
 // Extend this as new games appear in the feed.
 const GAME_SLUGS: Record<string, string> = {
   'Grim Dawn': 'grim-dawn',
-  'Grim Dawn Community League': 'titan-quest-ii',
+  'Grim Dawn Community League': 'grim-dawn-community-league',
   'The Dark West': 'the-dark-west',
   'Blizzless D2R': 'blizzless-d2r',
   'Path of Exile': 'path-of-exile',
-  'Path of Exile 2': 'path-of-exile-2',
+  'Path of Exile 2': 'path-of-exile2',
   'Diablo IV': 'diablo-iv',
   'Diablo III': 'diablo-iii',
   'Diablo II: Resurrected': 'diablo-ii-resurrected',
   'Path of Diablo': 'path-of-diablo',
   'Last Epoch': 'last-epoch',
-  'Torchlight Infinite': 'torchlight-infinite',
+  'Torchlight: Infinite': 'torchlight-infinite',
   'Undecember': 'undecember',
-  'Wolcen': 'wolcen',
-  'Titan Quest II': 'titan-quest-ii',
+  'Wolcen 2': 'wolcen-2',
+  'Titan Quest II': 'titan-quest-2',
   'Crystalfall': 'crystalfall',
   'Ravenswatch': 'ravenswatch',
   'Project Diablo 2': 'pd2',
@@ -40,6 +40,10 @@ const GAME_SLUGS: Record<string, string> = {
   'Darkhaven': 'darkhaven',
   'Dragonkin: The Banished': 'dragonkin-the-banished',
   'The Slormancer': 'the-slormancer',
+  'Pale Coins': 'pale-coins',
+  'Gods, Death & Reapers': 'gods-death-and-reapers',
+  'TARAE: The Unbound': 'tarae-the-unbound',
+  'Diablo V': 'diablo-v',
 }
 
 export type ArpgEventType = 'Demo' | 'Season' | 'Alpha' | 'Beta' | 'Launch' | 'Event'
