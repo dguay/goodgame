@@ -66,3 +66,17 @@ export function selectEntriesToRefresh(
 function statusPriority(entry: LibraryEntry): number {
   return entry.status === 'want_to_play' ? 0 : 1
 }
+
+export type MetadataPersistenceOutcome =
+  | { outcome: 'updated' }
+  | { outcome: 'missing' }
+  | { outcome: 'error'; message: string }
+
+export function classifyMetadataPersistence(result: {
+  data: { id: string } | null
+  error: { message: string } | null
+}): MetadataPersistenceOutcome {
+  if (result.error != null) return { outcome: 'error', message: result.error.message }
+  if (result.data == null) return { outcome: 'missing' }
+  return { outcome: 'updated' }
+}

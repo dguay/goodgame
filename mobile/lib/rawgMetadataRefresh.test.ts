@@ -1,4 +1,4 @@
-import { selectEntriesToRefresh } from './rawgMetadataRefresh'
+import { classifyMetadataPersistence, selectEntriesToRefresh } from './rawgMetadataRefresh'
 import type { LibraryEntry } from '../types/database'
 
 declare const require: (module: string) => unknown
@@ -105,6 +105,36 @@ test('uses a 12-hour staleness window near release', () => {
   ]
 
   assert.deepEqual(selectedIds(entries), ['stale'])
+})
+
+test('treats metadata synced exactly at the staleness threshold as stale', () => {
+  const entries = [
+    makeEntry({ id: 'exact-default', release_date: '2026-09-01', rawg_metadata_synced_at: syncedAgo(DAY_MS) }),
+    makeEntry({ id: 'exact-near', release_date: '2026-06-20', rawg_metadata_synced_at: syncedAgo(12 * HOUR_MS) }),
+  ]
+
+  assert.deepEqual(selectedIds(entries), ['exact-default', 'exact-near'])
+})
+
+test('counts a persisted row as an update', () => {
+  assert.deepEqual(
+    classifyMetadataPersistence({ data: { id: 'entry-id' }, error: null }),
+    { outcome: 'updated' },
+  )
+})
+
+test('does not count a zero-row update as an update', () => {
+  assert.deepEqual(
+    classifyMetadataPersistence({ data: null, error: null }),
+    { outcome: 'missing' },
+  )
+})
+
+test('reports a rejected update with its message', () => {
+  assert.deepEqual(
+    classifyMetadataPersistence({ data: null, error: { message: 'permission denied' } }),
+    { outcome: 'error', message: 'permission denied' },
+  )
 })
 
 test('prioritizes want_to_play entries while preserving input order', () => {

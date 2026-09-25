@@ -3,7 +3,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useLibraryEntries } from '@/hooks/useLibrary'
 import { syncAllReleaseNotifications } from '@/lib/notifications'
 import { getGameDetail } from '@/lib/rawg'
-import { selectEntriesToRefresh } from '@/lib/rawgMetadataRefresh'
+import {
+  classifyMetadataPersistence,
+  selectEntriesToRefresh,
+} from '@/lib/rawgMetadataRefresh'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import type { LibraryEntry } from '@/types/database'
@@ -26,17 +29,27 @@ async function syncStaleRawgMetadata(
       const game = await getGameDetail(entry.rawg_game_id)
       const rawgMetadataSyncedAt = new Date().toISOString()
       const platforms = getRawgPlatformSlugs(game)
-      const { error } = await supabase
-        .from('library_entries')
-        .update({
-          release_date: game.released,
-          platforms,
-          rawg_metadata_synced_at: rawgMetadataSyncedAt,
-        })
-        .eq('id', entry.id)
-        .eq('user_id', entry.user_id)
+      const persistence = classifyMetadataPersistence(
+        await supabase
+          .from('library_entries')
+          .update({
+            release_date: game.released,
+            platforms,
+            rawg_metadata_synced_at: rawgMetadataSyncedAt,
+          })
+          .eq('id', entry.id)
+          .eq('user_id', entry.user_id)
+          .select('id')
+          .maybeSingle(),
+      )
 
-      if (error) throw new Error(error.message)
+      if (persistence.outcome !== 'updated') {
+        throw new Error(
+          persistence.outcome === 'error'
+            ? persistence.message
+            : `Library entry ${entry.id} was not updated`,
+        )
+      }
 
       const idx = enriched.findIndex(e => e.id === entry.id)
       if (idx !== -1) {
