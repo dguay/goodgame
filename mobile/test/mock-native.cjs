@@ -1,9 +1,6 @@
+require('./resolve-alias.cjs')
 const Module = require('module')
-const fs = require('fs')
-const path = require('path')
 const React = require('react')
-
-const compiledRoot = path.join(__dirname, '../.test-build')
 
 function host(type) {
   return function Host(props) {
@@ -65,12 +62,6 @@ Module.prototype.require = function (id) {
   }
   if (id === 'react-native-safe-area-context') {
     return { useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }
-  }
-  if (typeof id === 'string' && id.startsWith('@/')) {
-    const base = path.join(compiledRoot, id.slice(2))
-    const candidates = [base, `${base}.js`, path.join(base, 'index.js')]
-    const found = candidates.find((candidate) => fs.existsSync(candidate))
-    if (found) return original.call(this, found)
   }
   return original.apply(this, arguments)
 }

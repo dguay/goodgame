@@ -1,4 +1,4 @@
-import type { PcgwSupportState } from './pcgamingwiki'
+import type { PcgwSupportState } from '@/lib/pcgamingwiki'
 
 const FEATURE_SUPPORT_LABELS: Record<PcgwSupportState, string> = {
   'always on': 'Always on',

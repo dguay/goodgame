@@ -1,5 +1,5 @@
-import { featureRecoveryReport } from './pcFeaturesRecovery'
-import type { PcGamingWikiFeatures } from '../types/database'
+import { featureRecoveryReport } from '@/lib/pcFeaturesRecovery'
+import type { PcGamingWikiFeatures } from '@/types/database'
 
 declare const process: {
   env: Record<string, string | undefined>
@@ -18,17 +18,23 @@ export async function reportProductionFeatureRecovery(
     throw new Error('Supabase URL and anon key are required')
   }
   const root = env.PCGW_RECOVERY_REST_URL ?? `${url}/rest/v1`
-  const response = await fetch(`${root}/pcgamingwiki_features?select=*`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Accept: 'application/json',
-    },
-  })
-  if (!response.ok) {
-    throw new Error(`feature cache read failed: ${response.status}`)
+  const after: PcGamingWikiFeatures[] = []
+  const pageSize = 1000
+  for (let offset = 0; ; offset += pageSize) {
+    const response = await fetch(`${root}/pcgamingwiki_features?select=*&order=rawg_game_id.asc&limit=${pageSize}&offset=${offset}`, {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json',
+      },
+    })
+    if (!response.ok) {
+      throw new Error(`feature cache read failed: ${response.status}`)
+    }
+    const page = (await response.json()) as PcGamingWikiFeatures[]
+    after.push(...page)
+    if (page.length < pageSize) break
   }
-  const after = (await response.json()) as PcGamingWikiFeatures[]
   return featureRecoveryReport(beforeRowsFromEnv(env), after)
 }
 

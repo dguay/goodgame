@@ -1,4 +1,4 @@
-import type { PcGamingWikiFeatures } from '../types/database'
+import type { PcGamingWikiFeatures } from '@/types/database'
 
 // Anonymous Cargo access stopped on this date. Empty rows refreshed earlier are
 // successful no-matches from before the outage.

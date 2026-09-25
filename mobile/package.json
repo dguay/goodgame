@@ -12,6 +12,7 @@
     "pretest": "node -e \"require('node:fs').rmSync('.test-build', { recursive: true, force: true })\"",
     "test": "tsc -p tsconfig.test.json && node --require ./test/mock-native.cjs --test .test-build/lib/*.test.js",
     "test:db": "PCGW_DB_TEST=1 pnpm test",
+    "recovery:report": "tsc -p tsconfig.test.json && PCGW_RECOVERY_REPORT=1 node --require ./test/resolve-alias.cjs .test-build/lib/pcFeaturesRecoveryCli.js",
     "build:web": "expo export --platform web",
     "eas:login": "eas login",
     "eas:configure": "eas build:configure",

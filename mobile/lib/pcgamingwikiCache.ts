@@ -1,6 +1,6 @@
 import type { PcgwFeatureResult, PcgwSupportState } from './pcgamingwiki'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from './time'
-import type { PcGamingWikiFeatures } from '../types/database'
+import type { PcGamingWikiFeatures } from '@/types/database'
 
 const REFRESH_AFTER_MS = 30 * DAY_MS
 const XBOX_GAME_PASS_REFRESH_AFTER_MS = 7 * DAY_MS

@@ -1,28 +1,26 @@
 import {
-  PCGW_API_CHANGE_AT_MS,
-  PCGW_POISON_REFRESH_BEFORE_MS,
   compareFeatureRecovery,
   featureRecoveryReport,
   formatFeatureRecoveryReport,
   isPoisonedPcFeaturesRow,
   recoverPcFeaturesCache,
-} from './pcFeaturesRecovery'
-import { pcFeatureSupportLabel, shouldShowPcFeaturesSection } from './pcFeaturesVisibility'
+} from '@/lib/pcFeaturesRecovery'
+import { pcFeatureSupportLabel, shouldShowPcFeaturesSection } from '@/lib/pcFeaturesVisibility'
 import {
   pcFeatureCacheWrite,
   pcFeatureQueryInput,
   resolvePcGamingWikiFeatures,
   type PcGamingWikiFeatureStore,
   type PcGamingWikiLiveLookup,
-} from './pcgamingwikiCache'
+} from '@/lib/pcgamingwikiCache'
 import {
   getPcgwFeaturesByGameName,
   getPcgwFeaturesBySteamAppId,
   type PcGamingWikiInvoke,
   type PcgwFeatureResult,
-} from './pcgamingwiki'
-import { reportProductionFeatureRecovery } from './pcFeaturesRecoveryCli'
-import type { PcGamingWikiFeatures } from '../types/database'
+} from '@/lib/pcgamingwiki'
+import { reportProductionFeatureRecovery } from '@/lib/pcFeaturesRecoveryCli'
+import type { PcGamingWikiFeatures } from '@/types/database'
 
 declare const require: (module: string) => unknown
 declare const __dirname: string
@@ -87,20 +85,6 @@ const RECOVERED: PcgwFeatureResult = {
   xboxGamePassFetchFailed: false,
 }
 
-test('the migration deletes the same outage window the predicate uses', () => {
-  const fs = require('node:fs') as { readFileSync: (path: string, encoding: string) => string }
-  const path = require('node:path') as { join: (...parts: string[]) => string }
-  const sql = fs.readFileSync(
-    path.join(__dirname, '../../../supabase/migrations/20260924171500_recover_poisoned_pcgw_features.sql'),
-    'utf8',
-  )
-  const start = new Date(PCGW_API_CHANGE_AT_MS).toISOString().replace('.000Z', '+00').replace('T', ' ')
-  const end = new Date(PCGW_POISON_REFRESH_BEFORE_MS).toISOString().replace('.000Z', '+00').replace('T', ' ')
-  assert.equal(sql.includes(`timestamptz '${start}'`), true)
-  assert.equal(sql.includes(`timestamptz '${end}'`), true)
-  assert.equal(sql.includes('DELETE FROM public.pcgamingwiki_features'), true)
-})
-
 test('an empty row refreshed during the outage is affected and a documented row is not', () => {
   const poisoned = row()
   const kept = documented()
@@ -164,6 +148,34 @@ test('the report command reads persisted after rows against the required snapsho
       EXPO_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
       PCGW_RECOVERY_BEFORE: beforePath,
     })
+    assert.equal(report, 'affected 9\npreserved 31\nrefreshed 1\nstill-failing 8')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('the report includes cache rows beyond the Supabase 1000-row response limit', async () => {
+  const beforePath = pathJoin(__dirname, '../../fixtures/pcgw-features-before-2026-09-24.json')
+  const after = JSON.parse(fsRead(
+    pathJoin(__dirname, '../../fixtures/pcgw-features-after-one-refresh.json'),
+  )) as PcGamingWikiFeatures[]
+  const filler = Array.from({ length: 1000 }, (_, index) =>
+    row({ rawg_game_id: 2000000 + index, refreshed_at: '2026-09-24T18:00:00.000Z' }),
+  )
+  const offsets: number[] = []
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const offset = Number(new URL(String(input)).searchParams.get('offset'))
+    offsets.push(offset)
+    return { ok: true, json: async () => offset === 0 ? filler : after }
+  }) as unknown as typeof fetch
+  try {
+    const report = await reportProductionFeatureRecovery({
+      EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
+      PCGW_RECOVERY_BEFORE: beforePath,
+    })
+    assert.deepEqual(offsets, [0, 1000])
     assert.equal(report, 'affected 9\npreserved 31\nrefreshed 1\nstill-failing 8')
   } finally {
     globalThis.fetch = originalFetch

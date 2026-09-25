@@ -1,4 +1,4 @@
-import { reportProductionFeatureRecovery } from './pcFeaturesRecoveryCli'
+import { reportProductionFeatureRecovery } from '@/lib/pcFeaturesRecoveryCli'
 
 declare const require: (module: string) => unknown
 declare const __dirname: string

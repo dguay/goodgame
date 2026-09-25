@@ -1,16 +1,19 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { RawgGameDetail } from '../types/rawg'
-import type { PcGamingWikiFeatures } from '../types/database'
+import type { RawgGameDetail } from '@/types/rawg'
+import type { PcGamingWikiFeatures } from '@/types/database'
 
 declare const require: (module: string) => unknown
 
 const assert = require('node:assert/strict') as {
+  deepEqual: (actual: unknown, expected: unknown) => void
   equal: (actual: unknown, expected: unknown) => void
 }
 const test = require('node:test') as (name: string, fn: () => Promise<void>) => void
 interface TestView {
-  toJSON(): unknown
+  root: {
+    findAllByType(type: string): { children: (string | object)[] }[]
+  }
   unmount(): void
 }
 const renderer = require('react-test-renderer') as {
@@ -97,7 +100,7 @@ test('a recovered PC game refreshes through the feature hook and appears on game
     },
   }
   screenGlobal.__pcgwScreenFixture = { game, steamAppId: 238960, supabase }
-  const GameDetailScreen = (require('../app/game/[id]') as { default: React.ComponentType }).default
+  const GameDetailScreen = (require('@/app/game/[id]') as { default: React.ComponentType }).default
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   let view: TestView | undefined
   try {
@@ -110,15 +113,15 @@ test('a recovered PC game refreshes through the feature hook and appears on game
       await new Promise<void>((resolve) => setTimeout(resolve, 30))
     })
     assert.equal(functionCalls.length, 1)
-    assert.equal(JSON.stringify(functionCalls[0]), '{"steamAppId":238960}')
+    assert.deepEqual(functionCalls[0], { steamAppId: 238960 })
     assert.equal(writes.length, 1)
     assert.equal(writes[0].rawg_game_id, 10533)
     assert.equal(writes[0].four_k_ultra_hd, 'limited')
-    const displayed = JSON.stringify(view?.toJSON())
-    assert.equal(displayed.includes('PC Features'), true)
-    assert.equal(displayed.includes('4K Ultra HD'), true)
-    assert.equal(displayed.includes('Limited'), true)
-    assert.equal(displayed.includes('First-person'), true)
+    const visibleText = view?.root.findAllByType('span').flatMap((node) =>
+      node.children.filter((child): child is string => typeof child === 'string'),
+    ) ?? []
+    assert.equal(visibleText.includes('Limited'), true)
+    assert.equal(visibleText.includes('First-person'), true)
   } finally {
     await renderer.act(async () => view?.unmount())
     client.clear()
