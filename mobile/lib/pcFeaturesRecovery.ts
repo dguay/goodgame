@@ -39,6 +39,12 @@ export function recoverPcFeaturesCache<T extends PcGamingWikiFeatures>(rows: rea
   return rows.filter((row) => !isPoisonedPcFeaturesRow(row))
 }
 
+function instant(value: string | null): string | null {
+  if (value == null) return null
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? String(parsed) : value
+}
+
 function persistedSignature(row: PcGamingWikiFeatures): string {
   return JSON.stringify([
     row.rawg_game_id,
@@ -52,9 +58,9 @@ function persistedSignature(row: PcGamingWikiFeatures): string {
     row.ultrawidescreen,
     row.official_discord_url,
     row.xbox_game_pass,
-    row.xbox_game_pass_checked_at,
+    instant(row.xbox_game_pass_checked_at),
     row.perspectives,
-    row.refreshed_at,
+    instant(row.refreshed_at),
   ])
 }
 

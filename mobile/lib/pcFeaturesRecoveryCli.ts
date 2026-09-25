@@ -17,7 +17,8 @@ export async function reportProductionFeatureRecovery(
   if (!url || !key) {
     throw new Error('Supabase URL and anon key are required')
   }
-  const response = await fetch(`${url}/rest/v1/pcgamingwiki_features?select=*`, {
+  const root = env.PCGW_RECOVERY_REST_URL ?? `${url}/rest/v1`
+  const response = await fetch(`${root}/pcgamingwiki_features?select=*`, {
     headers: {
       apikey: key,
       Authorization: `Bearer ${key}`,
