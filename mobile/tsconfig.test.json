@@ -16,6 +16,8 @@
     "lib/dates.test.ts",
     "lib/librarySort.ts",
     "lib/librarySort.test.ts",
+    "lib/rawgMetadataRefresh.ts",
+    "lib/rawgMetadataRefresh.test.ts",
     "lib/authHelpers.ts",
     "lib/authHelpers.test.ts",
     "lib/pcFeaturesVisibility.ts",
