@@ -1,4 +1,17 @@
-import type { PcgwSupportState } from './pcgamingwiki'
+import type { PcgwSupportState } from '@/lib/pcgamingwiki'
+
+const FEATURE_SUPPORT_LABELS: Record<PcgwSupportState, string> = {
+  'always on': 'Always on',
+  false: 'Unsupported',
+  hackable: 'Hackable',
+  limited: 'Limited',
+  true: 'Supported',
+  unknown: 'Unknown',
+}
+
+export function pcFeatureSupportLabel(state: PcgwSupportState | null): string {
+  return state == null ? 'Not documented' : FEATURE_SUPPORT_LABELS[state]
+}
 
 export interface PcFeaturesVisibilityInput {
   controllerSupport: PcgwSupportState | null

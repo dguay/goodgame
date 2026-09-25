@@ -1,6 +1,6 @@
 import type { PcgwFeatureResult, PcgwSupportState } from './pcgamingwiki'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from './time'
-import type { PcGamingWikiFeatures } from '../types/database'
+import type { PcGamingWikiFeatures } from '@/types/database'
 
 const REFRESH_AFTER_MS = 30 * DAY_MS
 const XBOX_GAME_PASS_REFRESH_AFTER_MS = 7 * DAY_MS
@@ -20,6 +20,63 @@ export interface PcGamingWikiFeaturesResult {
   sixtyFps: PcgwSupportState | null
   xboxGamePass: PcgwSupportState | null
   isDocumented: boolean
+}
+
+export function pcFeatureCacheWrite(
+  rawgGameId: number,
+  steamAppId: number | null,
+  result: PcgwFeatureResult | null,
+  now: string,
+) {
+  const primaryFound = result != null
+  const xboxFetchSucceeded = primaryFound && !result.xboxGamePassFetchFailed
+  const pageSourceFetchSucceeded = primaryFound && !result.pageSourceFetchFailed
+  return {
+    rawg_game_id: rawgGameId,
+    steam_app_id: steamAppId,
+    pcgw_page_id: result?.pageId ?? null,
+    pcgw_page_name: result?.pageName ?? null,
+    four_k_ultra_hd: result?.fourKUltraHd ?? null,
+    sixty_fps: result?.sixtyFps ?? null,
+    one_twenty_fps: result?.oneTwentyFps ?? null,
+    ultrawidescreen: result?.ultrawidescreen ?? null,
+    controller_support: result?.controllerSupport ?? null,
+    perspectives: result?.perspectives ?? [],
+    ...(pageSourceFetchSucceeded
+      ? { official_discord_url: result.officialDiscordUrl }
+      : !primaryFound
+        ? { official_discord_url: null }
+        : {}),
+    ...(xboxFetchSucceeded
+      ? { xbox_game_pass: result.xboxGamePass, xbox_game_pass_checked_at: now }
+      : !primaryFound
+        ? { xbox_game_pass: null, xbox_game_pass_checked_at: null }
+        : {}),
+    refreshed_at: now,
+  }
+}
+
+export function pcFeatureQueryInput(input: {
+  isPcGame: boolean
+  gameId: number | null
+  gameName: string | null
+  steamAppId: number | null
+  steamLookupComplete: boolean
+}): {
+  rawgGameId: number | null
+  steamAppId: number | null
+  gameName: string | null
+  enabled: boolean
+} {
+  if (!input.isPcGame || input.gameId == null) {
+    return { rawgGameId: null, steamAppId: null, gameName: null, enabled: false }
+  }
+  return {
+    rawgGameId: input.gameId,
+    steamAppId: input.steamAppId,
+    gameName: input.gameName,
+    enabled: input.steamLookupComplete,
+  }
 }
 
 export interface PcGamingWikiLiveLookup {

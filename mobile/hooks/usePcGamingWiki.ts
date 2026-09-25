@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   PCGW_FEATURES_GC_MS,
   PCGW_FEATURES_STALE_MS,
+  pcFeatureCacheWrite,
   resolvePcGamingWikiFeatures,
   type PcGamingWikiFeaturesResult,
 } from '@/lib/pcgamingwikiCache'
@@ -60,36 +61,9 @@ async function upsertFeatures(
   result: PcgwFeatureResult | null
 ): Promise<PcGamingWikiFeatures | null> {
   const now = new Date().toISOString()
-  // result=null: primary lookup returned no page → clear page-specific fields explicitly
-  // result!=null but secondary fetch failed → omit field to preserve existing cached value
-  const primaryFound = result != null
-  const xboxFetchSucceeded = primaryFound && !result.xboxGamePassFetchFailed
-  const pageSourceFetchSucceeded = primaryFound && !result.pageSourceFetchFailed
   const { data, error } = await supabase
     .from('pcgamingwiki_features')
-    .upsert({
-      rawg_game_id: rawgGameId,
-      steam_app_id: steamAppId,
-      pcgw_page_id: result?.pageId ?? null,
-      pcgw_page_name: result?.pageName ?? null,
-      four_k_ultra_hd: result?.fourKUltraHd ?? null,
-      sixty_fps: result?.sixtyFps ?? null,
-      one_twenty_fps: result?.oneTwentyFps ?? null,
-      ultrawidescreen: result?.ultrawidescreen ?? null,
-      controller_support: result?.controllerSupport ?? null,
-      perspectives: result?.perspectives ?? [],
-      ...(pageSourceFetchSucceeded
-        ? { official_discord_url: result.officialDiscordUrl }
-        : !primaryFound
-          ? { official_discord_url: null }
-          : {}),
-      ...(xboxFetchSucceeded
-        ? { xbox_game_pass: result.xboxGamePass, xbox_game_pass_checked_at: now }
-        : !primaryFound
-          ? { xbox_game_pass: null, xbox_game_pass_checked_at: null }
-          : {}),
-      refreshed_at: now,
-    })
+    .upsert(pcFeatureCacheWrite(rawgGameId, steamAppId, result, now))
     .select()
     .single()
 

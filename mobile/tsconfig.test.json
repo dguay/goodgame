@@ -3,6 +3,7 @@
   "compilerOptions": {
     "module": "Node16",
     "moduleResolution": "node16",
+    "jsx": "react-jsx",
     "target": "es2022",
     "outDir": ".test-build",
     "rootDir": ".",
@@ -10,6 +11,7 @@
     "types": []
   },
   "include": [
+    "app/game/[id].tsx",
     "lib/dates.ts",
     "lib/dates.test.ts",
     "lib/librarySort.ts",
@@ -22,6 +24,11 @@
     "lib/pcgamingwiki.test.ts",
     "lib/pcgamingwikiCache.ts",
     "lib/pcgamingwikiCache.test.ts",
+    "lib/pcFeaturesRecovery.ts",
+    "lib/pcFeaturesRecovery.test.ts",
+    "lib/pcFeaturesRecoveryCli.ts",
+    "lib/pcFeaturesRecovery.database.test.ts",
+    "lib/pcFeaturesGameDetails.screen.test.tsx",
     "lib/time.ts",
     "types/**/*.ts"
   ]
